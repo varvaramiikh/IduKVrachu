@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Иду к врачу | Подготовка ребенка</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <main class="app">
+    <div class="phone" aria-label="Сайт подготовки ребенка к визиту">
+      <section class="screen screen--active screen--welcome" id="screen-welcome">
+        <div class="welcome-card">
+          <h1 class="welcome-title">Добро пожаловать!</h1>
+          <img class="welcome-img" src="materials/img/Иллюстрация Hero.png" alt="Иллюстрация">
+          <img class="welcome-logo" src="materials/img/Цветное лого.svg" alt="Логотип">
+        </div>
+
+        <button class="button button-primary button-full" type="button" data-screen="screen-catalog">
+          Подготовка
+        </button>
+
+        <div class="info-list">
+          <div class="info-title-container">
+            <h2 class="info-title">Выберите направление подготовки</h2>
+            <p class="info-text">Каждое направление содержит в себе набор адаптационных материалов: мультфильм, социальная история, игра-тренажер и рекомендации для родителей</p>
+          </div>
+          <article class="info-item">
+            <div class="info-item-icon-container">
+              <img class="info-item-icon-tooth" src="materials/svg/icon-tooth.svg" alt="Иконка зуба">
+            </div>
+            <h3 class="info-item-title">Поход к стоматологу</h3>
+            <p class="info-item-text">Подготовка к визиту стоматолога</p>
+            <p class="info-item-text">4 материала</p>
+            <div class="info-item-price-container">
+              <div class="info-item-price-container-text info-item-price-container-text-paid">
+                <p class="info-item-price info-item-price-paid">69 ₽</p>
+              </div>
+              <button class="info-item-button info-item-button-paid">
+                <img class="info-item-icon-basket" src="materials/svg/icon-basket.svg" alt="Иконка корзины">
+                <p class="info-item-button-text info-item-button-text-paid">Купить</p>
+              </button>
+            </div>
+            <!-- <div class="info-item-price-container">
+              <div class="info-item-price-container-text">
+                <p class="info-item-price">Бесплатно</p>
+              </div>
+              <button class="info-item-button">
+                <p class="info-item-button-text">Начать</p>
+              </button>
+            </div> -->
+          </article>
+          <article class="info-item">
+            <div class="info-item-icon-container">
+              <img class="info-item-icon-syringe" src="materials/svg/icon-syringe.svg" alt="Иконка шприца">
+            </div>
+            <h3 class="info-item-title">Сдача анализа крови</h3>
+            <p class="info-item-text">Подготовка к процедуре забора крови</p>
+            <p class="info-item-text">3 материала</p>
+            <div class="info-item-price-container">
+              <div class="info-item-price-container-text">
+                <p class="info-item-price">Бесплатно</p>
+              </div>
+              <button class="info-item-button">
+                <p class="info-item-button-text">Начать</p>
+              </button>
+            </div>
+          </article>
+        </div>
+
+        
+      </section>
+
+      <section class="screen" id="screen-catalog">
+        <header class="topbar">
+          <button class="icon-button" type="button" data-screen="screen-welcome" aria-label="Назад">←</button>
+          <div>
+            <p class="screen-label">Каталог</p>
+            <h2>Выберите модуль</h2>
+          </div>
+        </header>
+
+        <article class="banner-card">
+          <strong>Каждый модуль помогает ребенку шаг за шагом привыкнуть к будущему визиту.</strong>
+          <p class="screen-text">
+            Материалы можно смотреть вместе с родителем и возвращаться к ним в удобный момент.
+          </p>
+        </article>
+
+        <div class="module-list">
+          <article class="module-card">
+            <div class="module-head">
+              <div>
+                <p class="module-type">Модуль</p>
+                <h3>Сдача крови</h3>
+              </div>
+              <span class="badge badge-soft">Бесплатно</span>
+            </div>
+            <p>Короткая подготовка к анализу: что ребенок увидит, как все пройдет и как можно успокоиться.</p>
+            <button class="button button-secondary button-full" type="button" data-screen="screen-blood">
+              Открыть
+            </button>
+          </article>
+
+          <article class="module-card">
+            <div class="module-head">
+              <div>
+                <p class="module-type">Модуль</p>
+                <h3>Стоматолог</h3>
+              </div>
+              <span class="badge badge-soft">Популярно</span>
+            </div>
+            <p>Видео, социальная история и игра помогают спокойно познакомиться с кабинетом стоматолога.</p>
+            <div class="progress-line">
+              <span style="width: 33%"></span>
+            </div>
+            <p class="progress-caption">Прогресс: 1 из 3 материалов</p>
+            <button class="button button-primary button-full" type="button" data-screen="screen-dentist">
+              Открыть модуль
+            </button>
+          </article>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-blood">
+        <header class="topbar">
+          <button class="icon-button" type="button" data-screen="screen-catalog" aria-label="Назад">←</button>
+          <div>
+            <p class="screen-label">Модуль</p>
+            <h2>Сдача крови</h2>
+          </div>
+        </header>
+
+        <article class="specialist-card">
+          <div class="specialist-icon">+</div>
+          <div>
+            <strong>Знакомство с процедурой</strong>
+            <p>Короткие материалы помогают понять, что процедура быстрая, а рядом всегда будет взрослый.</p>
+          </div>
+        </article>
+
+        <div class="content-list">
+          <article class="content-card">
+            <div class="content-top">
+              <div>
+                <p class="module-type">Видео</p>
+                <h3>Как проходит анализ</h3>
+              </div>
+              <span class="badge badge-soft">2 минуты</span>
+            </div>
+            <p>Показываем кабинет, кресло и объясняем, зачем берут кровь.</p>
+          </article>
+
+          <article class="content-card">
+            <div class="content-top">
+              <div>
+                <p class="module-type">Подсказки</p>
+                <h3>Дышим спокойно</h3>
+              </div>
+            </div>
+            <p>Простые шаги для ребенка: как сидеть, куда смотреть и как расслабить руку.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-dentist">
+        <header class="topbar">
+          <button class="icon-button" type="button" data-screen="screen-catalog" aria-label="Назад">←</button>
+          <div>
+            <p class="screen-label">Модуль</p>
+            <h2>Стоматолог</h2>
+          </div>
+        </header>
+
+        <article class="specialist-card">
+          <div class="specialist-icon">S</div>
+          <div>
+            <strong>Подготовка к визиту к стоматологу</strong>
+            <p>Ребенок заранее узнает, как выглядит кабинет, кресло и что будет делать врач.</p>
+          </div>
+        </article>
+
+        <div class="content-list">
+          <article class="content-card">
+            <div class="content-top">
+              <div>
+                <p class="module-type">Видео</p>
+                <h3>Как выглядит кабинет</h3>
+              </div>
+              <span class="badge badge-soft">Просмотрено</span>
+            </div>
+            <p>Короткое видео показывает кабинет, лампу и кресло, чтобы все выглядело знакомым.</p>
+          </article>
+
+          <article class="content-card">
+            <div class="content-top">
+              <div>
+                <p class="module-type">Социальная история</p>
+                <h3>Я иду к стоматологу</h3>
+              </div>
+              <span class="badge badge-soft">7 шагов</span>
+            </div>
+            <p>История спокойно объясняет весь путь: ожидание, кресло, осмотр и завершение приема.</p>
+            <button class="button button-primary button-full" type="button" data-screen="screen-story">
+              Начать
+            </button>
+          </article>
+
+          <article class="content-card">
+            <div class="content-top">
+              <div>
+                <p class="module-type">Мини-игра</p>
+                <h3>Собери кабинет</h3>
+              </div>
+            </div>
+            <p>Игровая карточка помогает запомнить знакомые предметы: кресло, зеркало, лампу и перчатки.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-story">
+        <header class="topbar">
+          <button class="icon-button" type="button" data-screen="screen-dentist" aria-label="Назад">←</button>
+          <div>
+            <p class="screen-label">Социальная история</p>
+            <h2>Я иду к стоматологу</h2>
+          </div>
+        </header>
+
+        <article class="story-hero">
+          <span class="story-step">Шаг 1</span>
+          <h3>Сначала мы придем в клинику</h3>
+          <p>Со мной будет взрослый. Мы немного подождем, а потом нас пригласит врач.</p>
+        </article>
+
+        <div class="story-list">
+          <article class="story-card">
+            <strong>Шаг 2</strong>
+            <p>Я увижу кабинет и большое кресло. Врач скажет, куда можно сесть и что будет дальше.</p>
+          </article>
+          <article class="story-card">
+            <strong>Шаг 3</strong>
+            <p>Лампа светит ярко, чтобы врачу было хорошо видно зубы. Это нормально и безопасно.</p>
+          </article>
+          <article class="story-card">
+            <strong>Шаг 4</strong>
+            <p>Врач может показать маленькое зеркало и другие инструменты, чтобы я не удивлялся.</p>
+          </article>
+          <article class="story-card">
+            <strong>Шаг 5</strong>
+            <p>Когда прием закончится, я смогу встать с кресла и услышать, какой я молодец.</p>
+          </article>
+        </div>
+
+        <button class="button button-secondary button-full" type="button" data-screen="screen-dentist">
+          Вернуться к модулю
+        </button>
+      </section>
+
+      <section class="screen" id="screen-progress">
+        <header class="topbar">
+          <button class="icon-button" type="button" data-screen="screen-catalog" aria-label="Назад">←</button>
+          <div>
+            <p class="screen-label">Прогресс</p>
+            <h2>Подготовка идет хорошо</h2>
+          </div>
+        </header>
+
+        <article class="banner-card">
+          <strong>Стоматолог</strong>
+          <div class="progress-line progress-line--large">
+            <span style="width: 66%"></span>
+          </div>
+          <p class="screen-text">Видео уже просмотрено, история начата, мини-игра осталась на потом.</p>
+        </article>
+
+        <div class="content-list">
+          <article class="content-card">
+            <div class="content-top">
+              <h3>Как выглядит кабинет</h3>
+              <span class="badge badge-soft">Готово</span>
+            </div>
+            <p>Ребенок уже знает, как выглядят кресло, лампа и кабинет стоматолога.</p>
+          </article>
+
+          <article class="content-card">
+            <div class="content-top">
+              <h3>Социальная история</h3>
+              <span class="badge badge-soft">В процессе</span>
+            </div>
+            <p>Пройдено несколько шагов, можно продолжить в любое удобное время.</p>
+          </article>
+
+          <article class="content-card">
+            <div class="content-top">
+              <h3>Собери кабинет</h3>
+              <span class="badge">Не начато</span>
+            </div>
+            <p>Игровой блок поможет закрепить знакомство с предметами врача в легком формате.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="screen" id="screen-parent">
+        <header class="topbar">
+          <button class="icon-button" type="button" data-screen="screen-catalog" aria-label="Назад">←</button>
+          <div>
+            <p class="screen-label">Родителю</p>
+            <h2>Как помочь ребенку</h2>
+          </div>
+        </header>
+
+        <div class="content-list">
+          <article class="content-card">
+            <div class="content-top">
+              <div>
+                <p class="module-type">Совет</p>
+                <h3>Говорите простыми фразами</h3>
+              </div>
+            </div>
+            <p>Например: "Мы зайдем в кабинет", "Врач посмотрит зубки", "Я буду рядом".</p>
+          </article>
+
+          <article class="content-card">
+            <div class="content-top">
+              <div>
+                <p class="module-type">Совет</p>
+                <h3>Не перегружайте деталями</h3>
+              </div>
+            </div>
+            <p>Лучше рассказывать по шагам и только о том, что действительно произойдет на приеме.</p>
+          </article>
+
+          <article class="content-card">
+            <div class="content-top">
+              <div>
+                <p class="module-type">Поддержка</p>
+                <h3>Проходите материалы вместе</h3>
+              </div>
+            </div>
+            <p>Сначала посмотрите видео, затем обсудите историю и только потом переходите к игре.</p>
+          </article>
+        </div>
+      </section>
+
+      <nav class="bottom-nav bottom-nav--hidden">
+        <button class="nav-button nav-button--active" type="button" data-screen="screen-catalog">Модули</button>
+        <button class="nav-button" type="button" data-screen="screen-dentist">История</button>
+        <button class="nav-button" type="button" data-screen="screen-progress">Прогресс</button>
+        <button class="nav-button" type="button" data-screen="screen-parent">Родителю</button>
+      </nav>
+    </div>
+  </main>
+
+  <script>
+    const screens = document.querySelectorAll('.screen');
+    const bottomNav = document.querySelector('.bottom-nav');
+    const navButtons = document.querySelectorAll('.nav-button');
+
+    function openScreen(screenId) {
+      screens.forEach((screen) => {
+        screen.classList.toggle('screen--active', screen.id === screenId);
+      });
+
+      navButtons.forEach((button) => {
+        button.classList.toggle('nav-button--active', button.dataset.screen === screenId);
+      });
+
+      bottomNav.classList.toggle('bottom-nav--hidden', screenId === 'screen-welcome');
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+
+    document.querySelectorAll('[data-screen]').forEach((button) => {
+      button.addEventListener('click', () => {
+        openScreen(button.dataset.screen);
+      });
+    });
+  </script>
+</body>
+</html>
