@@ -133,6 +133,11 @@ button {
   padding: 18px;
 }
 
+.content-card {
+  box-shadow: none;
+  border: 2px solid #16D0CA33;
+}
+
 .welcome-card {
   width: calc(100% + 32px);
   height: calc(100% + 42px);
@@ -300,8 +305,12 @@ button {
 }
 
 .info-item-price {
-  color: #128395;
+  color: #128395 !important;
   font-size: 12px;
+}
+
+.info-item-price-container-text .info-item-price {
+  color: #128395 !important;
 }
 
 .info-item-price-container {
@@ -319,6 +328,7 @@ button {
   justify-content: center;
   padding: 8px 16px;
   border-radius: 10px;
+  text-decoration: none;
 }
 
 .info-item-button-text {
@@ -345,24 +355,185 @@ button {
   gap: 5px;
 }
 
+.purchase-dialog {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.purchase-dialog[hidden] {
+  display: none;
+}
+
+.purchase-dialog.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.purchase-dialog__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: opacity 0.28s ease;
+}
+
+.purchase-dialog__content {
+  position: relative;
+  width: 100%;
+  height: 50%;
+  max-height: 422px;
+  padding: 24px;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+  overflow-y: auto;
+  z-index: 1;
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.32s ease, transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.purchase-dialog.is-open .purchase-dialog__backdrop {
+  opacity: 1;
+}
+
+.purchase-dialog.is-open .purchase-dialog__content {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.purchase-dialog__title {
+  margin: 0 0 10px;
+  color: #3B3B3B;
+  font-size: 16px;
+}
+
+.purchase-dialog__text {
+  margin: 0;
+  color: #848484;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.purchase-dialog__price-container {
+  margin-top: 20px;
+  margin-bottom: 30px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #F0F9FA;
+}
+
+.purchase-dialog__price-container-text {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.purchase-dialog__price-container-text-title {
+  margin: 0;
+  color: #515151;
+  font-size: 14px;
+}
+
+.purchase-dialog__price-container-text-price {
+  margin: 0;
+  color: #128395;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.purchase-dialog__price-container-text-description {
+  margin: 0;
+  color: #848484;
+  font-size: 12px;
+}
+
+.purchase-dialog__content-list {
+  margin-top: 16px;
+}
+
+.purchase-dialog__content-list-title {
+  margin: 0 0 20px;
+  color: #3B3B3B;
+  font-size: 14px;
+}
+
+.purchase-dialog__content-list-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.purchase-dialog__content-list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #515151;
+  font-size: 14px;
+}
+
+.purchase-dialog__content-list-item img {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.purchase-dialog__button {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 25px;
+}
+
+.purchase-dialog__button_secondary {
+  background: #eef5f6;
+  color: var(--text);
+}
+
+.purchase-dialog__button_primary {
+  background: #00B9C2;
+  color: #fff;
+  width: 100%;
+}
+
 
 .topbar {
   display: grid;
   grid-template-columns: 44px 1fr;
   gap: 12px;
   align-items: start;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
+  align-items: center;
 }
 
 .icon-button {
   width: 44px;
   height: 44px;
   border: 0;
-  border-radius: 14px;
-  background: var(--card);
+  border-radius: 20px;
+  background: #16D0CA33;
   color: var(--brand-dark);
   box-shadow: var(--shadow);
   cursor: pointer;
+}
+
+.icon-button img {
+  width: 20px;
+  height: 20px;
 }
 
 .module-head,
@@ -373,11 +544,184 @@ button {
   align-items: start;
 }
 
+.content-top-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F0F9FA;
+  border-radius: 14px;
+  flex-shrink: 0;
+}
+
 .module-type {
   margin: 0 0 6px;
-  color: var(--muted);
-  font-size: 0.82rem;
+  color: #128395;
+  font-size: 12px;
   font-weight: 600;
+}
+
+.content-card-title {
+  margin: 0 0 6px;
+  color: #3B3B3B;
+  font-size: 14px;
+}
+
+.content-card-description {
+  margin: 0 !important;
+  color: #848484;
+  font-size: 12px;
+}
+
+.content-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.content-card-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.content-card-time-text {
+  margin: 0 !important;
+  color: #848484;
+  font-size: 12px;
+}
+
+.content-card-button {
+  width: 106px !important;
+  height: 38px;
+  min-height: 38px;
+  border-radius: 10px;
+  justify-content: space-between;
+  padding: 0 12px;
+  margin-top: 0;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.content-card-button p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.content-section-title {
+  margin-bottom: 16px !important;
+  color: #3B3B3B !important;
+  font-family: "Inter", Arial, sans-serif;
+  font-weight: 600 !important;
+  font-size: 18px !important;
+  line-height: 24px !important;
+  letter-spacing: 0;
+}
+
+.content-card-list {
+  display: grid;
+  gap: 15px;
+}
+
+.screen-header-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #00B9C2;
+  border-radius: 16px;
+  min-height: 34px;
+}
+
+.screen-header-badge__text {
+  margin: 0;
+  color: #fff;
+  font-family: "Inter", Arial, sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.dentist-story-image {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto 16px;
+}
+
+.dentist-story-title {
+  margin: 15px 0 30px !important;
+  color: #3B3B3B !important;
+  font-weight: 600 !important;
+  font-size: 18px !important;
+  line-height: 24px !important;
+}
+
+.dentist-story-text {
+  margin-bottom: 16px;
+  padding: 25px;
+  border: 1px solid #16D0CA33;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(22, 208, 202, 0.05) 0%, rgba(0, 185, 194, 0.05) 100%);
+}
+
+.dentist-story-text p {
+  margin: 0;
+  color: #1E2939;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.dentist-story-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: #E5E7EB solid 1px;
+  margin-top: 30px;
+  padding: 30px 0 30px;
+}
+
+.dentist-story-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-direction: row;
+  width: 161px;
+  height: 48px;
+  padding-left: 30px;
+  padding-right: 30px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.dentist-story-button p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.dentist-story-button--secondary {
+  background-color: #FFFFFF;
+  color: #364153;
+}
+
+.dentist-story-button--secondary:disabled {
+  color: #D1D5DC;
+}
+
+.dentist-story-button--primary {
+  background-color: #16D0CA;
+  color: #FFFFFF;
+}
+
+.dentist-story-button:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 .badge {
@@ -397,20 +741,20 @@ button {
   color: var(--brand-dark);
 }
 
-.module-card p,
+/* .module-card p,
 .content-card p {
   margin: 10px 0 16px;
-}
+} */
 
 .button {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   width: auto;
   min-height: 34px;
   padding: 0 18px;
   border: 0;
-  border-radius: 18px;
+  border-radius: 16px;
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
@@ -427,14 +771,25 @@ button {
   width: 100%;
 }
 
-.button-primary {
+/* .button-primary {
   margin-top: 50px;
   margin-bottom: 20px;
-}
+} */
 
 .button-secondary {
   color: var(--brand-dark);
   background: #e9f5f7;
+}
+
+.welcome-action {
+  margin-top: 40px;
+  margin-bottom: 25px;
+  justify-content: center;
+}
+
+.welcome-action__text {
+  margin: 0;
+  text-align: center;
 }
 
 .specialist-card {
@@ -506,45 +861,8 @@ button {
   font-size: 0.85rem;
 }
 
-.bottom-nav {
-  position: fixed;
-  left: 50%;
-  bottom: 0;
-  transform: translateX(-50%);
-  width: 390px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  padding: 10px 10px 14px;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(217, 228, 234, 0.92);
-}
-
-.bottom-nav--hidden {
-  display: none;
-}
-
-.nav-button {
-  min-height: 44px;
-  padding: 6px;
-  border: 0;
-  border-radius: 14px;
-  background: transparent;
-  color: var(--muted);
-  font-size: 0.74rem;
-  cursor: pointer;
-}
-
-.nav-button--active {
-  background: rgba(18, 199, 212, 0.12);
-  color: var(--brand-dark);
-  font-weight: 700;
-}
-
 @media (max-width: 390px) {
-  .phone,
-  .bottom-nav {
+  .phone {
     width: 100%;
   }
 

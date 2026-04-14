@@ -12,6 +12,9 @@
 <body>
   <main class="app">
     <div class="phone" aria-label="Сайт подготовки ребенка к визиту">
+
+<!-- Главная -->
+
       <section class="screen screen--active screen--welcome" id="screen-welcome">
         <div class="welcome-card">
           <h1 class="welcome-title">Добро пожаловать!</h1>
@@ -19,9 +22,9 @@
           <img class="welcome-logo" src="materials/img/Цветное лого.svg" alt="Логотип">
         </div>
 
-        <button class="button button-primary button-full" type="button" data-screen="screen-catalog">
-          Подготовка
-        </button>
+        <div class="button button-primary button-full welcome-action" data-screen="screen-catalog">
+          <p class="welcome-action__text">Подготовка</p>
+        </div>
 
         <div class="info-list">
           <div class="info-title-container">
@@ -35,23 +38,23 @@
             <h3 class="info-item-title">Поход к стоматологу</h3>
             <p class="info-item-text">Подготовка к визиту стоматолога</p>
             <p class="info-item-text">4 материала</p>
-            <div class="info-item-price-container">
+            <!--<div class="info-item-price-container">
               <div class="info-item-price-container-text info-item-price-container-text-paid">
                 <p class="info-item-price info-item-price-paid">69 ₽</p>
               </div>
-              <button class="info-item-button info-item-button-paid">
+              <button class="info-item-button info-item-button-paid" type="button" data-open-purchase>
                 <img class="info-item-icon-basket" src="materials/svg/icon-basket.svg" alt="Иконка корзины">
                 <p class="info-item-button-text info-item-button-text-paid">Купить</p>
               </button>
-            </div>
-            <!-- <div class="info-item-price-container">
+            </div>-->
+            <div class="info-item-price-container">
               <div class="info-item-price-container-text">
-                <p class="info-item-price">Бесплатно</p>
+                <p class="info-item-price" style="color: #128395;">Бесплатно</p>
               </div>
-              <button class="info-item-button">
+              <a class="info-item-button" type="button" data-screen="screen-dentist" target="_blank" rel="noreferrer">
                 <p class="info-item-button-text">Начать</p>
-              </button>
-            </div> -->
+              </a>
+            </div> 
           </article>
           <article class="info-item">
             <div class="info-item-icon-container">
@@ -62,25 +65,21 @@
             <p class="info-item-text">3 материала</p>
             <div class="info-item-price-container">
               <div class="info-item-price-container-text">
-                <p class="info-item-price">Бесплатно</p>
+                <p class="info-item-price" style="color: #128395;">Бесплатно</p>
               </div>
-              <button class="info-item-button">
+              <a class="info-item-button" type="button" data-screen="screen-blood" target="_blank" rel="noreferrer">
                 <p class="info-item-button-text">Начать</p>
-              </button>
+              </a>
             </div>
           </article>
         </div>
-
-        
       </section>
+
+<!-- Каталог -->
 
       <section class="screen" id="screen-catalog">
         <header class="topbar">
-          <button class="icon-button" type="button" data-screen="screen-welcome" aria-label="Назад">←</button>
-          <div>
-            <p class="screen-label">Каталог</p>
-            <h2>Выберите модуль</h2>
-          </div>
+          <button class="icon-button" type="button" data-screen="screen-welcome" aria-label="Назад"><img src="materials/svg/icon-arrow.svg" alt=""></button>
         </header>
 
         <article class="banner-card">
@@ -94,7 +93,6 @@
           <article class="module-card">
             <div class="module-head">
               <div>
-                <p class="module-type">Модуль</p>
                 <h3>Сдача крови</h3>
               </div>
               <span class="badge badge-soft">Бесплатно</span>
@@ -108,7 +106,6 @@
           <article class="module-card">
             <div class="module-head">
               <div>
-                <p class="module-type">Модуль</p>
                 <h3>Стоматолог</h3>
               </div>
               <span class="badge badge-soft">Популярно</span>
@@ -125,251 +122,327 @@
         </div>
       </section>
 
+<!-- Сдача крови -->
+
       <section class="screen" id="screen-blood">
         <header class="topbar">
-          <button class="icon-button" type="button" data-screen="screen-catalog" aria-label="Назад">←</button>
-          <div>
-            <p class="screen-label">Модуль</p>
-            <h2>Сдача крови</h2>
+          <button class="icon-button" type="button" data-screen="screen-welcome" aria-label="Назад"><img src="materials/svg/icon-arrow.svg" alt=""></button>
+          <div class="screen-header-badge">
+            <p class="screen-header-badge__text">Сдача крови</p>
           </div>
         </header>
 
-        <article class="specialist-card">
-          <div class="specialist-icon">+</div>
-          <div>
-            <strong>Знакомство с процедурой</strong>
-            <p>Короткие материалы помогают понять, что процедура быстрая, а рядом всегда будет взрослый.</p>
-          </div>
-        </article>
+        <h3 class="content-section-title">Материалы для адаптации</h3>
 
-        <div class="content-list">
+        <div class="content-card-list">
           <article class="content-card">
             <div class="content-top">
-              <div>
-                <p class="module-type">Видео</p>
-                <h3>Как проходит анализ</h3>
+              <div class="content-top-icon">
+                <img src="materials/svg/icon-cartoon.svg" alt="">
               </div>
-              <span class="badge badge-soft">2 минуты</span>
+              <div>
+                <p class="module-type">Мультфильм</p>
+                <h4 class="content-card-title">Иду сдавать кровь из вены</h4>
+                <p class="content-card-description">Пошаговое объяснение ребенку хода процедуры</p>
+                <div class="content-card-actions">
+                  <div class="content-card-time">
+                    <img src="materials/svg/icon-clock.svg" alt="">
+                    <p class="content-card-time-text">4 мин</p>
+                  </div>
+                  <button class="button button-primary button-full content-card-button" type="button" data-screen="screen-blood-story">
+                    <img src="materials/svg/icon-play.svg" alt="">
+                    <p>Начать</p>
+                  </button>
+                </div>
+              </div>
             </div>
-            <p>Показываем кабинет, кресло и объясняем, зачем берут кровь.</p>
           </article>
 
           <article class="content-card">
             <div class="content-top">
+              <div class="content-top-icon">
+                <img src="materials/svg/icon-story.svg" alt="">
+              </div>
               <div>
-                <p class="module-type">Подсказки</p>
-                <h3>Дышим спокойно</h3>
+                <p class="module-type">Социальная история</p>
+                <h4 class="content-card-title">Иду сдавать кровь из вены</h4>
+                <p class="content-card-description">Пошаговое объяснение ребенку хода процедуры</p>
+                <div class="content-card-actions">
+                  <div class="content-card-time">
+                    <img src="materials/svg/icon-clock.svg" alt="">
+                    <p class="content-card-time-text">4 мин</p>
+                  </div>
+                  <button class="button button-primary button-full content-card-button" type="button" data-screen="screen-blood-story">
+                    <img src="materials/svg/icon-play.svg" alt="">
+                    <p>Начать</p>
+                  </button>
+                </div>
               </div>
             </div>
-            <p>Простые шаги для ребенка: как сидеть, куда смотреть и как расслабить руку.</p>
+          </article>
+
+          <article class="content-card">
+            <div class="content-top">
+              <div class="content-top-icon">
+                <img src="materials/svg/icon-game.svg" alt="">
+              </div>
+              <div>
+                <p class="module-type">Игра-тренажер</p>
+                <h4 class="content-card-title">Иду сдавать кровь из вены</h4>
+                <p class="content-card-description">Закрепление полученных навыков через игровую практику</p>
+                <div class="content-card-actions">
+                  <div class="content-card-time">
+                    <img src="materials/svg/icon-clock.svg" alt="">
+                    <p class="content-card-time-text">4 мин</p>
+                  </div>
+                  <a class="button button-primary button-full content-card-button" href="https://example.com" target="_blank" rel="noreferrer">
+                    <img src="materials/svg/icon-play.svg" alt="">
+                    <p>Начать</p>
+                  </a>
+                </div>
+              </div>
+            </div>
           </article>
         </div>
       </section>
+
+      <section class="screen" id="screen-blood-story">
+        <header class="topbar">
+          <button class="icon-button" type="button" data-screen="screen-welcome" aria-label="Назад"><img src="materials/svg/icon-arrow.svg" alt=""></button>
+          <div class="screen-header-badge">
+            <p class="screen-header-badge__text">Сдача крови</p>
+          </div>
+        </header>
+
+        <h3 class="dentist-story-title">Социстория “Иду сдавать кровь из вены”</h3>
+        <img class="dentist-story-image" id="blood-story-image" src="materials/img/blood/takeblood1.png" alt="Иллюстрация">
+        <div class="dentist-story-text">
+          <p id="blood-story-text">Я иду сдавать кровь из вены.</p>
+        </div>
+        <div class="dentist-story-buttons">
+          <button class="dentist-story-button dentist-story-button--secondary" type="button" id="blood-story-prev">
+            <p>&lt;</p>
+            <p>Назад</p>
+          </button>
+          <button class="dentist-story-button dentist-story-button--primary" type="button" id="blood-story-next">
+            <p>Вперед</p>
+            <p>&gt;</p>
+          </button>
+        </div>
+      </section>
+
+<!-- Поход к стоматологу -->
 
       <section class="screen" id="screen-dentist">
         <header class="topbar">
-          <button class="icon-button" type="button" data-screen="screen-catalog" aria-label="Назад">←</button>
-          <div>
-            <p class="screen-label">Модуль</p>
-            <h2>Стоматолог</h2>
+          <button class="icon-button" type="button" data-screen="screen-welcome" aria-label="Назад"><img src="materials/svg/icon-arrow.svg" alt=""></button>
+          <div class="screen-header-badge">
+            <p class="screen-header-badge__text">Поход к стоматологу</p>
           </div>
         </header>
-
-        <article class="specialist-card">
-          <div class="specialist-icon">S</div>
-          <div>
-            <strong>Подготовка к визиту к стоматологу</strong>
-            <p>Ребенок заранее узнает, как выглядит кабинет, кресло и что будет делать врач.</p>
-          </div>
-        </article>
-
-        <div class="content-list">
+        <h3 class="content-section-title">Материалы для адаптации</h3>
+      <div class="content-card-list">
           <article class="content-card">
             <div class="content-top">
-              <div>
-                <p class="module-type">Видео</p>
-                <h3>Как выглядит кабинет</h3>
+              <div class="content-top-icon">
+                <img src="materials/svg/icon-cartoon.svg" alt="">
               </div>
-              <span class="badge badge-soft">Просмотрено</span>
+              <div>
+                <p class="module-type">Мультфильм</p>
+                <h4 class="content-card-title">Иду к стоматологу</h4>
+                <p class="content-card-description">Пошаговое объяснение ребенку хода процедуры</p>
+                <div class="content-card-actions">
+                  <div class="content-card-time">
+                    <img src="materials/svg/icon-clock.svg" alt="">
+                    <p class="content-card-time-text">4 мин</p>
+                  </div>
+                  <a class="button button-primary button-full content-card-button" href="https://rutube.ru/video/private/ed02a8fd70e1c94fc4757ce31bb84bcc/?p=tPToE79p2R8lRMYapilT0Q" target="_blank" rel="noreferrer">
+                    <img src="materials/svg/icon-play.svg" alt="">
+                    <p>Начать</p>
+                  </a>
+                </div>
+              </div>
             </div>
-            <p>Короткое видео показывает кабинет, лампу и кресло, чтобы все выглядело знакомым.</p>
           </article>
 
           <article class="content-card">
             <div class="content-top">
+              <div class="content-top-icon">
+                <img src="materials/svg/icon-story.svg" alt="">
+              </div>
               <div>
                 <p class="module-type">Социальная история</p>
-                <h3>Я иду к стоматологу</h3>
+                <h4 class="content-card-title">Иду к стоматологу</h4>
+                <p class="content-card-description">Пошаговое объяснение ребенку хода процедуры</p>
+                <div class="content-card-actions">
+                  <div class="content-card-time">
+                    <img src="materials/svg/icon-clock.svg" alt="">
+                    <p class="content-card-time-text">4 мин</p>
+                  </div>
+                  <button class="button button-primary button-full content-card-button" type="button" data-screen="screen-dentist-story">
+                    <img src="materials/svg/icon-play.svg" alt="">
+                    <p>Начать</p>
+                  </button>
+                </div>
               </div>
-              <span class="badge badge-soft">7 шагов</span>
             </div>
-            <p>История спокойно объясняет весь путь: ожидание, кресло, осмотр и завершение приема.</p>
-            <button class="button button-primary button-full" type="button" data-screen="screen-story">
-              Начать
-            </button>
           </article>
 
           <article class="content-card">
             <div class="content-top">
+              <div class="content-top-icon">
+                <img src="materials/svg/icon-game.svg" alt="">
+              </div>
               <div>
-                <p class="module-type">Мини-игра</p>
-                <h3>Собери кабинет</h3>
+                <p class="module-type">Игра-тренажер</p>
+                <h4 class="content-card-title">Иду к стоматологу</h4>
+                <p class="content-card-description">Закрепление полученных навыков через игровую практику</p>
+                <div class="content-card-actions">
+                  <div class="content-card-time">
+                    <img src="materials/svg/icon-clock.svg" alt="">
+                    <p class="content-card-time-text">4 мин</p>
+                  </div>
+                  <a class="button button-primary button-full content-card-button" href="https://example.com" target="_blank" rel="noreferrer">
+                    <img src="materials/svg/icon-play.svg" alt="">
+                    <p>Начать</p>
+                  </a>
+                </div>
               </div>
             </div>
-            <p>Игровая карточка помогает запомнить знакомые предметы: кресло, зеркало, лампу и перчатки.</p>
           </article>
-        </div>
+          </div>
       </section>
 
-      <section class="screen" id="screen-story">
+<!-- Социальная история "Иду к стоматологу" -->
+
+      <section class="screen" id="screen-dentist-story">
         <header class="topbar">
-          <button class="icon-button" type="button" data-screen="screen-dentist" aria-label="Назад">←</button>
-          <div>
-            <p class="screen-label">Социальная история</p>
-            <h2>Я иду к стоматологу</h2>
+          <button class="icon-button" type="button" data-screen="screen-welcome" aria-label="Назад"><img src="materials/svg/icon-arrow.svg" alt=""></button>
+          <div class="screen-header-badge">
+            <p class="screen-header-badge__text">Поход к стоматологу</p>
           </div>
         </header>
 
-        <article class="story-hero">
-          <span class="story-step">Шаг 1</span>
-          <h3>Сначала мы придем в клинику</h3>
-          <p>Со мной будет взрослый. Мы немного подождем, а потом нас пригласит врач.</p>
-        </article>
-
-        <div class="story-list">
-          <article class="story-card">
-            <strong>Шаг 2</strong>
-            <p>Я увижу кабинет и большое кресло. Врач скажет, куда можно сесть и что будет дальше.</p>
-          </article>
-          <article class="story-card">
-            <strong>Шаг 3</strong>
-            <p>Лампа светит ярко, чтобы врачу было хорошо видно зубы. Это нормально и безопасно.</p>
-          </article>
-          <article class="story-card">
-            <strong>Шаг 4</strong>
-            <p>Врач может показать маленькое зеркало и другие инструменты, чтобы я не удивлялся.</p>
-          </article>
-          <article class="story-card">
-            <strong>Шаг 5</strong>
-            <p>Когда прием закончится, я смогу встать с кресла и услышать, какой я молодец.</p>
-          </article>
+        <h3 class="dentist-story-title">Социстория “Иду к стоматологу”</h3>
+        <img class="dentist-story-image" id="dentist-story-image" src="materials/img/dentist/dentist1.png" alt="Иллюстрация">
+        <div class="dentist-story-text">
+          <p id="dentist-story-text">Я иду в стоматологию, чтобы врач проверил мои зубки.</p>
         </div>
-
-        <button class="button button-secondary button-full" type="button" data-screen="screen-dentist">
-          Вернуться к модулю
-        </button>
-      </section>
-
-      <section class="screen" id="screen-progress">
-        <header class="topbar">
-          <button class="icon-button" type="button" data-screen="screen-catalog" aria-label="Назад">←</button>
-          <div>
-            <p class="screen-label">Прогресс</p>
-            <h2>Подготовка идет хорошо</h2>
-          </div>
-        </header>
-
-        <article class="banner-card">
-          <strong>Стоматолог</strong>
-          <div class="progress-line progress-line--large">
-            <span style="width: 66%"></span>
-          </div>
-          <p class="screen-text">Видео уже просмотрено, история начата, мини-игра осталась на потом.</p>
-        </article>
-
-        <div class="content-list">
-          <article class="content-card">
-            <div class="content-top">
-              <h3>Как выглядит кабинет</h3>
-              <span class="badge badge-soft">Готово</span>
-            </div>
-            <p>Ребенок уже знает, как выглядят кресло, лампа и кабинет стоматолога.</p>
-          </article>
-
-          <article class="content-card">
-            <div class="content-top">
-              <h3>Социальная история</h3>
-              <span class="badge badge-soft">В процессе</span>
-            </div>
-            <p>Пройдено несколько шагов, можно продолжить в любое удобное время.</p>
-          </article>
-
-          <article class="content-card">
-            <div class="content-top">
-              <h3>Собери кабинет</h3>
-              <span class="badge">Не начато</span>
-            </div>
-            <p>Игровой блок поможет закрепить знакомство с предметами врача в легком формате.</p>
-          </article>
+        <div class="dentist-story-buttons">
+          <button class="dentist-story-button dentist-story-button--secondary" type="button" id="dentist-story-prev">
+            <p>&lt;</p>
+            <p>Назад</p>
+          </button>
+          <button class="dentist-story-button dentist-story-button--primary" type="button" id="dentist-story-next">
+            <p>Вперед</p>
+            <p>&gt;</p>
+          </button>
         </div>
       </section>
 
-      <section class="screen" id="screen-parent">
-        <header class="topbar">
-          <button class="icon-button" type="button" data-screen="screen-catalog" aria-label="Назад">←</button>
-          <div>
-            <p class="screen-label">Родителю</p>
-            <h2>Как помочь ребенку</h2>
+      <div class="purchase-dialog" id="purchase-dialog" hidden>
+        <button class="purchase-dialog__backdrop" type="button" aria-label="Закрыть окно" data-close-purchase></button>
+        <div class="purchase-dialog__content">
+          <h3 class="purchase-dialog__title">Покупка доступа</h3>
+          <p class="purchase-dialog__text">Поход к стоматологу</p>
+          <div class="purchase-dialog__price-container">
+            <div class="purchase-dialog__price-container-text">
+              <p class="purchase-dialog__price-container-text-title">Стоимость курса</p>
+              <p class="purchase-dialog__price-container-text-price">69 ₽</p>
+              <p class="purchase-dialog__price-container-text-description">Единоразовая оплата. Доступ навсегда.</p>
+            </div>
           </div>
-        </header>
-
-        <div class="content-list">
-          <article class="content-card">
-            <div class="content-top">
-              <div>
-                <p class="module-type">Совет</p>
-                <h3>Говорите простыми фразами</h3>
-              </div>
-            </div>
-            <p>Например: "Мы зайдем в кабинет", "Врач посмотрит зубки", "Я буду рядом".</p>
-          </article>
-
-          <article class="content-card">
-            <div class="content-top">
-              <div>
-                <p class="module-type">Совет</p>
-                <h3>Не перегружайте деталями</h3>
-              </div>
-            </div>
-            <p>Лучше рассказывать по шагам и только о том, что действительно произойдет на приеме.</p>
-          </article>
-
-          <article class="content-card">
-            <div class="content-top">
-              <div>
-                <p class="module-type">Поддержка</p>
-                <h3>Проходите материалы вместе</h3>
-              </div>
-            </div>
-            <p>Сначала посмотрите видео, затем обсудите историю и только потом переходите к игре.</p>
-          </article>
+          <div class="purchase-dialog__content-list">
+            <h4 class="purchase-dialog__content-list-title">Что входит в курс:</h4>
+            <ul class="purchase-dialog__content-list-items">
+              <li class="purchase-dialog__content-list-item"><img src="materials/svg/icon-check.svg" alt="">Социальная история</li>
+              <li class="purchase-dialog__content-list-item"><img src="materials/svg/icon-check.svg" alt="">Онлайн-игра “Иду к стоматологу”</li>
+              <li class="purchase-dialog__content-list-item"><img src="materials/svg/icon-check.svg" alt="">Мультфильм “Иду к стоматологу”</li>
+              <li class="purchase-dialog__content-list-item"><img src="materials/svg/icon-check.svg" alt="">Методические рекомендации для родителей</li>
+            </ul>
+          </div>
+          <button class="purchase-dialog__button purchase-dialog__button_primary" type="button">Оплатить 69 ₽</button>
         </div>
-      </section>
-
-      <nav class="bottom-nav bottom-nav--hidden">
-        <button class="nav-button nav-button--active" type="button" data-screen="screen-catalog">Модули</button>
-        <button class="nav-button" type="button" data-screen="screen-dentist">История</button>
-        <button class="nav-button" type="button" data-screen="screen-progress">Прогресс</button>
-        <button class="nav-button" type="button" data-screen="screen-parent">Родителю</button>
-      </nav>
+      </div>
     </div>
   </main>
 
+  <script src="materials/img/blood/blood-story-actions.js"></script>
+  <script src="materials/img/dentist/dentist-story-actions.js"></script>
   <script>
     const screens = document.querySelectorAll('.screen');
-    const bottomNav = document.querySelector('.bottom-nav');
-    const navButtons = document.querySelectorAll('.nav-button');
+    const purchaseDialog = document.getElementById('purchase-dialog');
+    let purchaseDialogCloseTimer;
+    const storyControllers = {
+      'screen-blood-story': createStoryController({
+        image: document.getElementById('blood-story-image'),
+        text: document.getElementById('blood-story-text'),
+        prevButton: document.getElementById('blood-story-prev'),
+        nextButton: document.getElementById('blood-story-next'),
+        actions: window.bloodStoryActions ?? [],
+        imageCount: 28,
+        imagePathPrefix: 'materials/img/blood/takeblood',
+      }),
+      'screen-dentist-story': createStoryController({
+        image: document.getElementById('dentist-story-image'),
+        text: document.getElementById('dentist-story-text'),
+        prevButton: document.getElementById('dentist-story-prev'),
+        nextButton: document.getElementById('dentist-story-next'),
+        actions: window.dentistStoryActions ?? [],
+        imageCount: 30,
+        imagePathPrefix: 'materials/img/dentist/dentist',
+      }),
+    };
+
+    function createStoryController(config) {
+      const stepCount = config.actions.length;
+      let currentStep = 0;
+
+      function renderStep() {
+        if (!config.image || !config.text || stepCount === 0) {
+          return;
+        }
+
+        const imageIndex = Math.min(currentStep + 1, config.imageCount);
+        config.image.src = `${config.imagePathPrefix}${imageIndex}.png`;
+        config.text.textContent = config.actions[currentStep];
+        config.prevButton.disabled = currentStep === 0;
+        config.nextButton.disabled = currentStep === stepCount - 1;
+      }
+
+      function setStep(nextStep) {
+        if (stepCount === 0) {
+          return;
+        }
+
+        currentStep = Math.max(0, Math.min(nextStep, stepCount - 1));
+        renderStep();
+      }
+
+      config.prevButton?.addEventListener('click', () => {
+        setStep(currentStep - 1);
+      });
+
+      config.nextButton?.addEventListener('click', () => {
+        setStep(currentStep + 1);
+      });
+
+      renderStep();
+
+      return {
+        reset() {
+          setStep(0);
+        },
+      };
+    }
 
     function openScreen(screenId) {
       screens.forEach((screen) => {
         screen.classList.toggle('screen--active', screen.id === screenId);
       });
 
-      navButtons.forEach((button) => {
-        button.classList.toggle('nav-button--active', button.dataset.screen === screenId);
-      });
+      storyControllers[screenId]?.reset();
 
-      bottomNav.classList.toggle('bottom-nav--hidden', screenId === 'screen-welcome');
       window.scrollTo({ top: 0, behavior: 'auto' });
     }
 
@@ -378,6 +451,28 @@
         openScreen(button.dataset.screen);
       });
     });
+
+    document.querySelectorAll('[data-open-purchase]').forEach((button) => {
+      button.addEventListener('click', () => {
+        clearTimeout(purchaseDialogCloseTimer);
+        purchaseDialog.hidden = false;
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            purchaseDialog.classList.add('is-open');
+          });
+        });
+      });
+    });
+
+    document.querySelectorAll('[data-close-purchase]').forEach((button) => {
+      button.addEventListener('click', () => {
+        purchaseDialog.classList.remove('is-open');
+        purchaseDialogCloseTimer = setTimeout(() => {
+          purchaseDialog.hidden = true;
+        }, 240);
+      });
+    });
+
   </script>
 </body>
 </html>
