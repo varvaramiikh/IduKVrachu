@@ -44,18 +44,18 @@ button {
 
 .phone {
   position: relative;
-  width: 390px;
-  height: 844px;
+  width: 100%;
+  max-width: 390px;
+  min-height: 100vh;
   padding-bottom: 88px;
   background: var(--app-bg);
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .screen {
   display: none;
-  height: 844px;
+  min-height: 100vh;
   padding: 14px 16px 28px;
-  overflow-y: auto;
 }
 
 .screen--active {
@@ -867,7 +867,7 @@ button {
   }
 
   .phone {
-    height: 844px;
+    min-height: 100vh;
   }
 }
 
@@ -883,6 +883,6 @@ button {
   }
 
   .screen {
-    height: 844px;
+    min-height: 100vh;
   }
 }

@@ -8,12 +8,28 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles/main.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
   <main class="app">
-    <div class="phone" aria-label="Сайт подготовки ребенка к визиту">
+    <div class="phone" id="app-container" aria-label="Сайт подготовки ребенка к визиту">
 
 <!-- Главная -->
+
+      <section class="screen" id="screen-consent">
+        <div class="welcome-card">
+          <h1 class="welcome-title">Согласие на обработку данных</h1>
+          <div class="consent-content" style="padding: 20px; font-size: 14px; line-height: 1.4; color: var(--title); overflow-y: auto; max-height: 60vh;">
+            <p>Для использования сервиса «Иду к врачу» нам необходимо ваше согласие на обработку персональных данных в соответствии с Федеральным законом № 152-ФЗ.</p>
+            <p>Мы собираем только те данные, которые необходимы для записи к врачу: ФИО, номер телефона, данные о ребенке.</p>
+            <p>Ваши данные хранятся на защищенных серверах на территории РФ.</p>
+          </div>
+          <button class="button button-primary button-full" id="btn-accept-consent">
+            ✅ Принимаю условия
+          </button>
+          <a href="https://google.com" target="_blank" style="margin-top: 10px; color: var(--brand-dark); font-size: 12px;">Читать полное соглашение</a>
+        </div>
+      </section>
 
       <section class="screen screen--active screen--welcome" id="screen-welcome">
         <div class="welcome-card">
@@ -22,8 +38,24 @@
           <img class="welcome-logo" src="materials/img/Цветное лого.svg" alt="Логотип">
         </div>
 
-        <div class="button button-primary button-full welcome-action" data-screen="screen-catalog">
-          <p class="welcome-action__text">Подготовка</p>
+        <div class="button button-primary button-full welcome-action" id="btn-open-booking">
+          <p class="welcome-action__text">📅 Записаться к врачу</p>
+        </div>
+
+        <div class="button button-secondary button-full welcome-action" id="btn-open-my-appointments">
+          <p class="welcome-action__text">📝 Мои записи</p>
+        </div>
+
+        <div class="button button-secondary button-full welcome-action" id="btn-open-support">
+          <p class="welcome-action__text">🆘 Написать нам</p>
+        </div>
+
+        <a href="https://google.com" target="_blank" class="button button-secondary button-full welcome-action">
+          <p class="welcome-action__text">🌐 Наш сайт</p>
+        </a>
+
+        <div class="button button-secondary button-full welcome-action" data-screen="screen-catalog">
+          <p class="welcome-action__text">📚 Подготовка</p>
         </div>
 
         <div class="info-list">
@@ -72,6 +104,88 @@
               </a>
             </div>
           </article>
+        </div>
+      </section>
+
+<!-- Запись к врачу -->
+
+      <section class="screen" id="screen-booking-services">
+        <header class="topbar">
+          <button class="icon-button" type="button" data-screen="screen-welcome" aria-label="Назад"><img src="materials/svg/icon-arrow.svg" alt=""></button>
+          <div class="screen-header-badge"><p class="screen-header-badge__text">Выбор услуги</p></div>
+        </header>
+        <div class="module-list" id="services-list">
+          <!-- Услуги будут загружены динамически -->
+        </div>
+      </section>
+
+      <section class="screen" id="screen-booking-cities">
+        <header class="topbar">
+          <button class="icon-button" type="button" data-screen="screen-booking-services" aria-label="Назад"><img src="materials/svg/icon-arrow.svg" alt=""></button>
+          <div class="screen-header-badge"><p class="screen-header-badge__text">Выбор города</p></div>
+        </header>
+        <div class="module-list" id="cities-list"></div>
+      </section>
+
+      <section class="screen" id="screen-booking-clinics">
+        <header class="topbar">
+          <button class="icon-button" type="button" data-screen="screen-booking-cities" aria-label="Назад"><img src="materials/svg/icon-arrow.svg" alt=""></button>
+          <div class="screen-header-badge"><p class="screen-header-badge__text">Выбор клиники</p></div>
+        </header>
+        <div class="module-list" id="clinics-list"></div>
+      </section>
+
+      <section class="screen" id="screen-booking-slots">
+        <header class="topbar">
+          <button class="icon-button" type="button" data-screen="screen-booking-clinics" aria-label="Назад"><img src="materials/svg/icon-arrow.svg" alt=""></button>
+          <div class="screen-header-badge"><p class="screen-header-badge__text">Выбор времени</p></div>
+        </header>
+        <div class="module-list" id="slots-list"></div>
+      </section>
+
+      <section class="screen" id="screen-booking-form">
+        <header class="topbar">
+          <button class="icon-button" type="button" data-screen="screen-booking-slots" aria-label="Назад"><img src="materials/svg/icon-arrow.svg" alt=""></button>
+          <div class="screen-header-badge"><p class="screen-header-badge__text">Ваши данные</p></div>
+        </header>
+        <div class="welcome-card" style="height: auto; padding: 20px; border-radius: 24px; box-shadow: var(--shadow);">
+          <form id="booking-form" style="width: 100%; display: grid; gap: 12px;">
+            <input type="text" name="parent_fio" placeholder="ФИО родителя" required style="padding: 12px; border-radius: 10px; border: 1px solid var(--stroke);">
+            <input type="tel" name="phone" placeholder="Телефон" required style="padding: 12px; border-radius: 10px; border: 1px solid var(--stroke);">
+            <input type="text" name="child_fio" placeholder="ФИО ребенка" required style="padding: 12px; border-radius: 10px; border: 1px solid var(--stroke);">
+            <input type="date" name="child_birth_date" placeholder="Дата рождения ребенка" required style="padding: 12px; border-radius: 10px; border: 1px solid var(--stroke);">
+            <textarea name="comment" placeholder="Комментарий (не указывайте диагнозы)" style="padding: 12px; border-radius: 10px; border: 1px solid var(--stroke); min-height: 80px;"></textarea>
+            <button type="submit" class="button button-primary button-full">Подтвердить запись</button>
+          </form>
+        </div>
+      </section>
+
+<!-- Мои записи -->
+
+      <section class="screen" id="screen-my-appointments">
+        <header class="topbar">
+          <button class="icon-button" type="button" data-screen="screen-welcome" aria-label="Назад"><img src="materials/svg/icon-arrow.svg" alt=""></button>
+          <div class="screen-header-badge"><p class="screen-header-badge__text">Мои записи</p></div>
+        </header>
+        <div class="module-list" id="my-appointments-list">
+          <!-- Записи будут загружены динамически -->
+        </div>
+      </section>
+
+<!-- Поддержка -->
+
+      <section class="screen" id="screen-support">
+        <header class="topbar">
+          <button class="icon-button" type="button" data-screen="screen-welcome" aria-label="Назад"><img src="materials/svg/icon-arrow.svg" alt=""></button>
+          <div class="screen-header-badge"><p class="screen-header-badge__text">Поддержка</p></div>
+        </header>
+        <div class="welcome-card" style="height: auto; padding: 20px; border-radius: 24px; box-shadow: var(--shadow);">
+          <h3 style="margin-bottom: 15px;">Напишите нам</h3>
+          <p style="font-size: 14px; margin-bottom: 20px;">Если у вас есть вопросы или предложения, отправьте нам сообщение, и мы ответим вам в ближайшее время.</p>
+          <form id="support-form" style="width: 100%; display: grid; gap: 12px;">
+            <textarea name="message" placeholder="Ваше сообщение" required style="padding: 12px; border-radius: 10px; border: 1px solid var(--stroke); min-height: 150px;"></textarea>
+            <button type="submit" class="button button-primary button-full">Отправить</button>
+          </form>
         </div>
       </section>
 
@@ -369,9 +483,44 @@
 
   <script src="materials/img/blood/blood-story-actions.js"></script>
   <script src="materials/img/dentist/dentist-story-actions.js"></script>
+  <script src="frontend/src/api.js"></script>
+  <script src="frontend/src/booking.js"></script>
+  <script src="frontend/src/appointments.js"></script>
+  <script src="frontend/src/support.js"></script>
   <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    
+    // Применяем цвета темы Telegram
+    document.documentElement.style.setProperty('--app-bg', tg.themeParams.bg_color || '#fdf9f6');
+    document.documentElement.style.setProperty('--text', tg.themeParams.text_color || '#848484');
+    
     const screens = document.querySelectorAll('.screen');
     const purchaseDialog = document.getElementById('purchase-dialog');
+    
+    // Проверка согласия при старте
+    async function checkConsent() {
+        // В реальном приложении мы бы получили статус пользователя от API
+        // Для MVP просто показываем экран согласия, если не принято
+        const consentAccepted = localStorage.getItem('consent_accepted');
+        if (!consentAccepted) {
+            openScreen('screen-consent');
+        }
+    }
+    
+    document.getElementById('btn-accept-consent')?.addEventListener('click', async () => {
+        try {
+            await window.api.acceptConsent('1.0');
+            localStorage.setItem('consent_accepted', 'true');
+            openScreen('screen-welcome');
+            tg.showAlert('Спасибо! Теперь вам доступны все функции.');
+        } catch (e) {
+            tg.showAlert('Ошибка: ' + e.message);
+        }
+    });
+
+    checkConsent();
+    
     let purchaseDialogCloseTimer;
     const storyControllers = {
       'screen-blood-story': createStoryController({
