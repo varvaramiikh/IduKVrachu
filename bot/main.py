@@ -1,22 +1,84 @@
 import asyncio
+import logging
 import os
+import time
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Any, Awaitable, Callable, Dict, Optional
 
 from aiogram import Bot, Dispatcher, types, F
+from aiogram.client.session.middlewares.base import BaseRequestMiddleware
 from aiogram.filters import Command
+from aiogram.methods import TelegramMethod
+from aiogram.methods.base import Response
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand, WebAppInfo
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.config import settings
-from backend.app.database import async_session, init_db
+from backend.app.database import async_session
+from backend.app.logging_utils import configure_logging, log_environment, log_settings
 from backend.app.models import User, Appointment, Clinic
 
+configure_logging()
+logger = logging.getLogger("bot")
+
+
+class LoggingSessionMiddleware(BaseRequestMiddleware):
+    async def __call__(
+        self,
+        make_request: Callable[[Bot, TelegramMethod], Awaitable[Response]],
+        bot: Bot,
+        method: TelegramMethod,
+    ) -> Response:
+        method_name = type(method).__name__
+        logger.info("Telegram API --> %s", method_name)
+        start = time.monotonic()
+        try:
+            result = await make_request(bot, method)
+        except Exception:
+            duration_ms = (time.monotonic() - start) * 1000
+            logger.exception("Telegram API <-- %s ERROR (%.1f ms)", method_name, duration_ms)
+            raise
+        duration_ms = (time.monotonic() - start) * 1000
+        logger.info("Telegram API <-- %s OK (%.1f ms)", method_name, duration_ms)
+        return result
+
+
 bot = Bot(token=settings.BOT_TOKEN)
+bot.session.middleware(LoggingSessionMiddleware())
 dp = Dispatcher()
 scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
+
+
+@dp.update.outer_middleware()
+async def log_updates(
+    handler: Callable[[types.Update, Dict[str, Any]], Awaitable[Any]],
+    event: types.Update,
+    data: Dict[str, Any],
+) -> Any:
+    user_id = None
+    payload_kind = "other"
+    if event.message:
+        payload_kind = "message"
+        user_id = event.message.from_user.id if event.message.from_user else None
+    elif event.callback_query:
+        payload_kind = "callback_query"
+        user_id = event.callback_query.from_user.id if event.callback_query.from_user else None
+    elif event.inline_query:
+        payload_kind = "inline_query"
+        user_id = event.inline_query.from_user.id if event.inline_query.from_user else None
+    logger.info("Update %s: kind=%s user=%s", event.update_id, payload_kind, user_id)
+    start = time.monotonic()
+    try:
+        result = await handler(event, data)
+    except Exception:
+        duration_ms = (time.monotonic() - start) * 1000
+        logger.exception("Update %s handler ERROR (%.1f ms)", event.update_id, duration_ms)
+        raise
+    duration_ms = (time.monotonic() - start) * 1000
+    logger.info("Update %s done (%.1f ms)", event.update_id, duration_ms)
+    return result
 
 def is_https_url(url: str) -> bool:
     return url.startswith("https://")
@@ -114,12 +176,15 @@ def get_main_kb():
     return InlineKeyboardMarkup(inline_keyboard=kb)
 
 async def main():
-    await init_db()
+    logger.info("Starting bot...")
+    log_environment(logger)
+    log_settings(logger, settings)
+
     await bot.set_my_commands([
         BotCommand(command="start", description="🏠 Главное меню"),
         BotCommand(command="paysupport", description="🛠 Поддержка платежей")
     ])
-    
+
     if is_https_url(settings.WEB_APP_URL):
         await bot.set_chat_menu_button(
             menu_button=types.MenuButtonWebApp(
@@ -127,8 +192,9 @@ async def main():
                 web_app=WebAppInfo(url=settings.WEB_APP_URL)
             )
         )
-    
+
     scheduler.start()
+    logger.info("=== Bot готов к работе ===")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
