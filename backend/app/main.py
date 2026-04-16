@@ -1,3 +1,6 @@
+import asyncio
+import logging
+import time
 from fastapi import FastAPI, Depends, HTTPException, Header, Request, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
@@ -10,12 +13,17 @@ import json
 import os
 from datetime import datetime, timedelta
 
-from .database import get_db, init_db
+from alembic import command
+from alembic.config import Config
+
+from .database import get_db, ensure_storage
+from .seed import seed_if_empty
+from .logging_utils import configure_logging, log_environment, log_settings
 from .models import User, City, Clinic, Service, Appointment, SupportTicket, ContentModule, ContentItem, Purchase, Progress
 from .schemas import (
-    User as UserSchema, 
-    City as CitySchema, 
-    Clinic as ClinicSchema, 
+    User as UserSchema,
+    City as CitySchema,
+    Clinic as ClinicSchema,
     Service as ServiceSchema,
     SlotSchema,
     AppointmentCreate,
@@ -27,7 +35,29 @@ from .auth import validate_init_data
 from .mis import mis_provider
 from .config import settings
 
+configure_logging()
+logger = logging.getLogger("backend.api")
+
 app = FastAPI(title="Иду к врачу API")
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.monotonic()
+    client = request.client.host if request.client else "-"
+    logger.info("--> %s %s from %s", request.method, request.url.path, client)
+    try:
+        response = await call_next(request)
+    except Exception:
+        duration_ms = (time.monotonic() - start) * 1000
+        logger.exception("<-- %s %s ERROR (%.1f ms)", request.method, request.url.path, duration_ms)
+        raise
+    duration_ms = (time.monotonic() - start) * 1000
+    logger.info(
+        "<-- %s %s %s (%.1f ms)",
+        request.method, request.url.path, response.status_code, duration_ms,
+    )
+    return response
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -35,9 +65,21 @@ app.mount("/styles", StaticFiles(directory=os.path.join(BASE_DIR, "styles")), na
 app.mount("/materials", StaticFiles(directory=os.path.join(BASE_DIR, "materials")), name="materials")
 app.mount("/frontend", StaticFiles(directory=os.path.join(BASE_DIR, "frontend")), name="frontend")
 
+def _run_migrations() -> None:
+    cfg = Config(os.path.join(BASE_DIR, "alembic.ini"))
+    cfg.set_main_option("script_location", os.path.join(BASE_DIR, "migrations"))
+    command.upgrade(cfg, "head")
+
+
 @app.on_event("startup")
 async def startup():
-    await init_db()
+    logger.info("Starting backend...")
+    log_environment(logger)
+    log_settings(logger, settings)
+    ensure_storage()
+    await asyncio.get_running_loop().run_in_executor(None, _run_migrations)
+    await seed_if_empty()
+    logger.info("=== Backend готов к работе ===")
 
 @app.get("/", include_in_schema=False)
 async def index():
