@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: idukvrachu
+  labels:
+    app: idukvrachu
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: idukvrachu.kapps.dustdev.ru
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: idukvrachu-backend
+                port:
+                  name: http
