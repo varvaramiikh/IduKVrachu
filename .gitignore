@@ -37,3 +37,6 @@ status.dat
 # OS
 .DS_Store
 Thumbs.db
+
+# Kubernetes secrets
+ci/secrets.yaml
