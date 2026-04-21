@@ -40,3 +40,4 @@ Thumbs.db
 
 # Kubernetes secrets
 ci/secrets.yaml
+.claude/settings.local.json
