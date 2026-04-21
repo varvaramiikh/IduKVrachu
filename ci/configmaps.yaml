@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: idukvrachu-config
+  labels:
+    app: idukvrachu
+data:
+  DATABASE_URL: sqlite+aiosqlite:////app/data/app.db
+  DEBUG: "False"
+  WEB_APP_URL: https://idukvrachu.kapps.dustdev.ru

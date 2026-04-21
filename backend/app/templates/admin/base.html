@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель | Иду к врачу</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f8f9fa; }
+        .sidebar { min-height: 100vh; background: #2c3e50; color: white; padding: 20px 0; }
+        .sidebar a { color: #bdc3c7; text-decoration: none; padding: 10px 20px; display: block; }
+        .sidebar a:hover, .sidebar a.active { background: #34495e; color: white; }
+        .content { padding: 30px; }
+        .card { border: none; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-md-2 d-none d-md-block sidebar">
+                <h4 class="text-center mb-4">Админка</h4>
+                <a href="/admin/cities" class="{{ 'active' if active_page == 'cities' else '' }}">🏙 Города</a>
+                <a href="/admin/clinics" class="{{ 'active' if active_page == 'clinics' else '' }}">🏥 Клиники</a>
+                <a href="/admin/services" class="{{ 'active' if active_page == 'services' else '' }}">🩺 Услуги</a>
+                <a href="/admin/modules" class="{{ 'active' if active_page == 'modules' else '' }}">📚 Модули</a>
+                <a href="/admin/tickets" class="{{ 'active' if active_page == 'tickets' else '' }}">🆘 Тикеты</a>
+                <a href="/admin/appointments" class="{{ 'active' if active_page == 'appointments' else '' }}">📅 Записи</a>
+                <hr>
+                <a href="/" target="_blank">🌐 К приложению</a>
+            </nav>
+            <main class="col-md-10 content">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

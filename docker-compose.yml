@@ -1,0 +1,37 @@
+services:
+  backend:
+    build: .
+    container_name: idukvrachu_backend
+    volumes:
+      - db_data:/app/data
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:////app/data/app.db
+    ports:
+      - "8000:8000"
+    command: uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+    networks:
+      - app_network
+
+  bot:
+    build: .
+    container_name: idukvrachu_bot
+    volumes:
+      - db_data:/app/data
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:////app/data/app.db
+    command: python -m bot.main
+    depends_on:
+      - backend
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  db_data:

@@ -1,0 +1,66 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Тикеты поддержки</h2>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Пользователь (TG ID)</th>
+                    <th>Сообщение</th>
+                    <th>Статус</th>
+                    <th>Дата</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticket in tickets %}
+                <tr>
+                    <td>{{ ticket.id }}</td>
+                    <td>{{ ticket.user.telegram_id }}</td>
+                    <td>{{ ticket.message[:50] }}{{ '...' if ticket.message|length > 50 else '' }}</td>
+                    <td>
+                        <span class="badge {{ 'bg-success' if ticket.status == 'closed' else 'bg-warning text-dark' }}">
+                            {{ ticket.status }}
+                        </span>
+                    </td>
+                    <td>{{ ticket.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#ticketModal{{ ticket.id }}">Просмотр</button>
+                    </td>
+                </tr>
+
+                <!-- Modal -->
+                <div class="modal fade" id="ticketModal{{ ticket.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Тикет #{{ ticket.id }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p><strong>От:</strong> TG ID {{ ticket.user.telegram_id }}</p>
+                                <p><strong>Дата:</strong> {{ ticket.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                                <hr>
+                                <p>{{ ticket.message }}</p>
+                            </div>
+                            <div class="modal-footer">
+                                <form action="/admin/tickets/{{ ticket.id }}/close" method="POST">
+                                    <button type="submit" class="btn btn-success">Закрыть тикет</button>
+                                </form>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть окно</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
