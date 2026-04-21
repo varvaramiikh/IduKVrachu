@@ -6,5 +6,5 @@ metadata:
     app: idukvrachu
 data:
   DATABASE_URL: sqlite+aiosqlite:////app/data/app.db
-  DEBUG: "False"
+  DEBUG: "True"
   WEB_APP_URL: https://idukvrachu.kapps.dustdev.ru
