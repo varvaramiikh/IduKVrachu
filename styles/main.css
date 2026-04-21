@@ -555,6 +555,10 @@ button {
   flex-shrink: 0;
 }
 
+.content-top-icon-parents {
+  background-color: #16D0CA;
+}
+
 .module-type {
   margin: 0 0 6px;
   color: #128395;
@@ -605,6 +609,10 @@ button {
   flex-shrink: 0;
 }
 
+.content-card-button-parents  {
+  width: 116px !important;
+}
+
 .content-card-button p {
   margin: 0;
   font-size: 14px;
@@ -623,6 +631,11 @@ button {
 .content-card-list {
   display: grid;
   gap: 15px;
+}
+
+.content-card-parents {
+  background-color: #F0FDF44D;
+  border-color: #DCFCE7;
 }
 
 .screen-header-badge {
