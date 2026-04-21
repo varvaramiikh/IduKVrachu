@@ -34,6 +34,10 @@ button {
   font: inherit;
 }
 
+main {
+  background: var(--app-bg);
+}
+
 .app {
   min-height: 100vh;
   display: flex;
@@ -707,9 +711,9 @@ button {
   height: 48px;
   padding-left: 30px;
   padding-right: 30px;
-  border: none;
   border-radius: 10px;
   cursor: pointer;
+  border: 2px solid #D1D5DC;
 }
 
 .dentist-story-button p {
@@ -872,6 +876,74 @@ button {
   margin: 0 0 16px;
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.reccomend-card-list {
+  padding: 0 5px;
+}
+
+.content-section-title {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  margin-bottom: 0 !important;
+}
+
+.content-section-description {
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  margin-top: 8px !important;
+}
+
+.reccomend-card {
+  padding: 15px 20px 15px 20px;
+  border: none;
+  background-color: transparent;
+}
+
+.reccomend-card-title {
+  color: #128395;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 17px;
+}
+
+.reccomend-card-list-items {
+  font-size: 12px;
+  font-weight: 400;
+  width: 100%;
+  padding-left: 15px !important;
+}
+
+.reccomend-card-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 500;
+  border-top: 1px solid #E5E7EB;
+  padding-top: 30px;
+}
+
+.reccomend-card-button {
+  width: 165px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 10px;
+}
+
+.reccomend-card-button--secondary {
+  color: #364153;
+  border: 2px solid #D1D5DC;
+  background-color: white;
+}
+
+.reccomend-card-button--primary {
+  color: white;
+  background: #16D0CA;
+
+  border: none;
 }
 
 @media (max-width: 390px) {

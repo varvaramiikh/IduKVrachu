@@ -11,7 +11,6 @@
 </head>
 <body>
   <main class="app">
-    <div class="phone" aria-label="Сайт подготовки ребенка к визиту">
 
 <!-- Главная -->
 
@@ -22,7 +21,7 @@
           <img class="welcome-logo" src="materials/img/Цветное лого.svg" alt="Логотип">
         </div>
 
-        <div class="button button-primary button-full welcome-action" data-screen="screen-catalog">
+        <div class="button button-primary button-full welcome-action">
           <p class="welcome-action__text">Подготовка</p>
         </div>
 
@@ -75,53 +74,6 @@
         </div>
       </section>
 
-<!-- Каталог -->
-
-      <section class="screen" id="screen-catalog">
-        <header class="topbar">
-          <button class="icon-button" type="button" data-screen="screen-welcome" aria-label="Назад"><img src="materials/svg/icon-arrow.svg" alt=""></button>
-        </header>
-
-        <article class="banner-card">
-          <strong>Каждый модуль помогает ребенку шаг за шагом привыкнуть к будущему визиту.</strong>
-          <p class="screen-text">
-            Материалы можно смотреть вместе с родителем и возвращаться к ним в удобный момент.
-          </p>
-        </article>
-
-        <div class="module-list">
-          <article class="module-card">
-            <div class="module-head">
-              <div>
-                <h3>Сдача крови</h3>
-              </div>
-              <span class="badge badge-soft">Бесплатно</span>
-            </div>
-            <p>Короткая подготовка к анализу: что ребенок увидит, как все пройдет и как можно успокоиться.</p>
-            <button class="button button-secondary button-full" type="button" data-screen="screen-blood">
-              Открыть
-            </button>
-          </article>
-
-          <article class="module-card">
-            <div class="module-head">
-              <div>
-                <h3>Стоматолог</h3>
-              </div>
-              <span class="badge badge-soft">Популярно</span>
-            </div>
-            <p>Видео, социальная история и игра помогают спокойно познакомиться с кабинетом стоматолога.</p>
-            <div class="progress-line">
-              <span style="width: 33%"></span>
-            </div>
-            <p class="progress-caption">Прогресс: 1 из 3 материалов</p>
-            <button class="button button-primary button-full" type="button" data-screen="screen-dentist">
-              Открыть модуль
-            </button>
-          </article>
-        </div>
-      </section>
-
 <!-- Сдача крови -->
 
       <section class="screen" id="screen-blood">
@@ -149,10 +101,10 @@
                     <img src="materials/svg/icon-clock.svg" alt="">
                     <p class="content-card-time-text">4 мин</p>
                   </div>
-                  <button class="button button-primary button-full content-card-button" type="button" data-screen="screen-blood-story">
+                  <a class="button button-primary button-full content-card-button" href="https://www.google.com/" target="_blank" rel="noreferrer">
                     <img src="materials/svg/icon-play.svg" alt="">
                     <p>Начать</p>
-                  </button>
+                  </a>
                 </div>
               </div>
             </div>
@@ -195,7 +147,7 @@
                     <img src="materials/svg/icon-clock.svg" alt="">
                     <p class="content-card-time-text">4 мин</p>
                   </div>
-                  <a class="button button-primary button-full content-card-button" href="https://example.com" target="_blank" rel="noreferrer">
+                  <a class="button button-primary button-full content-card-button" href="https://www.google.com/" target="_blank" rel="noreferrer">
                     <img src="materials/svg/icon-play.svg" alt="">
                     <p>Начать</p>
                   </a>
@@ -302,7 +254,7 @@
                     <img src="materials/svg/icon-clock.svg" alt="">
                     <p class="content-card-time-text">4 мин</p>
                   </div>
-                  <a class="button button-primary button-full content-card-button" href="https://example.com" target="_blank" rel="noreferrer">
+                  <a class="button button-primary button-full content-card-button" href="https://www.google.com/" target="_blank" rel="noreferrer">
                     <img src="materials/svg/icon-play.svg" alt="">
                     <p>Начать</p>
                   </a>
@@ -323,15 +275,64 @@
                 <div class="content-card-actions">
                   <div class="content-card-time">
                   </div>
-                  <a class="button button-primary button-full content-card-button content-card-button-parents" href="https://example.com" target="_blank" rel="noreferrer">
+                  <button class="button button-primary button-full content-card-button content-card-button-parents" type="button" data-screen="screen-dentist-parents">
                     <img src="materials/svg/icon-book.svg" alt="">
                     <p>Открыть</p>
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
           </article>
           </div>
+      </section>
+
+<!-- Рекомендации для родителей (стоматолог) -->
+
+      <section class="screen" id="screen-dentist-parents">
+        <header class="topbar">
+          <button class="icon-button" type="button" data-screen="screen-dentist" aria-label="Назад"><img src="materials/svg/icon-arrow.svg" alt=""></button>
+          <div class="screen-header-badge">
+            <p class="screen-header-badge__text">Поход к стоматологу</p>
+          </div>
+        </header>
+
+        <div class="reccomend-card-list">
+        <h3 class="content-section-title">Рекомендации для родителей</h3>
+        <p class="content-section-description">Подготовка к стоматологической помощи детей с РАС</p>
+        </div>
+
+        <article class="reccomend-card">
+          <h4 class="reccomend-card-title">Общие рекомендации</h4>
+          <ol class="reccomend-card-list-items">
+            <li>
+              <p>Включать в повседневные игры с ребенком игру в стоматолога, по возможности использовать игровые стоматологические наборы (инструменты, нагрудную салфетку, перчатки и т.д.);</p>
+            </li>
+            <li>
+              <p>Учить ребенка в игровой форме держать рот открытым, можно в виде соревнования с Вами (кто дольше);</p>
+            </li>
+            <li>
+              <p>Закладывать за щеку ватку, постепенно увеличивая время ее нахождения в полости рта, начиная с 1-2 секунд;</p>
+            </li>
+            <li>
+              <p>Считать друг другу зубки и записывать результат в тетрадь;</p>
+            </li>
+            <li>
+              <p>Использовать электрическую зубную щетку сначала самим, чтобы ребенок наблюдал за Вами со стороны. Затем предложить ребенку детскую зубную щетку, чтобы ребенок привыкал к вибрации, звуку, механическим движениям. Хорошо, если найдете щетку с изображением любимого героя, или в той цветовой гамме, которая нравится ребенку;</p>
+            </li>
+            <li>
+              <p>Полезно заранее познакомить ребенка на фото и видеоматериалах с клиникой, в которой планируется проводить лечение;</p>
+            </li>
+          </ol>
+        </article>
+        <div class="reccomend-card-buttons">
+          <button class="reccomend-card-button reccomend-card-button--secondary">
+            <p>Закрыть</p>
+          </button>
+          <button class="reccomend-card-button reccomend-card-button--primary" download>
+            <img src="materials/svg/icon-download.svg" alt="">
+            <p>Скачать</p>
+          </button>
+        </div>
       </section>
 
 <!-- Социальная история "Иду к стоматологу" -->
@@ -385,7 +386,7 @@
           <button class="purchase-dialog__button purchase-dialog__button_primary" type="button">Оплатить 69 ₽</button>
         </div>
       </div>
-    </div>
+
   </main>
 
   <script src="materials/img/blood/blood-story-actions.js"></script>
