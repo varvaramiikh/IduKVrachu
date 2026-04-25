@@ -87,20 +87,58 @@ async def get_db():
     async with async_session() as session:
         yield session
 
-async def send_remind(chat_id: int, appointment_id: int):
-    async with async_session() as db:
-        result = await db.execute(
-            select(Appointment).where(Appointment.id == appointment_id)
-        )
-        appointment = result.scalar_one_or_none()
-        if not appointment or appointment.status != "scheduled":
-            return
+async def call_with_retry(
+    op_name: str,
+    coro_factory: Callable[[], Awaitable[Any]],
+    *,
+    attempts: int = 5,
+    base_delay: float = 2.0,
+    max_delay: float = 30.0,
+) -> Any:
+    last_exc: Optional[BaseException] = None
+    for attempt in range(1, attempts + 1):
+        try:
+            result = await coro_factory()
+            if attempt > 1:
+                logger.info("%s: успех с попытки %d/%d", op_name, attempt, attempts)
+            return result
+        except Exception as exc:
+            last_exc = exc
+            if attempt == attempts:
+                logger.error(
+                    "%s: исчерпаны %d попыток, последняя ошибка: %r",
+                    op_name, attempts, exc,
+                )
+                raise
+            delay = min(max_delay, base_delay * (2 ** (attempt - 1)))
+            logger.warning(
+                "%s: попытка %d/%d не удалась (%r), повтор через %.1f с",
+                op_name, attempt, attempts, exc, delay,
+            )
+            await asyncio.sleep(delay)
+    raise last_exc  # unreachable
 
-    await bot.send_message(
-        chat_id, 
-        "🔔 **Напоминание:**\nНе забудьте завтра взять с собой паспорт и направление на анализы!\n"
-        f"Ваша запись на {appointment.slot_datetime.strftime('%d.%m.%Y %H:%M')}"
-    )
+
+async def send_remind(chat_id: int, appointment_id: int):
+    try:
+        async with async_session() as db:
+            result = await db.execute(
+                select(Appointment).where(Appointment.id == appointment_id)
+            )
+            appointment = result.scalar_one_or_none()
+            if not appointment or appointment.status != "scheduled":
+                return
+
+        await bot.send_message(
+            chat_id,
+            "🔔 **Напоминание:**\nНе забудьте завтра взять с собой паспорт и направление на анализы!\n"
+            f"Ваша запись на {appointment.slot_datetime.strftime('%d.%m.%Y %H:%M')}"
+        )
+    except Exception:
+        logger.exception(
+            "send_remind: ошибка отправки напоминания chat_id=%s appointment_id=%s",
+            chat_id, appointment_id,
+        )
 
 async def schedule_appointment_reminder(chat_id: int, appointment_id: int, slot_datetime: datetime):
     # ТЗ FR-27: напоминание за 3 часа
@@ -180,17 +218,23 @@ async def main():
     log_environment(logger)
     log_settings(logger, settings)
 
-    await bot.set_my_commands([
-        BotCommand(command="start", description="🏠 Главное меню"),
-        BotCommand(command="paysupport", description="🛠 Поддержка платежей")
-    ])
+    await call_with_retry(
+        "set_my_commands",
+        lambda: bot.set_my_commands([
+            BotCommand(command="start", description="🏠 Главное меню"),
+            BotCommand(command="paysupport", description="🛠 Поддержка платежей"),
+        ]),
+    )
 
     if is_https_url(settings.WEB_APP_URL):
-        await bot.set_chat_menu_button(
-            menu_button=types.MenuButtonWebApp(
-                text="Записаться",
-                web_app=WebAppInfo(url=settings.WEB_APP_URL)
-            )
+        await call_with_retry(
+            "set_chat_menu_button",
+            lambda: bot.set_chat_menu_button(
+                menu_button=types.MenuButtonWebApp(
+                    text="Записаться",
+                    web_app=WebAppInfo(url=settings.WEB_APP_URL),
+                )
+            ),
         )
 
     scheduler.start()

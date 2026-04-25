@@ -88,7 +88,7 @@ async def index():
 async def get_current_user(x_tg_init_data: str = Header(...), db: AsyncSession = Depends(get_db)) -> User:
     if not validate_init_data(x_tg_init_data):
         raise HTTPException(status_code=401, detail="Invalid initData")
-    
+
     try:
         from urllib.parse import parse_qs
         params = parse_qs(x_tg_init_data)
@@ -96,26 +96,39 @@ async def get_current_user(x_tg_init_data: str = Header(...), db: AsyncSession =
         if not user_json:
             if settings.DEBUG:
                 tg_id = 12345678
+                logger.warning(
+                    "auth: поле 'user' отсутствует в initData — подставлен debug telegram_id=%s (DEBUG=True)",
+                    tg_id,
+                )
             else:
+                logger.warning("auth: поле 'user' отсутствует в initData — запрос отклонён")
                 raise HTTPException(status_code=401, detail="User info missing")
         else:
             user_data = json.loads(user_json)
             tg_id = user_data.get("id")
+            logger.info("auth: telegram_id=%s извлечён из подписанной initData", tg_id)
     except Exception:
         if settings.DEBUG:
             tg_id = 12345678
+            logger.warning(
+                "auth: ошибка парсинга initData — подставлен debug telegram_id=%s (DEBUG=True)",
+                tg_id,
+                exc_info=True,
+            )
         else:
+            logger.warning("auth: ошибка парсинга initData — запрос отклонён", exc_info=True)
             raise HTTPException(status_code=401, detail="Invalid user data")
 
     result = await db.execute(select(User).where(User.telegram_id == tg_id))
     user = result.scalar_one_or_none()
-    
+
     if not user:
         user = User(telegram_id=tg_id)
         db.add(user)
         await db.commit()
         await db.refresh(user)
-    
+        logger.info("auth: создан новый User id=%s для telegram_id=%s", user.id, tg_id)
+
     return user
 
 @app.get("/api/cities", response_model=List[CitySchema])
