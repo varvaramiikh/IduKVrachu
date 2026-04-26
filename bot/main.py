@@ -203,7 +203,6 @@ async def start_handler(message: types.Message):
         )
         return
 
-    await message.answer(f"Добро пожаловать, {name}!")
     await message.answer(
         INFO_MESSAGE,
         parse_mode="HTML",
