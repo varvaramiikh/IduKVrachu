@@ -535,6 +535,16 @@
       });
     });
 
+    const screenParam = new URLSearchParams(window.location.search).get('screen');
+    const screenParamMap = {
+      'preparation': 'screen-welcome',
+      'appointment': 'screen-welcome',
+      'my-appointments': 'screen-welcome',
+    };
+    if (screenParam && screenParamMap[screenParam]) {
+      openScreen(screenParamMap[screenParam]);
+    }
+
     document.querySelectorAll('[data-open-purchase]').forEach((button) => {
       button.addEventListener('click', () => {
         clearTimeout(purchaseDialogCloseTimer);

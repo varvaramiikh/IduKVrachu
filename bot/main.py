@@ -301,22 +301,19 @@ def get_consent_kb():
 
 
 def get_main_kb():
-    open_button = (
-        InlineKeyboardButton(
-            text="🏥 Открыть приложение",
-            web_app=WebAppInfo(url=settings.WEB_APP_URL)
-        )
-        if is_https_url(settings.WEB_APP_URL)
-        else InlineKeyboardButton(
-            text="🏥 Открыть приложение",
-            url=settings.WEB_APP_URL
-        )
-    )
-    kb = [
-        [open_button],
-        [InlineKeyboardButton(text="🆘 Написать нам", url="https://t.me/admin_handle")]
-    ]
-    return InlineKeyboardMarkup(inline_keyboard=kb)
+    def webapp_btn(text: str, path: str = "") -> InlineKeyboardButton:
+        url = settings.WEB_APP_URL + path
+        if is_https_url(settings.WEB_APP_URL):
+            return InlineKeyboardButton(text=text, web_app=WebAppInfo(url=url))
+        return InlineKeyboardButton(text=text, url=url)
+
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text='🏥 Сервис "Иду к врачу"', url="https://example.com")],
+        [webapp_btn("📚 Подготовка")],
+        [webapp_btn("📅 Запись к врачу", "?screen=appointment")],
+        [webapp_btn("📋 Мои записи", "?screen=my-appointments")],
+        [InlineKeyboardButton(text="✉️ Написать нам", url="https://t.me/admin_handle")],
+    ])
 
 async def enable_webapp_button(chat_id: int):
     if is_https_url(settings.WEB_APP_URL):
