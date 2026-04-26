@@ -162,6 +162,20 @@ async def schedule_appointment_reminder(chat_id: int, appointment_id: int, slot_
         id=job_id
     )
 
+INFO_MESSAGE = (
+    "Привет! Я цифровой помощник «Иду к врачу».\n"
+    "Я помогу ребёнку с РАС подготовиться к посещению врача и сделать его менее тревожным.\n\n"
+    "<b>Что доступно прямо сейчас:</b>\n"
+    "• Подготовка ребёнка к посещению стоматолога\n"
+    "• Подготовка к сдаче крови\n"
+    "• Запись в клинику\n\n"
+    "Подготовка включает адаптационные материалы: мультфильмы, социстории, "
+    "игры-тренажёры и рекомендации для родителей.\n\n"
+    "<i>Нажимая кнопку «Начать», вы подтверждаете согласие на обработку "
+    "персональных данных в соответствии с ФЗ-152.</i>"
+)
+
+
 @dp.message(Command("start"))
 async def start_handler(message: types.Message):
     async with async_session() as db:
@@ -173,27 +187,28 @@ async def start_handler(message: types.Message):
             user = User(
                 telegram_id=message.from_user.id,
                 username=message.from_user.username,
-                first_name=message.from_user.first_name
+                first_name=message.from_user.first_name,
             )
             db.add(user)
             await db.commit()
             await db.refresh(user)
 
     name = message.from_user.first_name or "друг"
+
     if user.consent_timestamp:
         await message.answer(
             f"Добро пожаловать, {name}! 👋\n\n"
             "Вы можете пользоваться всеми функциями сервиса.",
             reply_markup=get_main_kb(),
         )
-    else:
-        await message.answer(
-            f"Добро пожаловать, {name}!\n\n"
-            "Для использования сервиса необходимо ваше согласие на обработку "
-            "персональных данных в соответствии с Федеральным законом № 152-ФЗ.\n\n"
-            "Откройте приложение, ознакомьтесь с условиями и нажмите «Согласен».",
-            reply_markup=get_consent_kb(),
-        )
+        return
+
+    await message.answer(f"Добро пожаловать, {name}!")
+    await message.answer(
+        INFO_MESSAGE,
+        parse_mode="HTML",
+        reply_markup=get_consent_kb(),
+    )
 
 CONSENT_TEXT = (
     "📋 <b>Согласие на обработку персональных данных</b>\n\n"
@@ -222,9 +237,15 @@ async def consent_view_handler(callback: types.CallbackQuery):
         CONSENT_TEXT,
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="✅ Согласен", callback_data="consent_agree")],
+            [InlineKeyboardButton(text="← Назад", callback_data="consent_back")],
         ]),
     )
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "consent_back")
+async def consent_back_handler(callback: types.CallbackQuery):
+    await callback.message.delete()
     await callback.answer()
 
 
@@ -252,12 +273,15 @@ async def consent_agree_handler(callback: types.CallbackQuery):
             logger.info("consent: принято telegram_id=%s", callback.from_user.id)
 
     await callback.message.edit_text(
-        "✅ Согласие на обработку персональных данных принято.\n\n"
-        f"Добро пожаловать, {callback.from_user.first_name or 'друг'}! "
+        "✅ Согласие на обработку персональных данных принято.",
+        parse_mode="HTML",
+    )
+    await callback.message.answer(
+        f"Добро пожаловать, {callback.from_user.first_name or 'друг'}! 👋\n\n"
         "Теперь вам доступен полный функционал сервиса «Иду к врачу»! 🏥",
         reply_markup=get_main_kb(),
     )
-    await callback.answer("Согласие принято!")
+    await callback.answer()
 
 
 @dp.message(Command("paysupport"))
@@ -270,8 +294,8 @@ async def pay_support_handler(message: types.Message):
 
 def get_consent_kb():
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✅ Согласен", callback_data="consent_agree")],
-        [InlineKeyboardButton(text="📄 Посмотреть согласие", callback_data="consent_view")],
+        [InlineKeyboardButton(text="Начать", callback_data="consent_agree")],
+        [InlineKeyboardButton(text="📄 Подробнее о согласии", callback_data="consent_view")],
     ])
 
 
