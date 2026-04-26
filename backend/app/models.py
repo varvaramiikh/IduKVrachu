@@ -19,6 +19,7 @@ class User(Base):
     
     parent_profile = relationship("ParentProfile", back_populates="user", uselist=False)
     appointments = relationship("Appointment", back_populates="user")
+    bot_appointments = relationship("BotAppointmentRequest", back_populates="user")
     purchases = relationship("Purchase", back_populates="user")
     progress = relationship("Progress", back_populates="user")
     tickets = relationship("SupportTicket", back_populates="user")
@@ -159,6 +160,21 @@ class SupportTicket(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     
     user = relationship("User", back_populates="tickets")
+
+class BotAppointmentRequest(Base):
+    __tablename__ = "bot_appointment_requests"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    city: Mapped[str] = mapped_column(String(100))
+    clinic_name: Mapped[str] = mapped_column(String(255))
+    desired_date: Mapped[str] = mapped_column(String(20))
+    time_range: Mapped[str] = mapped_column(String(20))
+    status: Mapped[str] = mapped_column(String(50), default="pending")  # pending, cancelled
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="bot_appointments")
+
 
 class AdminAuditLog(Base):
     __tablename__ = "admin_audit_logs"

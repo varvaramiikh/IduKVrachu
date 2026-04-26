@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.config import settings
 from backend.app.database import async_session
 from backend.app.logging_utils import configure_logging, log_environment, log_settings
-from backend.app.models import User, Appointment, Clinic
+from backend.app.models import User, Appointment, Clinic, BotAppointmentRequest
 
 configure_logging()
 logger = logging.getLogger("bot")
@@ -314,7 +314,7 @@ def get_main_kb():
         [InlineKeyboardButton(text='🏥 Сервис "Иду к врачу"', url="https://example.com")],
         [webapp_btn("📚 Подготовка")],
         [InlineKeyboardButton(text="📅 Запись к врачу", callback_data="appt_start")],
-        [webapp_btn("📋 Мои записи", "?screen=my-appointments")],
+        [InlineKeyboardButton(text="📋 Мои записи", callback_data="my_appts")],
         [InlineKeyboardButton(text="✉️ Написать нам", url="https://t.me/admin_handle")],
     ])
 
@@ -464,6 +464,21 @@ async def appt_back_time(callback: types.CallbackQuery, state: FSMContext):
 async def appt_confirm(callback: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     await state.clear()
+
+    async with async_session() as db:
+        result = await db.execute(select(User).where(User.telegram_id == callback.from_user.id))
+        user = result.scalar_one_or_none()
+        if user:
+            req = BotAppointmentRequest(
+                user_id=user.id,
+                city=data["city"],
+                clinic_name=data["clinic"],
+                desired_date=data["date"],
+                time_range=data["time_range"],
+            )
+            db.add(req)
+            await db.commit()
+
     await callback.message.edit_text(
         "✅ <b>Заявка отправлена!</b>\n\n"
         f"🏥 {data['clinic']}, {data['city']}\n"
@@ -471,6 +486,7 @@ async def appt_confirm(callback: types.CallbackQuery, state: FSMContext):
         "Администратор клиники свяжется с вами для уточнения и согласования даты и времени записи.",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📋 Мои записи", callback_data="my_appts")],
             [InlineKeyboardButton(text="🏠 На главную", callback_data="go_home")],
         ]),
     )
@@ -491,6 +507,106 @@ async def go_home(callback: types.CallbackQuery, state: FSMContext):
         "🏠 Главное меню",
         reply_markup=get_main_kb(),
     )
+    await callback.answer()
+
+
+# ── Мои записи ──────────────────────────────────────────────────────────────
+
+STATUS_LABELS = {"pending": "⏳ Ожидает подтверждения", "cancelled": "❌ Отменена"}
+
+
+def _my_appt_kb(appt_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🔄 Перенести", callback_data=f"appt_reschedule:{appt_id}"),
+            InlineKeyboardButton(text="❌ Отменить", callback_data=f"appt_cancel_req:{appt_id}"),
+        ],
+    ])
+
+
+@dp.callback_query(F.data == "my_appts")
+async def my_appts_handler(callback: types.CallbackQuery):
+    async with async_session() as db:
+        result = await db.execute(select(User).where(User.telegram_id == callback.from_user.id))
+        user = result.scalar_one_or_none()
+        if not user:
+            await callback.answer("Пользователь не найден.", show_alert=True)
+            return
+
+        result = await db.execute(
+            select(BotAppointmentRequest)
+            .where(BotAppointmentRequest.user_id == user.id,
+                   BotAppointmentRequest.status != "cancelled")
+            .order_by(BotAppointmentRequest.created_at.desc())
+        )
+        appts = result.scalars().all()
+
+    if not appts:
+        await callback.message.answer(
+            "📋 <b>Мои записи</b>\n\nУ вас нет активных заявок.",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🏠 На главную", callback_data="go_home")],
+            ]),
+        )
+        await callback.answer()
+        return
+
+    for appt in appts:
+        status = STATUS_LABELS.get(appt.status, appt.status)
+        text = (
+            f"📋 <b>Заявка №{appt.id}</b>\n\n"
+            f"🏥 {appt.clinic_name}, {appt.city}\n"
+            f"📅 {appt.desired_date}, {appt.time_range}\n"
+            f"Статус: {status}"
+        )
+        await callback.message.answer(text, parse_mode="HTML", reply_markup=_my_appt_kb(appt.id))
+
+    await callback.message.answer(
+        "Выберите запись для управления:",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🏠 На главную", callback_data="go_home")],
+        ]),
+    )
+    await callback.answer()
+
+
+@dp.callback_query(F.data.startswith("appt_cancel_req:"))
+async def appt_cancel_req(callback: types.CallbackQuery):
+    appt_id = int(callback.data.split(":", 1)[1])
+    async with async_session() as db:
+        result = await db.execute(
+            select(BotAppointmentRequest).where(BotAppointmentRequest.id == appt_id)
+        )
+        appt = result.scalar_one_or_none()
+        if appt:
+            appt.status = "cancelled"
+            await db.commit()
+
+    await callback.message.edit_text(
+        f"❌ Заявка №{appt_id} отменена.",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🏠 На главную", callback_data="go_home")],
+        ]),
+    )
+    await callback.answer()
+
+
+@dp.callback_query(F.data.startswith("appt_reschedule:"))
+async def appt_reschedule(callback: types.CallbackQuery, state: FSMContext):
+    appt_id = int(callback.data.split(":", 1)[1])
+    async with async_session() as db:
+        result = await db.execute(
+            select(BotAppointmentRequest).where(BotAppointmentRequest.id == appt_id)
+        )
+        appt = result.scalar_one_or_none()
+        if appt:
+            appt.status = "cancelled"
+            await db.commit()
+
+    await state.clear()
+    await callback.message.answer("🏙 Выберите город для новой записи:", reply_markup=_appt_city_kb())
+    await state.set_state(ApptStates.choosing_city)
     await callback.answer()
 
 
