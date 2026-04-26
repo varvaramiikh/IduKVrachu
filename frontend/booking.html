@@ -925,7 +925,7 @@
       </div>
 
       <!-- ── STEP 1: Выбор услуги ─────────────────────────── -->
-      <div class="booking-step booking-step--active" id="step-1" data-step="1">
+      <div class="booking-step" id="step-1" data-step="1">
         <h2 class="step-title">Выберите услугу</h2>
         <p class="step-subtitle">Укажите направление, по которому хотите записать ребёнка</p>
 
@@ -1513,8 +1513,7 @@
     };
 
     function goToStep(n, back = false) {
-      const current = document.querySelector('.booking-step--active');
-      if (current) current.classList.remove('booking-step--active');
+      document.querySelectorAll('.booking-step--active').forEach(el => el.classList.remove('booking-step--active'));
 
       const next = document.getElementById(typeof n === 'number' ? `step-${n}` : `step-${n}`);
       if (back) next.classList.add('booking-step--back');
