@@ -19,9 +19,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.config import settings
-from backend.app.database import async_session
+from backend.app.database import async_session, engine
 from backend.app.logging_utils import configure_logging, log_environment, log_settings
-from backend.app.models import User, Appointment, Clinic, BotAppointmentRequest
+from backend.app.models import Base, User, Appointment, Clinic, BotAppointmentRequest
 
 configure_logging()
 logger = logging.getLogger("bot")
@@ -526,49 +526,52 @@ def _my_appt_kb(appt_id: int) -> InlineKeyboardMarkup:
 
 @dp.callback_query(F.data == "my_appts")
 async def my_appts_handler(callback: types.CallbackQuery):
-    async with async_session() as db:
-        result = await db.execute(select(User).where(User.telegram_id == callback.from_user.id))
-        user = result.scalar_one_or_none()
-        if not user:
-            await callback.answer("Пользователь не найден.", show_alert=True)
+    await callback.answer()
+    try:
+        async with async_session() as db:
+            result = await db.execute(select(User).where(User.telegram_id == callback.from_user.id))
+            user = result.scalar_one_or_none()
+            if not user:
+                await callback.message.answer("Пользователь не найден.")
+                return
+
+            result = await db.execute(
+                select(BotAppointmentRequest)
+                .where(BotAppointmentRequest.user_id == user.id,
+                       BotAppointmentRequest.status != "cancelled")
+                .order_by(BotAppointmentRequest.created_at.desc())
+            )
+            appts = result.scalars().all()
+
+        if not appts:
+            await callback.message.answer(
+                "📋 <b>Мои записи</b>\n\nУ вас нет активных заявок.",
+                parse_mode="HTML",
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="🏠 На главную", callback_data="go_home")],
+                ]),
+            )
             return
 
-        result = await db.execute(
-            select(BotAppointmentRequest)
-            .where(BotAppointmentRequest.user_id == user.id,
-                   BotAppointmentRequest.status != "cancelled")
-            .order_by(BotAppointmentRequest.created_at.desc())
-        )
-        appts = result.scalars().all()
+        for appt in appts:
+            status = STATUS_LABELS.get(appt.status, appt.status)
+            text = (
+                f"📋 <b>Заявка №{appt.id}</b>\n\n"
+                f"🏥 {appt.clinic_name}, {appt.city}\n"
+                f"📅 {appt.desired_date}, {appt.time_range}\n"
+                f"Статус: {status}"
+            )
+            await callback.message.answer(text, parse_mode="HTML", reply_markup=_my_appt_kb(appt.id))
 
-    if not appts:
         await callback.message.answer(
-            "📋 <b>Мои записи</b>\n\nУ вас нет активных заявок.",
-            parse_mode="HTML",
+            "Выберите запись для управления:",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="🏠 На главную", callback_data="go_home")],
             ]),
         )
-        await callback.answer()
-        return
-
-    for appt in appts:
-        status = STATUS_LABELS.get(appt.status, appt.status)
-        text = (
-            f"📋 <b>Заявка №{appt.id}</b>\n\n"
-            f"🏥 {appt.clinic_name}, {appt.city}\n"
-            f"📅 {appt.desired_date}, {appt.time_range}\n"
-            f"Статус: {status}"
-        )
-        await callback.message.answer(text, parse_mode="HTML", reply_markup=_my_appt_kb(appt.id))
-
-    await callback.message.answer(
-        "Выберите запись для управления:",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🏠 На главную", callback_data="go_home")],
-        ]),
-    )
-    await callback.answer()
+    except Exception:
+        logger.exception("my_appts_handler error user=%s", callback.from_user.id)
+        await callback.message.answer("Произошла ошибка. Попробуйте позже.")
 
 
 @dp.callback_query(F.data.startswith("appt_cancel_req:"))
@@ -624,6 +627,10 @@ async def main():
     logger.info("Starting bot...")
     log_environment(logger)
     log_settings(logger, settings)
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    logger.info("DB tables ensured")
 
     await call_with_retry(
         "set_my_commands",
