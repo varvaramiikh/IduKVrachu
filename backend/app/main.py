@@ -85,6 +85,10 @@ async def startup():
 async def index():
     return FileResponse(os.path.join(BASE_DIR, "frontend", "index.html"))
 
+@app.get("/booking.html", include_in_schema=False)
+async def booking():
+    return FileResponse(os.path.join(BASE_DIR, "frontend", "booking.html"))
+
 async def get_current_user(x_tg_init_data: str = Header(...), db: AsyncSession = Depends(get_db)) -> User:
     if not validate_init_data(x_tg_init_data):
         raise HTTPException(status_code=401, detail="Invalid initData")
