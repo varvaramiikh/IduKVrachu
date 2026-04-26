@@ -12,29 +12,9 @@
 <body>
   <main class="app">
 
-<!-- Согласие на обработку ПД (входной экран) -->
-
-      <section class="screen screen--active screen--welcome" id="screen-consent-gate">
-        <div class="welcome-card">
-          <h1 class="welcome-title">Добро пожаловать!</h1>
-          <img class="welcome-img" src="materials/img/Иллюстрация Hero.png" alt="Иллюстрация">
-          <img class="welcome-logo" src="materials/img/Цветное лого.svg" alt="Логотип">
-        </div>
-
-        <div class="consent-gate__body">
-          <p class="consent-gate__text">Для использования сервиса необходимо ваше согласие на обработку персональных данных в соответствии с Федеральным законом № 152-ФЗ.</p>
-          <button class="button button-full consent-gate__btn" type="button" id="consent-accept-btn">
-            Согласен
-          </button>
-          <button class="welcome-footer__link consent-gate__link" type="button" data-screen="screen-consent">
-            Читать согласие на обработку персональных данных
-          </button>
-        </div>
-      </section>
-
 <!-- Главная -->
 
-      <section class="screen screen--welcome" id="screen-welcome">
+      <section class="screen screen--active screen--welcome" id="screen-welcome">
         <div class="welcome-card">
           <h1 class="welcome-title">Добро пожаловать!</h1>
           <img class="welcome-img" src="materials/img/Иллюстрация Hero.png" alt="Иллюстрация">
@@ -93,13 +73,18 @@
           </article>
         </div>
 
+        <footer class="welcome-footer">
+          <button class="welcome-footer__link" type="button" data-screen="screen-consent">
+            Согласие на обработку персональных данных
+          </button>
+        </footer>
       </section>
 
 <!-- Согласие на обработку персональных данных (ФЗ-152) -->
 
       <section class="screen" id="screen-consent">
         <header class="topbar">
-          <button class="icon-button" type="button" data-screen="screen-consent-gate" aria-label="Назад"><img src="materials/svg/icon-arrow.svg" alt=""></button>
+          <button class="icon-button" type="button" data-screen="screen-welcome" aria-label="Назад"><img src="materials/svg/icon-arrow.svg" alt=""></button>
           <div class="screen-header-badge">
             <p class="screen-header-badge__text">Согласие</p>
           </div>
@@ -571,39 +556,6 @@
       });
     });
 
-    // Consent logic
-    const CONSENT_VERSION = '1.0';
-    const CONSENT_KEY = 'consent_signed';
-
-    if (localStorage.getItem(CONSENT_KEY)) {
-      openScreen('screen-welcome');
-    }
-
-    document.getElementById('consent-accept-btn').addEventListener('click', async function () {
-      const btn = this;
-      btn.disabled = true;
-      btn.textContent = 'Сохраняем…';
-
-      const initData = window.Telegram?.WebApp?.initData ?? '';
-      try {
-        const res = await fetch('/api/consent?version=' + encodeURIComponent(CONSENT_VERSION), {
-          method: 'POST',
-          headers: {
-            'X-Tg-Init-Data': initData,
-            'ngrok-skip-browser-warning': 'true',
-          },
-        });
-        if (!res.ok) {
-          console.error('consent API error', res.status, await res.text());
-        }
-      } catch (e) {
-        console.error('consent fetch failed', e);
-      }
-
-      localStorage.setItem(CONSENT_KEY, CONSENT_VERSION);
-      btn.textContent = '✓ Согласие принято';
-      setTimeout(() => openScreen('screen-welcome'), 600);
-    });
 
   </script>
 </body>

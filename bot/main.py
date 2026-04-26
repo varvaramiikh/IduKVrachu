@@ -195,6 +195,71 @@ async def start_handler(message: types.Message):
             reply_markup=get_consent_kb(),
         )
 
+CONSENT_TEXT = (
+    "📋 <b>Согласие на обработку персональных данных</b>\n\n"
+    "В соответствии с Федеральным законом от 27.07.2006 № 152-ФЗ «О персональных данных».\n\n"
+    "<b>Оператор:</b> Сервис «Иду к врачу»\n\n"
+    "<b>Цели обработки:</b>\n"
+    "• предоставление доступа к материалам сервиса;\n"
+    "• идентификация пользователя в Telegram;\n"
+    "• обработка обращений в поддержку;\n"
+    "• совершенствование работы сервиса.\n\n"
+    "<b>Обрабатываемые данные:</b>\n"
+    "• Telegram ID, имя и username;\n"
+    "• действия в приложении (просмотренные материалы, прогресс).\n\n"
+    "<b>Передача третьим лицам:</b> не осуществляется, кроме случаев, "
+    "предусмотренных законодательством РФ.\n\n"
+    "<b>Срок действия:</b> с момента согласия до его отзыва. "
+    "Для отзыва напишите в поддержку.\n\n"
+    "<b>Ваши права:</b> уточнение, блокирование и уничтожение данных "
+    "по обращению к Оператору; жалоба в Роскомнадзор."
+)
+
+
+@dp.callback_query(F.data == "consent_view")
+async def consent_view_handler(callback: types.CallbackQuery):
+    await callback.message.answer(
+        CONSENT_TEXT,
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="✅ Согласен", callback_data="consent_agree")],
+        ]),
+    )
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "consent_agree")
+async def consent_agree_handler(callback: types.CallbackQuery):
+    async with async_session() as db:
+        result = await db.execute(
+            select(User).where(User.telegram_id == callback.from_user.id)
+        )
+        user = result.scalar_one_or_none()
+        if not user:
+            user = User(
+                telegram_id=callback.from_user.id,
+                username=callback.from_user.username,
+                first_name=callback.from_user.first_name,
+            )
+            db.add(user)
+            await db.commit()
+            await db.refresh(user)
+
+        if not user.consent_timestamp:
+            user.consent_version = "1.0"
+            user.consent_timestamp = datetime.utcnow()
+            await db.commit()
+            logger.info("consent: принято telegram_id=%s", callback.from_user.id)
+
+    await callback.message.edit_text(
+        "✅ Согласие на обработку персональных данных принято.\n\n"
+        f"Добро пожаловать, {callback.from_user.first_name or 'друг'}! "
+        "Теперь вам доступен полный функционал сервиса «Иду к врачу»! 🏥",
+        reply_markup=get_main_kb(),
+    )
+    await callback.answer("Согласие принято!")
+
+
 @dp.message(Command("paysupport"))
 async def pay_support_handler(message: types.Message):
     await message.answer(
@@ -204,18 +269,10 @@ async def pay_support_handler(message: types.Message):
     )
 
 def get_consent_kb():
-    open_button = (
-        InlineKeyboardButton(
-            text="📋 Дать согласие",
-            web_app=WebAppInfo(url=settings.WEB_APP_URL),
-        )
-        if is_https_url(settings.WEB_APP_URL)
-        else InlineKeyboardButton(
-            text="📋 Дать согласие",
-            url=settings.WEB_APP_URL,
-        )
-    )
-    return InlineKeyboardMarkup(inline_keyboard=[[open_button]])
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="✅ Согласен", callback_data="consent_agree")],
+        [InlineKeyboardButton(text="📄 Посмотреть согласие", callback_data="consent_view")],
+    ])
 
 
 def get_main_kb():
