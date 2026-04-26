@@ -8,6 +8,9 @@ from typing import Any, Awaitable, Callable, Dict, Optional
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.client.session.middlewares.base import BaseRequestMiddleware
 from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.methods import TelegramMethod
 from aiogram.methods.base import Response
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, BotCommand, WebAppInfo
@@ -47,7 +50,7 @@ class LoggingSessionMiddleware(BaseRequestMiddleware):
 
 bot = Bot(token=settings.BOT_TOKEN)
 bot.session.middleware(LoggingSessionMiddleware())
-dp = Dispatcher()
+dp = Dispatcher(storage=MemoryStorage())
 scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
 
 
@@ -310,10 +313,186 @@ def get_main_kb():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text='🏥 Сервис "Иду к врачу"', url="https://example.com")],
         [webapp_btn("📚 Подготовка")],
-        [webapp_btn("📅 Запись к врачу", "?screen=appointment")],
+        [InlineKeyboardButton(text="📅 Запись к врачу", callback_data="appt_start")],
         [webapp_btn("📋 Мои записи", "?screen=my-appointments")],
         [InlineKeyboardButton(text="✉️ Написать нам", url="https://t.me/admin_handle")],
     ])
+
+# ── Запись к врачу ──────────────────────────────────────────────────────────
+
+class ApptStates(StatesGroup):
+    choosing_city = State()
+    choosing_clinic = State()
+    choosing_date = State()
+    choosing_time = State()
+    confirming = State()
+
+CITIES = {"moscow": "Москва"}
+CLINICS = {"zubnaya_feya": "🦷 Зубная фея"}
+TIME_RANGES = ["8:00–10:00", "10:00–12:00", "12:00–14:00",
+               "14:00–16:00", "16:00–18:00", "18:00–20:00"]
+
+
+def _appt_city_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🏙 Москва", callback_data="appt_city:moscow")],
+        [InlineKeyboardButton(text="✖ Отмена", callback_data="appt_cancel")],
+    ])
+
+
+def _appt_clinic_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🦷 Зубная фея", callback_data="appt_clinic:zubnaya_feya")],
+        [InlineKeyboardButton(text="← Назад", callback_data="appt_back_city")],
+    ])
+
+
+def _appt_date_kb() -> InlineKeyboardMarkup:
+    today = datetime.now().date()
+    rows = []
+    for i in range(1, 8):
+        d = today + timedelta(days=i)
+        label = d.strftime("%d.%m (%a)").replace(
+            "Mon", "пн").replace("Tue", "вт").replace("Wed", "ср").replace(
+            "Thu", "чт").replace("Fri", "пт").replace("Sat", "сб").replace("Sun", "вс")
+        rows.append([InlineKeyboardButton(text=label, callback_data=f"appt_date:{d.isoformat()}")])
+    rows.append([InlineKeyboardButton(text="← Назад", callback_data="appt_back_clinic")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _appt_time_kb() -> InlineKeyboardMarkup:
+    rows = []
+    for i in range(0, len(TIME_RANGES), 2):
+        pair = TIME_RANGES[i:i+2]
+        rows.append([
+            InlineKeyboardButton(text=t, callback_data=f"appt_time:{t}") for t in pair
+        ])
+    rows.append([InlineKeyboardButton(text="← Назад", callback_data="appt_back_date")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def _appt_confirm_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="✅ Подтвердить", callback_data="appt_confirm")],
+        [InlineKeyboardButton(text="← Назад", callback_data="appt_back_time")],
+    ])
+
+
+@dp.callback_query(F.data == "appt_start")
+async def appt_start(callback: types.CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.message.answer("🏙 Выберите город:", reply_markup=_appt_city_kb())
+    await state.set_state(ApptStates.choosing_city)
+    await callback.answer()
+
+
+@dp.callback_query(F.data.startswith("appt_city:"), ApptStates.choosing_city)
+async def appt_city(callback: types.CallbackQuery, state: FSMContext):
+    key = callback.data.split(":", 1)[1]
+    await state.update_data(city=CITIES[key])
+    await callback.message.edit_text("🏥 Выберите клинику:", reply_markup=_appt_clinic_kb())
+    await state.set_state(ApptStates.choosing_clinic)
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "appt_back_city")
+async def appt_back_city(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.edit_text("🏙 Выберите город:", reply_markup=_appt_city_kb())
+    await state.set_state(ApptStates.choosing_city)
+    await callback.answer()
+
+
+@dp.callback_query(F.data.startswith("appt_clinic:"), ApptStates.choosing_clinic)
+async def appt_clinic(callback: types.CallbackQuery, state: FSMContext):
+    key = callback.data.split(":", 1)[1]
+    await state.update_data(clinic=CLINICS[key])
+    await callback.message.edit_text("📅 Выберите удобную дату:", reply_markup=_appt_date_kb())
+    await state.set_state(ApptStates.choosing_date)
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "appt_back_clinic")
+async def appt_back_clinic(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.edit_text("🏥 Выберите клинику:", reply_markup=_appt_clinic_kb())
+    await state.set_state(ApptStates.choosing_clinic)
+    await callback.answer()
+
+
+@dp.callback_query(F.data.startswith("appt_date:"), ApptStates.choosing_date)
+async def appt_date(callback: types.CallbackQuery, state: FSMContext):
+    date_str = callback.data.split(":", 1)[1]
+    d = datetime.fromisoformat(date_str)
+    await state.update_data(date=d.strftime("%d.%m.%Y"), date_iso=date_str)
+    await callback.message.edit_text("🕐 Выберите диапазон времени:", reply_markup=_appt_time_kb())
+    await state.set_state(ApptStates.choosing_time)
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "appt_back_date")
+async def appt_back_date(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.edit_text("📅 Выберите удобную дату:", reply_markup=_appt_date_kb())
+    await state.set_state(ApptStates.choosing_date)
+    await callback.answer()
+
+
+@dp.callback_query(F.data.startswith("appt_time:"), ApptStates.choosing_time)
+async def appt_time(callback: types.CallbackQuery, state: FSMContext):
+    time_range = callback.data.split(":", 1)[1]
+    await state.update_data(time_range=time_range)
+    data = await state.get_data()
+    summary = (
+        "📋 <b>Проверьте вашу заявку:</b>\n\n"
+        f"🏙 Город: {data['city']}\n"
+        f"🏥 Клиника: {data['clinic']}\n"
+        f"📅 Дата: {data['date']}\n"
+        f"🕐 Время: {data['time_range']}\n\n"
+        "<i>Администратор клиники свяжется с вами для уточнения и согласования даты и времени записи.</i>"
+    )
+    await callback.message.edit_text(summary, parse_mode="HTML", reply_markup=_appt_confirm_kb())
+    await state.set_state(ApptStates.confirming)
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "appt_back_time")
+async def appt_back_time(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.edit_text("🕐 Выберите диапазон времени:", reply_markup=_appt_time_kb())
+    await state.set_state(ApptStates.choosing_time)
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "appt_confirm", ApptStates.confirming)
+async def appt_confirm(callback: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    await state.clear()
+    await callback.message.edit_text(
+        "✅ <b>Заявка отправлена!</b>\n\n"
+        f"🏥 {data['clinic']}, {data['city']}\n"
+        f"📅 {data['date']}, {data['time_range']}\n\n"
+        "Администратор клиники свяжется с вами для уточнения и согласования даты и времени записи.",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🏠 На главную", callback_data="go_home")],
+        ]),
+    )
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "appt_cancel")
+async def appt_cancel(callback: types.CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.message.delete()
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "go_home")
+async def go_home(callback: types.CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.message.edit_text(
+        "🏠 Главное меню",
+        reply_markup=get_main_kb(),
+    )
+    await callback.answer()
+
 
 async def enable_webapp_button(chat_id: int):
     if is_https_url(settings.WEB_APP_URL):
