@@ -179,13 +179,21 @@ async def start_handler(message: types.Message):
             await db.commit()
             await db.refresh(user)
 
-    name = message.from_user.first_name
-    await message.answer(
-        f"Добро пожаловать, {name}!\n\n"
-        "Для использования сервиса необходимо ваше согласие на обработку персональных данных "
-        "в соответствии с Федеральным законом № 152-ФЗ.",
-        reply_markup=get_main_kb()
-    )
+    name = message.from_user.first_name or "друг"
+    if user.consent_timestamp:
+        await message.answer(
+            f"Добро пожаловать, {name}! 👋\n\n"
+            "Вы можете пользоваться всеми функциями сервиса.",
+            reply_markup=get_main_kb(),
+        )
+    else:
+        await message.answer(
+            f"Добро пожаловать, {name}!\n\n"
+            "Для использования сервиса необходимо ваше согласие на обработку "
+            "персональных данных в соответствии с Федеральным законом № 152-ФЗ.\n\n"
+            "Откройте приложение, ознакомьтесь с условиями и нажмите «Согласен».",
+            reply_markup=get_consent_kb(),
+        )
 
 @dp.message(Command("paysupport"))
 async def pay_support_handler(message: types.Message):
@@ -194,6 +202,21 @@ async def pay_support_handler(message: types.Message):
         "Если у вас возникли проблемы с оплатой или начислением баллов, "
         "пожалуйста, напишите нашему оператору: @admin_handle"
     )
+
+def get_consent_kb():
+    open_button = (
+        InlineKeyboardButton(
+            text="📋 Дать согласие",
+            web_app=WebAppInfo(url=settings.WEB_APP_URL),
+        )
+        if is_https_url(settings.WEB_APP_URL)
+        else InlineKeyboardButton(
+            text="📋 Дать согласие",
+            url=settings.WEB_APP_URL,
+        )
+    )
+    return InlineKeyboardMarkup(inline_keyboard=[[open_button]])
+
 
 def get_main_kb():
     open_button = (

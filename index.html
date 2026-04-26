@@ -23,7 +23,7 @@
 
         <div class="consent-gate__body">
           <p class="consent-gate__text">Для использования сервиса необходимо ваше согласие на обработку персональных данных в соответствии с Федеральным законом № 152-ФЗ.</p>
-          <button class="button button-full consent-gate__btn" type="button" data-screen="screen-welcome">
+          <button class="button button-full consent-gate__btn" type="button" id="consent-accept-btn">
             Согласен
           </button>
           <button class="welcome-footer__link consent-gate__link" type="button" data-screen="screen-consent">
@@ -569,6 +569,29 @@
           purchaseDialog.hidden = true;
         }, 240);
       });
+    });
+
+    // Consent logic
+    const CONSENT_VERSION = '1.0';
+    const CONSENT_KEY = 'consent_signed';
+
+    if (localStorage.getItem(CONSENT_KEY)) {
+      openScreen('screen-welcome');
+    }
+
+    document.getElementById('consent-accept-btn').addEventListener('click', async () => {
+      localStorage.setItem(CONSENT_KEY, CONSENT_VERSION);
+      openScreen('screen-welcome');
+
+      const initData = window.Telegram?.WebApp?.initData ?? '';
+      try {
+        await fetch('/api/consent?version=' + encodeURIComponent(CONSENT_VERSION), {
+          method: 'POST',
+          headers: { 'X-Tg-Init-Data': initData },
+        });
+      } catch (e) {
+        // не блокируем пользователя при сетевой ошибке
+      }
     });
 
   </script>

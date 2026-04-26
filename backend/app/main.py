@@ -225,10 +225,47 @@ async def create_ticket(
 
 @app.post("/api/consent")
 async def accept_consent(version: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    already_consented = user.consent_timestamp is not None
     user.consent_version = version
     user.consent_timestamp = datetime.utcnow()
     await db.commit()
+
+    if not already_consented:
+        try:
+            from aiogram import Bot as TgBot
+            tg_bot = TgBot(token=settings.BOT_TOKEN)
+            await tg_bot.send_message(
+                user.telegram_id,
+                "✅ Вы дали согласие на обработку персональных данных.\n\n"
+                "Теперь вам доступен полный функционал сервиса «Иду к врачу»! 🏥\n"
+                "Нажмите кнопку ниже, чтобы открыть приложение.",
+                reply_markup=_get_main_kb_for_notify(),
+            )
+            await tg_bot.session.close()
+        except Exception:
+            logger.warning(
+                "consent: не удалось отправить уведомление telegram_id=%s",
+                user.telegram_id,
+                exc_info=True,
+            )
+
     return {"status": "ok"}
+
+
+def _get_main_kb_for_notify():
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+    open_button = (
+        InlineKeyboardButton(
+            text="🏥 Открыть приложение",
+            web_app=WebAppInfo(url=settings.WEB_APP_URL),
+        )
+        if settings.WEB_APP_URL.startswith("https://")
+        else InlineKeyboardButton(
+            text="🏥 Открыть приложение",
+            url=settings.WEB_APP_URL,
+        )
+    )
+    return InlineKeyboardMarkup(inline_keyboard=[[open_button]])
 
 @app.post("/api/progress")
 async def update_progress(item_id: int, status: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
