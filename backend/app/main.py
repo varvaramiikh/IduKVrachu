@@ -231,23 +231,27 @@ async def accept_consent(version: str, user: User = Depends(get_current_user), d
     await db.commit()
 
     if not already_consented:
-        try:
-            from aiogram import Bot as TgBot
-            tg_bot = TgBot(token=settings.BOT_TOKEN)
-            await tg_bot.send_message(
-                user.telegram_id,
-                "✅ Вы дали согласие на обработку персональных данных.\n\n"
-                "Теперь вам доступен полный функционал сервиса «Иду к врачу»! 🏥\n"
-                "Нажмите кнопку ниже, чтобы открыть приложение.",
-                reply_markup=_get_main_kb_for_notify(),
-            )
-            await tg_bot.session.close()
-        except Exception:
-            logger.warning(
-                "consent: не удалось отправить уведомление telegram_id=%s",
-                user.telegram_id,
-                exc_info=True,
-            )
+        if user.telegram_id == 12345678:
+            logger.warning("consent: пропускаем уведомление — debug-заглушка telegram_id=12345678 (initData был пустым)")
+        else:
+            try:
+                from aiogram import Bot as TgBot
+                tg_bot = TgBot(token=settings.BOT_TOKEN)
+                await tg_bot.send_message(
+                    user.telegram_id,
+                    "✅ Вы дали согласие на обработку персональных данных.\n\n"
+                    "Теперь вам доступен полный функционал сервиса «Иду к врачу»! 🏥\n"
+                    "Нажмите кнопку ниже, чтобы открыть приложение.",
+                    reply_markup=_get_main_kb_for_notify(),
+                )
+                await tg_bot.session.close()
+                logger.info("consent: уведомление отправлено telegram_id=%s", user.telegram_id)
+            except Exception:
+                logger.warning(
+                    "consent: не удалось отправить уведомление telegram_id=%s",
+                    user.telegram_id,
+                    exc_info=True,
+                )
 
     return {"status": "ok"}
 

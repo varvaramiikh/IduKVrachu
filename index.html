@@ -579,19 +579,30 @@
       openScreen('screen-welcome');
     }
 
-    document.getElementById('consent-accept-btn').addEventListener('click', async () => {
-      localStorage.setItem(CONSENT_KEY, CONSENT_VERSION);
-      openScreen('screen-welcome');
+    document.getElementById('consent-accept-btn').addEventListener('click', async function () {
+      const btn = this;
+      btn.disabled = true;
+      btn.textContent = 'Сохраняем…';
 
       const initData = window.Telegram?.WebApp?.initData ?? '';
       try {
-        await fetch('/api/consent?version=' + encodeURIComponent(CONSENT_VERSION), {
+        const res = await fetch('/api/consent?version=' + encodeURIComponent(CONSENT_VERSION), {
           method: 'POST',
-          headers: { 'X-Tg-Init-Data': initData },
+          headers: {
+            'X-Tg-Init-Data': initData,
+            'ngrok-skip-browser-warning': 'true',
+          },
         });
+        if (!res.ok) {
+          console.error('consent API error', res.status, await res.text());
+        }
       } catch (e) {
-        // не блокируем пользователя при сетевой ошибке
+        console.error('consent fetch failed', e);
       }
+
+      localStorage.setItem(CONSENT_KEY, CONSENT_VERSION);
+      btn.textContent = '✓ Согласие принято';
+      setTimeout(() => openScreen('screen-welcome'), 600);
     });
 
   </script>
