@@ -946,6 +946,32 @@ main {
   border: none;
 }
 
+.consent-gate__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 28px 0 12px;
+}
+
+.consent-gate__text {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.consent-gate__btn {
+  justify-content: center;
+  font-size: 16px;
+  min-height: 52px;
+}
+
+.consent-gate__link {
+  font-size: 13px;
+}
+
 .welcome-footer {
   margin-top: 28px;
   padding: 18px 0 8px;
