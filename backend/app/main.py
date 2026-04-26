@@ -61,8 +61,8 @@ async def log_requests(request: Request, call_next):
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-app.mount("/styles", StaticFiles(directory=os.path.join(BASE_DIR, "styles")), name="styles")
-app.mount("/materials", StaticFiles(directory=os.path.join(BASE_DIR, "materials")), name="materials")
+app.mount("/styles", StaticFiles(directory=os.path.join(BASE_DIR, "frontend", "styles")), name="styles")
+app.mount("/materials", StaticFiles(directory=os.path.join(BASE_DIR, "frontend", "materials")), name="materials")
 app.mount("/frontend", StaticFiles(directory=os.path.join(BASE_DIR, "frontend")), name="frontend")
 
 def _run_migrations() -> None:
@@ -83,7 +83,7 @@ async def startup():
 
 @app.get("/", include_in_schema=False)
 async def index():
-    return FileResponse(os.path.join(BASE_DIR, "index.html"))
+    return FileResponse(os.path.join(BASE_DIR, "frontend", "index.html"))
 
 async def get_current_user(x_tg_init_data: str = Header(...), db: AsyncSession = Depends(get_db)) -> User:
     if not validate_init_data(x_tg_init_data):
