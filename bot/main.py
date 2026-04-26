@@ -313,8 +313,8 @@ def get_main_kb():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text='🏥 Сервис "Иду к врачу"', url="https://example.com")],
         [webapp_btn("📚 Подготовка")],
-        [InlineKeyboardButton(text="📅 Запись к врачу", callback_data="appt_start")],
-        [InlineKeyboardButton(text="📋 Мои записи", callback_data="my_appts")],
+        [webapp_btn("📅 Записаться к врачу", "/booking.html")],
+        [webapp_btn("📋 Мои записи", "/booking.html?screen=appointments")],
         [InlineKeyboardButton(text="✉️ Написать нам", url="https://t.me/admin_handle")],
     ])
 

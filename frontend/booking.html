@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Запись к врачу | Иду к врачу</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/main.css">
+  <style>
+    /* ─── Booking-specific additions ─── */
+
+    /* Step progress bar */
+    .booking-progress {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 2px 18px;
+    }
+    .booking-progress__dot {
+      height: 4px;
+      border-radius: 99px;
+      background: #D9E4EA;
+      flex: 1;
+      transition: background 0.35s ease, flex 0.35s ease;
+    }
+    .booking-progress__dot--active {
+      background: var(--btn-color);
+      flex: 2;
+    }
+    .booking-progress__dot--done {
+      background: #16D0CA66;
+    }
+
+    /* Step screens — slide transition */
+    .booking-step {
+      display: none;
+      animation: slideIn 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .booking-step--active {
+      display: block;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(22px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideBack {
+      from { opacity: 0; transform: translateX(-22px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    .booking-step--back {
+      animation: slideBack 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Section title inside steps */
+    .step-title {
+      margin: 0 0 6px;
+      color: #3B3B3B;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .step-subtitle {
+      margin: 0 0 20px;
+      color: #848484;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* Service cards */
+    .service-list {
+      display: grid;
+      gap: 12px;
+    }
+    .service-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
+      border-radius: 18px;
+      background: #fff;
+      border: 2px solid #D9E4EA;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .service-card:active {
+      transform: scale(0.98);
+    }
+    .service-card--selected {
+      border-color: var(--btn-color);
+      box-shadow: 0 0 0 3px rgba(0, 185, 194, 0.12);
+    }
+    .service-card__icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: #F0F9FA;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .service-card__icon img {
+      width: 28px;
+      height: 28px;
+    }
+    .service-card__body {
+      flex: 1;
+    }
+    .service-card__title {
+      margin: 0 0 4px;
+      color: #3B3B3B;
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+    .service-card__desc {
+      margin: 0;
+      color: #848484;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .service-card__check {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid #D9E4EA;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .service-card--selected .service-card__check {
+      background: var(--btn-color);
+      border-color: var(--btn-color);
+    }
+    .service-card__check svg {
+      display: none;
+    }
+    .service-card--selected .service-card__check svg {
+      display: block;
+    }
+
+    /* Clinic list */
+    .clinic-list {
+      display: grid;
+      gap: 12px;
+    }
+    .clinic-card {
+      padding: 16px;
+      border-radius: 18px;
+      background: #fff;
+      border: 2px solid #D9E4EA;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .clinic-card:active {
+      transform: scale(0.98);
+    }
+    .clinic-card--selected {
+      border-color: var(--btn-color);
+      box-shadow: 0 0 0 3px rgba(0, 185, 194, 0.12);
+    }
+    .clinic-card__name {
+      margin: 0 0 4px;
+      color: #3B3B3B;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .clinic-card__addr {
+      margin: 0 0 8px;
+      color: #848484;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .clinic-card__meta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .clinic-tag {
+      display: inline-flex;
+      align-items: center;
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 99px;
+      background: #E0F7F6;
+      color: #128395;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* Calendar */
+    .calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .calendar-month {
+      color: #3B3B3B;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .cal-nav {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: none;
+      background: #F0F9FA;
+      color: #128395;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin-bottom: 20px;
+    }
+    .cal-day-label {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #848484;
+      padding-bottom: 6px;
+    }
+    .cal-day {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 10px;
+      border: none;
+      background: transparent;
+      color: #3B3B3B;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .cal-day:hover:not(:disabled):not(.cal-day--selected) {
+      background: #E0F7F6;
+      color: #128395;
+    }
+    .cal-day--selected {
+      background: var(--btn-color);
+      color: #fff;
+      font-weight: 700;
+    }
+    .cal-day--today:not(.cal-day--selected) {
+      color: var(--btn-color);
+      font-weight: 700;
+    }
+    .cal-day:disabled {
+      color: #D9E4EA;
+      cursor: default;
+    }
+    .cal-day--empty {
+      pointer-events: none;
+    }
+
+    /* Time slots */
+    .slots-label {
+      margin: 0 0 10px;
+      color: #3B3B3B;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .slots-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .slot-btn {
+      padding: 10px 4px;
+      border-radius: 12px;
+      border: 2px solid #D9E4EA;
+      background: #fff;
+      color: #3B3B3B;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+    }
+    .slot-btn--selected {
+      border-color: var(--btn-color);
+      background: var(--btn-color);
+      color: #fff;
+      font-weight: 700;
+    }
+    .slot-btn--busy {
+      color: #D9E4EA;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    /* Form */
+    .booking-form {
+      display: grid;
+      gap: 14px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-label {
+      color: #3B3B3B;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .form-label span {
+      color: #848484;
+      font-weight: 400;
+    }
+    .form-input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 2px solid #D9E4EA;
+      background: #fff;
+      color: #3B3B3B;
+      font-family: "Inter", Arial, sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+    .form-input:focus {
+      border-color: var(--btn-color);
+    }
+    .form-input::placeholder {
+      color: #C0CDD4;
+    }
+    .form-input--textarea {
+      resize: none;
+      min-height: 72px;
+      line-height: 1.5;
+    }
+    .form-hint {
+      color: #848484;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    .form-section-title {
+      margin: 6px 0 0;
+      color: #128395;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* Summary card */
+    .summary-card {
+      padding: 18px;
+      border-radius: 18px;
+      background: #fff;
+      border: 2px solid #16D0CA33;
+      margin-bottom: 16px;
+    }
+    .summary-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid #F0F4F5;
+    }
+    .summary-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .summary-row:first-child {
+      padding-top: 0;
+    }
+    .summary-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: #F0F9FA;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .summary-icon svg {
+      width: 16px;
+      height: 16px;
+      color: #128395;
+    }
+    .summary-label {
+      margin: 0 0 2px;
+      color: #848484;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .summary-value {
+      margin: 0;
+      color: #3B3B3B;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    /* Success screen */
+    .success-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding-top: 40px;
+    }
+    .success-icon-wrap {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #16D0CA22, #00B9C222);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+    .success-icon-wrap svg {
+      width: 44px;
+      height: 44px;
+      color: var(--btn-color);
+    }
+    .success-title {
+      margin: 0 0 10px;
+      color: #3B3B3B;
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .success-text {
+      margin: 0 0 28px;
+      color: #848484;
+      font-size: 14px;
+      line-height: 1.6;
+      max-width: 280px;
+    }
+    .success-remind-card {
+      width: 100%;
+      padding: 16px;
+      border-radius: 16px;
+      background: #F0F9FA;
+      border: 1px solid #16D0CA33;
+      margin-bottom: 28px;
+      text-align: left;
+    }
+    .success-remind-label {
+      margin: 0 0 4px;
+      color: #128395;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .success-remind-text {
+      margin: 0;
+      color: #3B3B3B;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    /* Bottom sticky CTA */
+    .booking-cta {
+      position: sticky;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 12px 0 20px;
+      background: linear-gradient(to top, #fdf9f6 70%, transparent);
+      margin: 0 -16px;
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+
+    .btn-booking {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 52px;
+      border-radius: 16px;
+      border: none;
+      background: var(--btn-color);
+      color: #fff;
+      font-family: "Inter", Arial, sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-booking:active {
+      transform: scale(0.98);
+    }
+    .btn-booking:disabled {
+      opacity: 0.45;
+      cursor: default;
+      transform: none;
+    }
+    .btn-booking--secondary {
+      background: #E9F5F7;
+      color: #128395;
+    }
+
+    /* Info tag in topbar */
+    .step-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 34px;
+      padding: 0 14px;
+      border-radius: 16px;
+      background: #00B9C2;
+    }
+    .step-badge__text {
+      margin: 0;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* Selected summary strip */
+    .selection-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: #F0F9FA;
+      border: 1px solid #16D0CA33;
+      margin-bottom: 16px;
+    }
+    .selection-strip__text {
+      margin: 0;
+      color: #128395;
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.3;
+    }
+
+    /* Error state */
+    .form-input--error {
+      border-color: #F16567;
+    }
+    .form-error {
+      color: #F16567;
+      font-size: 11px;
+    }
+
+    /* Loader dots */
+    .loader {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 28px 0;
+    }
+    .loader__dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--btn-color);
+      animation: bounce 0.9s ease-in-out infinite;
+    }
+    .loader__dot:nth-child(2) { animation-delay: 0.15s; }
+    .loader__dot:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+      30% { transform: translateY(-8px); opacity: 1; }
+    }
+
+    /* ─── Doctor cards ─── */
+    .doctor-list {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 4px;
+    }
+    .doctor-card {
+      padding: 16px;
+      border-radius: 18px;
+      background: #fff;
+      border: 2px solid #D9E4EA;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .doctor-card--selected {
+      border-color: var(--btn-color);
+      box-shadow: 0 0 0 3px rgba(0,185,194,0.12);
+    }
+    .doctor-card__top {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .doctor-card__avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      position: relative;
+    }
+    .doctor-card__avatar-dot {
+      display: none;
+    }
+    .doctor-card__info {
+      flex: 1;
+    }
+    .doctor-card__name {
+      margin: 0 0 4px;
+      color: #3B3B3B;
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+    .doctor-card__spec {
+      margin: 0;
+      color: #848484;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .doctor-card__price {
+      display: inline-flex;
+      align-items: center;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 99px;
+      background: #E0F7F6;
+      color: #128395;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .doctor-card__tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .doctor-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 26px;
+      padding: 0 10px;
+      border-radius: 99px;
+      background: #F0F9FA;
+      color: #3B3B3B;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .doctor-tag svg {
+      width: 12px;
+      height: 12px;
+      flex-shrink: 0;
+      color: #128395;
+    }
+    .doctor-slots-label {
+      margin: 0 0 8px;
+      color: #3B3B3B;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .doctor-slots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .doctor-slot {
+      padding: 8px 14px;
+      border-radius: 12px;
+      border: 2px solid #D9E4EA;
+      background: #fff;
+      color: #3B3B3B;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+    }
+    .doctor-slot--selected {
+      border-color: var(--btn-color);
+      background: var(--btn-color);
+      color: #fff;
+      font-weight: 700;
+    }
+    /* ─── Start screen ─── */
+    .start-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 0 32px;
+      text-align: center;
+    }
+    .start-logo {
+      width: 100px;
+      height: 40px;
+      object-fit: contain;
+      margin-bottom: 20px;
+    }
+    .start-title {
+      margin: 0 0 8px;
+      color: #006879;
+      font-family: "Unbounded", Arial, sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .start-subtitle {
+      margin: 0;
+      color: #848484;
+      font-size: 14px;
+    }
+    .start-actions {
+      display: grid;
+      gap: 14px;
+    }
+    .start-action-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 16px;
+      border-radius: 20px;
+      background: #fff;
+      border: 2px solid #D9E4EA;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      width: 100%;
+    }
+    .start-action-card:active { transform: scale(0.98); }
+    .start-action-card:hover { border-color: var(--btn-color); box-shadow: 0 0 0 3px rgba(0,185,194,0.10); }
+    .start-action-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .start-action-body { flex: 1; }
+    .start-action-title {
+      margin: 0 0 4px;
+      color: #3B3B3B;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .start-action-desc {
+      margin: 0;
+      color: #848484;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .start-action-arrow { flex-shrink: 0; }
+
+    /* ─── My appointments screen ─── */
+    .appt-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 48px 16px 0;
+      gap: 12px;
+    }
+    .appt-empty-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: #F0F9FA;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .appt-empty-title {
+      margin: 0;
+      color: #3B3B3B;
+      font-size: 17px;
+      font-weight: 600;
+    }
+    .appt-empty-text {
+      margin: 0;
+      color: #848484;
+      font-size: 14px;
+      line-height: 1.55;
+      max-width: 260px;
+    }
+    .appt-card {
+      padding: 16px;
+      border-radius: 18px;
+      background: #fff;
+      border: 2px solid #D9E4EA;
+      margin-bottom: 12px;
+    }
+    .appt-card__service {
+      margin: 0 0 4px;
+      color: #3B3B3B;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .appt-card__clinic {
+      margin: 0 0 10px;
+      color: #848484;
+      font-size: 12px;
+    }
+    .appt-card__meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .appt-card__date {
+      color: #128395;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .appt-card__status {
+      display: inline-flex;
+      align-items: center;
+      height: 24px;
+      padding: 0 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .appt-card__status--upcoming { background: #E0F7F6; color: #128395; }
+    .appt-card__status--past { background: #F0F4F5; color: #848484; }
+
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="screen screen--active" id="screen-booking" style="height: auto; min-height: 100vh; padding-bottom: 0;">
+
+      <!-- ── SCREEN 0: Стартовый экран ──────────────────── -->
+      <div class="booking-step booking-step--active" id="step-0" data-step="0">
+        <div class="start-hero">
+          <img class="start-logo" src="materials/img/Цветное лого.svg" alt="Иду к врачу">
+          <h1 class="start-title">Запись к врачу</h1>
+          <p class="start-subtitle">Выберите действие</p>
+        </div>
+
+        <div class="start-actions">
+          <button class="start-action-card" id="btn-go-booking" type="button">
+            <div class="start-action-icon" style="background: linear-gradient(135deg, #16D0CA, #006879);">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                <rect x="4" y="5" width="20" height="19" rx="3" stroke="white" stroke-width="2"/>
+                <path d="M4 11h20M10 4v4M18 4v4" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                <path d="M9 16h4M9 20h6" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="start-action-body">
+              <p class="start-action-title">Записаться к врачу</p>
+              <p class="start-action-desc">Выберите специалиста и удобное время</p>
+            </div>
+            <svg class="start-action-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M8 5l5 5-5 5" stroke="#128395" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          <button class="start-action-card" id="btn-go-appointments" type="button">
+            <div class="start-action-icon" style="background: linear-gradient(135deg, #f59e42, #d97706);">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                <rect x="4" y="5" width="20" height="19" rx="3" stroke="white" stroke-width="2"/>
+                <path d="M4 11h20M10 4v4M18 4v4" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                <path d="M8 16l2.5 2.5L19 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="start-action-body">
+              <p class="start-action-title">Мои записи</p>
+              <p class="start-action-desc">Просмотр, отмена и перенос визитов</p>
+            </div>
+            <svg class="start-action-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M8 5l5 5-5 5" stroke="#128395" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- TOPBAR (hidden on step-0) -->
+      <header class="topbar" id="booking-topbar" style="display:none;">
+        <button class="icon-button" type="button" id="booking-back" aria-label="Назад">
+          <img src="materials/svg/icon-arrow.svg" alt="">
+        </button>
+        <div class="step-badge">
+          <p class="step-badge__text" id="booking-badge-text">Запись к врачу</p>
+        </div>
+      </header>
+
+      <!-- PROGRESS BAR -->
+      <div class="booking-progress" id="booking-progress">
+        <div class="booking-progress__dot" data-dot="1"></div>
+        <div class="booking-progress__dot" data-dot="2"></div>
+        <div class="booking-progress__dot" data-dot="3"></div>
+        <div class="booking-progress__dot" data-dot="4"></div>
+        <div class="booking-progress__dot" data-dot="5"></div>
+        <div class="booking-progress__dot" data-dot="6"></div>
+        <div class="booking-progress__dot" data-dot="7"></div>
+      </div>
+
+      <!-- ── STEP 1: Выбор услуги ─────────────────────────── -->
+      <div class="booking-step booking-step--active" id="step-1" data-step="1">
+        <h2 class="step-title">Выберите услугу</h2>
+        <p class="step-subtitle">Укажите направление, по которому хотите записать ребёнка</p>
+
+        <div class="service-list">
+          <div class="service-card" data-service="dental" tabindex="0">
+            <div class="service-card__icon">
+              <img src="materials/svg/icon-tooth.svg" alt="">
+            </div>
+            <div class="service-card__body">
+              <p class="service-card__title">Стоматология</p>
+              <p class="service-card__desc">Осмотр, лечение, профилактика</p>
+            </div>
+            <div class="service-card__check">
+              <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+                <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="service-card" data-service="blood" tabindex="0">
+            <div class="service-card__icon">
+              <img src="materials/svg/icon-syringe.svg" alt="">
+            </div>
+            <div class="service-card__body">
+              <p class="service-card__title">Сдача анализа крови</p>
+              <p class="service-card__desc">Забор крови из вены или пальца</p>
+            </div>
+            <div class="service-card__check">
+              <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+                <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="service-card" data-service="pediatr" tabindex="0">
+            <div class="service-card__icon">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style="color:#128395">
+                <circle cx="14" cy="9" r="4" stroke="currentColor" stroke-width="2"/>
+                <path d="M6 24c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="service-card__body">
+              <p class="service-card__title">Педиатр</p>
+              <p class="service-card__desc">Плановый осмотр, консультация</p>
+            </div>
+            <div class="service-card__check">
+              <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+                <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="service-card" data-service="neuro" tabindex="0">
+            <div class="service-card__icon">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style="color:#128395">
+                <path d="M14 4C10 4 7 7 7 11c0 2.5 1.2 4.7 3 6.1V22h8v-4.9c1.8-1.4 3-3.6 3-6.1 0-4-3-7-7-7z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M11 22h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="service-card__body">
+              <p class="service-card__title">Невролог</p>
+              <p class="service-card__desc">Консультация и обследование</p>
+            </div>
+            <div class="service-card__check">
+              <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+                <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="booking-cta">
+          <button class="btn-booking" id="btn-step1-next" disabled>Выбрать город →</button>
+        </div>
+      </div>
+
+      <!-- ── STEP 2: Выбор города ────────────────────────── -->
+      <div class="booking-step" id="step-2" data-step="2">
+        <h2 class="step-title">Выберите город</h2>
+        <p class="step-subtitle">В других городах запись скоро появится</p>
+
+        <div class="selection-strip" id="strip-service">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0">
+            <circle cx="8" cy="8" r="7" stroke="#128395" stroke-width="1.5"/>
+            <path d="M5.5 8l2 2 3-3" stroke="#128395" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p class="selection-strip__text" id="strip-service-text">—</p>
+        </div>
+
+        <div class="service-list">
+          <div class="service-card service-card--selected" data-city="moscow" tabindex="0" id="city-moscow">
+            <div class="service-card__icon">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style="color:#128395">
+                <path d="M14 3C9.58 3 6 6.58 6 11c0 6.56 8 14 8 14s8-7.44 8-14c0-4.42-3.58-8-8-8z" stroke="currentColor" stroke-width="2"/>
+                <circle cx="14" cy="11" r="2.5" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="service-card__body">
+              <p class="service-card__title">Москва</p>
+              <p class="service-card__desc">1 клиника доступна</p>
+            </div>
+            <div class="service-card__check">
+              <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+                <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Другие города — недоступны -->
+          <div class="service-card" style="opacity:0.4; pointer-events:none;" tabindex="-1">
+            <div class="service-card__icon">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style="color:#848484">
+                <path d="M14 3C9.58 3 6 6.58 6 11c0 6.56 8 14 8 14s8-7.44 8-14c0-4.42-3.58-8-8-8z" stroke="currentColor" stroke-width="2"/>
+                <circle cx="14" cy="11" r="2.5" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="service-card__body">
+              <p class="service-card__title" style="color:#848484">Санкт-Петербург</p>
+              <p class="service-card__desc">Скоро</p>
+            </div>
+            <div class="service-card__check" style="border-color:#D9E4EA"></div>
+          </div>
+
+          <div class="service-card" style="opacity:0.4; pointer-events:none;" tabindex="-1">
+            <div class="service-card__icon">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style="color:#848484">
+                <path d="M14 3C9.58 3 6 6.58 6 11c0 6.56 8 14 8 14s8-7.44 8-14c0-4.42-3.58-8-8-8z" stroke="currentColor" stroke-width="2"/>
+                <circle cx="14" cy="11" r="2.5" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="service-card__body">
+              <p class="service-card__title" style="color:#848484">Казань</p>
+              <p class="service-card__desc">Скоро</p>
+            </div>
+            <div class="service-card__check" style="border-color:#D9E4EA"></div>
+          </div>
+        </div>
+
+        <div class="booking-cta">
+          <button class="btn-booking" id="btn-step2-next">Выбрать клинику →</button>
+        </div>
+      </div>
+
+      <!-- ── STEP 3: Выбор клиники ───────────────────────── -->
+      <div class="booking-step" id="step-3" data-step="3">
+        <h2 class="step-title">Выберите клинику</h2>
+
+        <div class="selection-strip" id="strip-city">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0">
+            <path d="M8 2C5.24 2 3 4.24 3 7c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5z" stroke="#128395" stroke-width="1.5"/>
+            <circle cx="8" cy="7" r="1.5" stroke="#128395" stroke-width="1.5"/>
+          </svg>
+          <p class="selection-strip__text" id="strip-city-text">Москва</p>
+        </div>
+
+        <div class="clinic-list">
+          <div class="clinic-card" data-clinic="1" tabindex="0">
+            <p class="clinic-card__name">Зубная фея</p>
+            <p class="clinic-card__addr">ул. Пушкина, д. Колотушкина</p>
+            <div class="clinic-card__meta">
+              <span class="clinic-tag">Пн–Пт 9:00–19:00</span>
+              <span class="clinic-tag">Стоматология</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="booking-cta">
+          <button class="btn-booking" id="btn-step3-clinic-next" disabled>Выбрать дату и время →</button>
+        </div>
+      </div>
+
+      <!-- ── STEP 4: Дата и время ────────────────────────── -->
+      <div class="booking-step" id="step-4" data-step="4">
+        <h2 class="step-title">Дата и время</h2>
+
+        <div class="selection-strip" id="strip-clinic">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0">
+            <path d="M8 2C5.24 2 3 4.24 3 7c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5z" stroke="#128395" stroke-width="1.5"/>
+            <circle cx="8" cy="7" r="1.5" stroke="#128395" stroke-width="1.5"/>
+          </svg>
+          <p class="selection-strip__text" id="strip-clinic-text">Зубная фея</p>
+        </div>
+
+        <!-- Mini calendar -->
+        <div style="padding: 16px; border-radius: 18px; background: #fff; border: 2px solid #D9E4EA; margin-bottom: 16px;">
+          <div class="calendar-header">
+            <button class="cal-nav" id="cal-prev">&#8249;</button>
+            <span class="calendar-month" id="cal-month-label"></span>
+            <button class="cal-nav" id="cal-next">&#8250;</button>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+
+        <!-- Time slots removed — moved to doctor step -->
+
+        <div class="booking-cta">
+          <button class="btn-booking" id="btn-step4-dt-next" disabled>Выбрать врача →</button>
+        </div>
+      </div>
+
+      <!-- ── STEP 5: Врач ─────────────────────────────────────── -->
+      <div class="booking-step" id="step-5" data-step="5">
+        <h2 class="step-title">Выберите врача</h2>
+        <div class="selection-strip" id="strip-date">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0"><rect x="2" y="3" width="12" height="11" rx="2" stroke="#128395" stroke-width="1.5"/><path d="M2 7h12M6 2v2M10 2v2" stroke="#128395" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <p class="selection-strip__text" id="strip-date-text">—</p>
+        </div>
+        <div class="doctor-list" id="doctor-list"></div>
+        <div class="booking-cta">
+          <button class="btn-booking" id="btn-step5-dr-next" disabled>Заполнить данные →</button>
+        </div>
+      </div>
+
+      <!-- ── STEP 6: Данные ─────────────────────────────────────── -->
+      <div class="booking-step" id="step-6" data-step="6">
+        <h2 class="step-title">Данные для записи</h2>
+        <p class="step-subtitle">Пожалуйста, проверьте информацию перед записью</p>
+
+        <form class="booking-form" id="booking-form" novalidate>
+          <p class="form-section-title">Родитель / Опекун</p>
+
+          <div class="form-group">
+            <label class="form-label" for="input-parent-name">ФИО родителя</label>
+            <input class="form-input" type="text" id="input-parent-name" placeholder="Иванова Мария Сергеевна" autocomplete="name">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="input-phone">Телефон</label>
+            <input class="form-input" type="tel" id="input-phone" placeholder="+7 (___) ___-__-__" autocomplete="tel">
+          </div>
+
+          <p class="form-section-title" style="margin-top:8px">Ребёнок</p>
+
+          <div class="form-group">
+            <label class="form-label" for="input-child-name">ФИО ребёнка</label>
+            <input class="form-input" type="text" id="input-child-name" placeholder="Иванов Дима Павлович">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="input-child-dob">Дата рождения</label>
+            <input class="form-input" type="date" id="input-child-dob">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="input-comment">Комментарий <span>(необязательно)</span></label>
+            <textarea class="form-input form-input--textarea" id="input-comment" placeholder="Особые пожелания или вопросы…" maxlength="300"></textarea>
+            <p class="form-hint">Не указывайте диагнозы и медицинские данные в комментарии</p>
+          </div>
+        </form>
+
+        <div class="booking-cta" style="margin-top: 16px;">
+          <button class="btn-booking" id="btn-step6-next">Проверить и подтвердить →</button>
+        </div>
+      </div>
+
+      <!-- ── STEP 7: Подтверждение ─────────────────────────────── -->
+      <div class="booking-step" id="step-7" data-step="7">
+        <h2 class="step-title">Проверьте запись</h2>
+        <p class="step-subtitle">Убедитесь, что всё верно, и нажмите «Записаться»</p>
+
+        <div class="summary-card" id="summary-card">
+          <!-- filled by JS -->
+        </div>
+
+        <div style="padding: 14px 16px; border-radius: 14px; background: #FFF8F0; border: 1px solid #FFE0C0; margin-bottom: 24px;">
+          <p style="margin: 0; color: #7A4A00; font-size: 12px; line-height: 1.55;">
+            После нажатия кнопки мы направим запрос в клинику. Запись можно отменить не позднее чем за 24 часа до визита в разделе «Мои записи».
+          </p>
+        </div>
+
+        <div class="booking-cta" style="position:static; padding: 0; margin: 0; background: transparent;">
+          <button class="btn-booking" id="btn-confirm" style="margin-bottom: 10px;">Записаться</button>
+          <button class="btn-booking btn-booking--secondary" id="btn-edit">Изменить данные</button>
+        </div>
+      </div>
+
+
+      <!-- ── SCREEN: Мои записи ─────────────────────────────────── -->
+      <div class="booking-step" id="step-appointments" data-step="appointments">
+        <div class="appt-empty" id="appt-empty-state">
+          <div class="appt-empty-icon">
+            <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+              <rect x="4" y="6" width="26" height="24" rx="4" stroke="#128395" stroke-width="2"/>
+              <path d="M4 13h26M12 5v4M22 5v4" stroke="#128395" stroke-width="2" stroke-linecap="round"/>
+              <path d="M10 20l4 4 10-8" stroke="#128395" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <p class="appt-empty-title">Записей пока нет</p>
+          <p class="appt-empty-text">Здесь появятся ваши предстоящие и прошедшие визиты к врачу</p>
+          <button class="btn-booking" id="btn-appt-go-booking" style="width:100%; margin-top:8px;">Записаться к врачу</button>
+        </div>
+        <div id="appt-list" style="display:none;"></div>
+      </div>
+
+      <!-- ── STEP 8: Успех ───────────────────────────────────── -->
+      <div class="booking-step" id="step-8" data-step="8">
+        <div class="success-screen">
+          <div class="success-icon-wrap">
+            <svg viewBox="0 0 44 44" fill="none">
+              <path d="M8 22l10 10L36 12" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h2 class="success-title">Вы записаны!</h2>
+          <p class="success-text" id="success-text">Ваша запись подтверждена. Бот напомнит за 3 часа до визита.</p>
+
+          <div class="success-remind-card" id="success-card">
+            <!-- filled by JS -->
+          </div>
+
+          <button class="btn-booking" id="btn-done" style="width:100%; margin-bottom: 12px;">На главную</button>
+          <button class="btn-booking btn-booking--secondary" id="btn-my-appointments" style="width:100%;">Мои записи</button>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <script>
+    // ─── State ──────────────────────────────────────────────────────────────
+    const state = {
+      service: null,
+      city: null,
+      clinic: null,
+      doctorId: null,
+      doctorName: null,
+      doctorSpec: null,
+      date: null,          // Date object
+      slot: null,          // "HH:MM"
+      parentName: '',
+      phone: '',
+      childName: '',
+      childDob: '',
+      comment: '',
+    };
+
+    // Restore persisted step
+    const STORAGE_KEY = 'booking_step';
+    let currentStep = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+    if (typeof currentStep === 'number' && currentStep > 7) currentStep = 0;
+
+    // ─── Data ───────────────────────────────────────────────────────────────
+    const SERVICES = {
+      dental:  'Стоматология',
+      blood:   'Сдача анализа крови',
+      pediatr: 'Педиатр',
+      neuro:   'Невролог',
+    };
+    const CLINICS = {
+      '1': { name: 'Зубная фея', addr: 'ул. Пушкина, д. Колотушкина' },
+    };
+
+
+    const DOCTORS = [
+      {
+        id: 1,
+        name: 'Петрова Анна Викторовна',
+        spec: 'Стоматолог-терапевт',
+        exp: 'Стаж: 12 лет',
+        age: 'С 3 лет',
+        color: '#16a085',
+        initials: 'АП',
+        slots: ['09:00','09:30','11:00','14:00','15:30','17:00'],
+      },
+      {
+        id: 2,
+        name: 'Смирнов Дмитрий Олегович',
+        spec: 'Стоматолог-хирург',
+        exp: 'Стаж: 8 лет',
+        age: 'С 12 лет',
+        color: '#2980b9',
+        initials: 'ДС',
+        slots: ['10:00','10:30','13:00','16:00','16:30'],
+      },
+    ];
+
+    // Mock time slots per weekday (0=Sun busy)
+    function getSlots(date) {
+      if (!date) return [];
+      const day = date.getDay();
+      if (day === 0) return []; // Воскресенье
+      const base = ['09:00','09:30','10:00','10:30','11:00','11:30','14:00','14:30','15:00','15:30','16:00','17:00'];
+      // pseudo-random busy
+      const seed = date.getDate() + date.getMonth() * 31;
+      return base.map((t, i) => ({ time: t, busy: (seed + i * 7) % 5 === 0 }));
+    }
+
+    // ─── Calendar state ──────────────────────────────────────────────────────
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    let calYear = today.getFullYear();
+    let calMonth = today.getMonth();
+
+    const MONTHS_RU = ['Январь','Февраль','Март','Апрель','Май','Июнь',
+                       'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+    const DAYS_SHORT = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+    function renderCalendar() {
+      const label = document.getElementById('cal-month-label');
+      label.textContent = `${MONTHS_RU[calMonth]} ${calYear}`;
+
+      const grid = document.getElementById('cal-grid');
+      grid.innerHTML = '';
+
+      // Day labels
+      DAYS_SHORT.forEach(d => {
+        const el = document.createElement('div');
+        el.className = 'cal-day-label';
+        el.textContent = d;
+        grid.appendChild(el);
+      });
+
+      // First weekday (Mon=0)
+      const first = new Date(calYear, calMonth, 1);
+      let startOffset = first.getDay() - 1;
+      if (startOffset < 0) startOffset = 6;
+
+      for (let i = 0; i < startOffset; i++) {
+        const el = document.createElement('div');
+        el.className = 'cal-day cal-day--empty';
+        grid.appendChild(el);
+      }
+
+      const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+      for (let d = 1; d <= daysInMonth; d++) {
+        const date = new Date(calYear, calMonth, d);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'cal-day';
+        btn.textContent = d;
+
+        const isPast = date < today;
+        const isSun = date.getDay() === 0;
+        if (isPast || isSun) {
+          btn.disabled = true;
+        } else {
+          btn.addEventListener('click', () => selectDate(date));
+        }
+
+        if (date.toDateString() === today.toDateString()) btn.classList.add('cal-day--today');
+        if (state.date && date.toDateString() === state.date.toDateString()) btn.classList.add('cal-day--selected');
+
+        grid.appendChild(btn);
+      }
+    }
+
+    function selectDate(date) {
+      state.date = date;
+      state.slot = null;
+      renderCalendar();
+      renderSlots();
+      updateStep4CTA();
+    }
+
+    function renderSlots() {
+      const label = document.getElementById('slots-day-label');
+      const grid = document.getElementById('slots-grid');
+      if (!label || !grid) return;
+
+      if (!state.date) {
+        label.textContent = 'Выберите дату';
+        grid.innerHTML = '';
+        return;
+      }
+
+      const d = state.date;
+      const dateStr = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+      label.textContent = `Время — ${dateStr}`;
+
+      const slots = getSlots(d);
+      if (slots.length === 0) {
+        grid.innerHTML = '<p style="color:#848484;font-size:13px;grid-column:1/-1">Нет доступных слотов</p>';
+        return;
+      }
+
+      grid.innerHTML = '';
+      slots.forEach(s => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'slot-btn' + (s.busy ? ' slot-btn--busy' : '') + (state.slot === s.time && !s.busy ? ' slot-btn--selected' : '');
+        btn.textContent = s.time;
+        if (!s.busy) {
+          btn.addEventListener('click', () => {
+            state.slot = s.time;
+            renderSlots();
+            updateStep4CTA();
+          });
+        } else {
+          btn.disabled = true;
+        }
+        grid.appendChild(btn);
+      });
+    }
+
+    function updateStep4CTA() {
+      document.getElementById('btn-step4-dt-next').disabled = !state.date;
+    }
+
+    // ─── Summary ─────────────────────────────────────────────────────────────
+    function buildSummary() {
+      const d = state.date;
+      const dateStr = d ? d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'long' }) : '—';
+
+      const rows = [
+        {
+          icon: `<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 8l2 2 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+          label: 'Услуга',
+          value: SERVICES[state.service] || '—'
+        },
+        {
+          icon: `<svg viewBox="0 0 16 16" fill="none"><path d="M8 2C5.24 2 3 4.24 3 7c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5z" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="7" r="1.5" stroke="currentColor" stroke-width="1.5"/></svg>`,
+          label: 'Клиника',
+          value: state.clinic ? `${CLINICS[state.clinic].name}\n${CLINICS[state.clinic].addr}` : '—'
+        },
+        {
+          icon: `<svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2 7h12M6 2v2M10 2v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+          label: 'Дата и время',
+          value: `${dateStr}\n${state.slot}`
+        },
+        {
+          icon: `<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M2 14c0-2.76 2.24-5 6-5s6 2.24 6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+          label: 'Врач',
+          value: state.doctorName ? `${state.doctorName}\n${state.doctorSpec}` : '—'
+        },
+        {
+          icon: `<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="6" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M3 14c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+          label: 'Родитель',
+          value: `${state.parentName}\n${state.phone}`
+        },
+        {
+          icon: `<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M4 14c0-2.21 1.79-4 4-4s4 1.79 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+          label: 'Ребёнок',
+          value: `${state.childName}\nДата рождения: ${state.childDob ? formatDob(state.childDob) : '—'}`
+        },
+      ];
+
+      if (state.comment) {
+        rows.push({
+          icon: `<svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+          label: 'Комментарий',
+          value: state.comment
+        });
+      }
+
+      document.getElementById('summary-card').innerHTML = rows.map(r => `
+        <div class="summary-row">
+          <div class="summary-icon">${r.icon}</div>
+          <div>
+            <p class="summary-label">${r.label}</p>
+            <p class="summary-value">${r.value.replace(/\n/g, '<br>')}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function formatDob(iso) {
+      if (!iso) return '—';
+      const [y,m,d] = iso.split('-');
+      return `${d}.${m}.${y}`;
+    }
+
+    function buildSuccessCard() {
+      const d = state.date;
+      const dateStr = d ? d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'long' }) : '—';
+      document.getElementById('success-card').innerHTML = `
+        <p class="success-remind-label">Ваша запись</p>
+        <p class="success-remind-text" style="margin-bottom:8px">${SERVICES[state.service]}</p>
+        <p class="success-remind-text" style="color:#848484; font-size:13px; font-weight:400; margin-bottom:4px">${CLINICS[state.clinic]?.name}</p>
+        <p class="success-remind-text" style="color:#128395">${dateStr}, ${state.slot}</p>
+      `;
+      document.getElementById('success-text').textContent =
+        `Запись подтверждена. Бот напомнит вам за 3 часа до визита — ${state.slot}.`;
+    }
+
+    // ─── Step navigation ─────────────────────────────────────────────────────
+    const BADGE_LABELS = {
+      1: 'Услуга',
+      2: 'Город',
+      3: 'Клиника',
+      4: 'Дата',
+      5: 'Врач',
+      6: 'Ваши данные',
+      7: 'Подтверждение',
+      8: 'Запись',
+      appointments: 'Мои записи',
+    };
+
+    function goToStep(n, back = false) {
+      const current = document.querySelector('.booking-step--active');
+      if (current) current.classList.remove('booking-step--active');
+
+      const next = document.getElementById(typeof n === 'number' ? `step-${n}` : `step-${n}`);
+      if (back) next.classList.add('booking-step--back');
+      else next.classList.remove('booking-step--back');
+      next.classList.add('booking-step--active');
+
+      // remove back class after animation
+      if (back) setTimeout(() => next.classList.remove('booking-step--back'), 350);
+
+      currentStep = n;
+      localStorage.setItem(STORAGE_KEY, n);
+
+      document.getElementById('booking-badge-text').textContent = BADGE_LABELS[n] || 'Запись к врачу';
+
+      // Progress dots
+      const dots = document.querySelectorAll('.booking-progress__dot');
+      const totalSteps = 7;
+      dots.forEach((dot, i) => {
+        const dotStep = i + 1;
+        dot.classList.remove('booking-progress__dot--active', 'booking-progress__dot--done');
+        if (dotStep === Math.min(n, totalSteps)) dot.classList.add('booking-progress__dot--active');
+        else if (dotStep < Math.min(n, totalSteps)) dot.classList.add('booking-progress__dot--done');
+      });
+
+      // Hide topbar+progress on step-0 and success; show on others
+      const hideChrome = (n === 0 || n === 8);
+      document.getElementById('booking-progress').style.display = hideChrome ? 'none' : 'flex';
+      document.getElementById('booking-topbar').style.display = hideChrome ? 'none' : '';
+      // appointments screen also hides progress
+      if (n === 'appointments') {
+        document.getElementById('booking-progress').style.display = 'none';
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ─── Step 1 logic ─────────────────────────────────────────────────────────
+    document.querySelectorAll('.service-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.service-card').forEach(c => c.classList.remove('service-card--selected'));
+        card.classList.add('service-card--selected');
+        state.service = card.dataset.service;
+        document.getElementById('btn-step1-next').disabled = false;
+      });
+    });
+
+    document.getElementById('btn-step1-next').addEventListener('click', () => {
+      document.getElementById('strip-service-text').textContent = SERVICES[state.service];
+      goToStep(2);
+    });
+
+    // ─── Step 2 logic (город) ─────────────────────────────────────────────────
+    state.city = 'moscow';
+    document.getElementById('btn-step2-next').addEventListener('click', () => {
+      goToStep(3);
+    });
+
+    // ─── Step 3 logic (клиника) ───────────────────────────────────────────────
+    document.querySelectorAll('.clinic-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.clinic-card').forEach(c => c.classList.remove('clinic-card--selected'));
+        card.classList.add('clinic-card--selected');
+        state.clinic = card.dataset.clinic;
+        document.getElementById('btn-step3-clinic-next').disabled = false;
+      });
+    });
+
+    document.getElementById('btn-step3-clinic-next').addEventListener('click', () => {
+      const c = CLINICS[state.clinic];
+      document.getElementById('strip-clinic-text').textContent = `${c.name} · ${c.addr}`;
+      renderCalendar();
+      renderSlots();
+      goToStep(4);
+    });
+
+    // ─── Step 4 logic (календарь) ─────────────────────────────────────────────
+    document.getElementById('cal-prev').addEventListener('click', () => {
+      const now = new Date();
+      if (calYear === now.getFullYear() && calMonth === now.getMonth()) return;
+      calMonth--;
+      if (calMonth < 0) { calMonth = 11; calYear--; }
+      renderCalendar();
+    });
+    document.getElementById('cal-next').addEventListener('click', () => {
+      calMonth++;
+      if (calMonth > 11) { calMonth = 0; calYear++; }
+      renderCalendar();
+    });
+
+    document.getElementById('btn-step4-dt-next').addEventListener('click', () => { renderDoctors(); goToStep(5); });
+    // ─── Step 5 logic (врач) ──────────────────────────────────────────────────────
+    function renderDoctors() {
+      const d = state.date;
+      if (d) {
+        const dateStr = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'long' });
+        document.getElementById('strip-date-text').textContent = dateStr;
+      }
+
+      const list = document.getElementById('doctor-list');
+      list.innerHTML = '';
+
+      DOCTORS.forEach(doc => {
+        const card = document.createElement('div');
+        card.className = 'doctor-card' + (state.doctorId === doc.id ? ' doctor-card--selected' : '');
+        card.innerHTML = `
+          <div class="doctor-card__top">
+            <div class="doctor-card__avatar" style="background:${doc.color}">
+              ${doc.initials}
+              <div class="doctor-card__avatar-dot"></div>
+            </div>
+            <div class="doctor-card__info">
+              <p class="doctor-card__name">${doc.name}</p>
+              <p class="doctor-card__spec">${doc.spec}</p>
+            </div>
+            <span class="doctor-card__price">Бесплатно</span>
+          </div>
+          <div class="doctor-card__tags">
+            <span class="doctor-tag">
+              <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/><path d="M6 3.5v3l1.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+              ${doc.exp}
+            </span>
+            <span class="doctor-tag">
+              <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="4.5" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M2 11c0-2.21 1.79-4 4-4s4 1.79 4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+              ${doc.age}
+            </span>
+            <span class="doctor-tag">
+              <svg viewBox="0 0 12 12" fill="none"><path d="M6 1.5C4.07 1.5 2.5 3.07 2.5 5c0 2.63 3.5 6.5 3.5 6.5S9.5 7.63 9.5 5c0-1.93-1.57-3.5-3.5-3.5z" stroke="currentColor" stroke-width="1.2"/></svg>
+              ул. Пушкина, д. Колотушкина
+            </span>
+          </div>
+          <p class="doctor-slots-label">Доступное время:</p>
+          <div class="doctor-slots">
+            ${doc.slots.map(t => `<button class="doctor-slot${state.doctorId === doc.id && state.slot === t ? ' doctor-slot--selected' : ''}" data-doctor="${doc.id}" data-time="${t}">${t}</button>`).join('')}
+          </div>
+        `;
+
+        // Slot click
+        card.querySelectorAll('.doctor-slot').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            state.doctorId = doc.id;
+            state.doctorName = doc.name;
+            state.doctorSpec = doc.spec;
+            state.slot = btn.dataset.time;
+            renderDoctors();
+            document.getElementById('btn-step5-dr-next').disabled = false;
+          });
+        });
+
+        list.appendChild(card);
+      });
+    }
+
+    document.getElementById('btn-step5-dr-next').addEventListener('click', () => goToStep(6));
+
+
+
+    // ─── Step 6 logic (форма) ─────────────────────────────────────────────────
+    // Phone mask
+    const phoneInput = document.getElementById('input-phone');
+    phoneInput.addEventListener('input', (e) => {
+      let v = e.target.value.replace(/\D/g,'');
+      if (v.startsWith('8')) v = '7' + v.slice(1);
+      if (v.startsWith('7')) {
+        v = v.slice(0, 11);
+        let out = '+7';
+        if (v.length > 1) out += ' (' + v.slice(1, 4);
+        if (v.length >= 4) out += ') ' + v.slice(4, 7);
+        if (v.length >= 7) out += '-' + v.slice(7, 9);
+        if (v.length >= 9) out += '-' + v.slice(9, 11);
+        e.target.value = out;
+      }
+    });
+
+    function validateForm() {
+      const parent = document.getElementById('input-parent-name').value.trim();
+      const phone = document.getElementById('input-phone').value.trim();
+      const child = document.getElementById('input-child-name').value.trim();
+      const dob = document.getElementById('input-child-dob').value;
+      return parent.length >= 2 && phone.length >= 11 && child.length >= 2 && dob;
+    }
+
+    document.getElementById('btn-step6-next').addEventListener('click', () => {
+      // Validate
+      const fields = [
+        { el: document.getElementById('input-parent-name'), min: 2 },
+        { el: document.getElementById('input-phone'), min: 11 },
+        { el: document.getElementById('input-child-name'), min: 2 },
+        { el: document.getElementById('input-child-dob'), min: 1 },
+      ];
+      let valid = true;
+      fields.forEach(f => {
+        const v = f.el.value.trim().replace(/\D/g,'').length >= f.min
+               || f.el.value.trim().length >= f.min;
+        if (!v) { f.el.classList.add('form-input--error'); valid = false; }
+        else f.el.classList.remove('form-input--error');
+      });
+      if (!valid) return;
+
+      state.parentName = document.getElementById('input-parent-name').value.trim();
+      state.phone = document.getElementById('input-phone').value.trim();
+      state.childName = document.getElementById('input-child-name').value.trim();
+      state.childDob = document.getElementById('input-child-dob').value;
+      state.comment = document.getElementById('input-comment').value.trim();
+
+      buildSummary();
+      goToStep(7);
+    });
+
+    // ─── Step 7 logic (подтверждение) ────────────────────────────────────────
+    document.getElementById('btn-edit').addEventListener('click', () => goToStep(6, true));
+
+    document.getElementById('btn-confirm').addEventListener('click', () => {
+      const btn = document.getElementById('btn-confirm');
+      btn.disabled = true;
+      btn.textContent = 'Отправка…';
+
+      // Simulate API call
+      setTimeout(() => {
+        buildSuccessCard();
+        // Save for appointments screen
+        const d = state.date;
+        window._completedAppointment = {
+          service: SERVICES[state.service] || '',
+          clinic: CLINICS[state.clinic]?.name || '',
+          doctor: state.doctorName || '',
+          date: d ? d.toLocaleDateString('ru-RU', {day:'numeric', month:'long', weekday:'short'}) : '',
+          time: state.slot || '',
+        };
+        goToStep(8);
+        localStorage.removeItem(STORAGE_KEY);
+      }, 1200);
+    });
+
+    // ─── Step 6 logic ─────────────────────────────────────────────────────────
+    document.getElementById('btn-done').addEventListener('click', () => {
+      goToStep(0);
+    });
+    document.getElementById('btn-my-appointments').addEventListener('click', () => {
+      renderAppointments();
+      goToStep('appointments');
+    });
+
+    // ─── Back button logic ────────────────────────────────────────────────────
+    document.getElementById('booking-back').addEventListener('click', () => {
+      if (currentStep === 'appointments' || currentStep <= 1) {
+        goToStep(0, true);
+        return;
+      }
+      goToStep(currentStep - 1, true);
+    });
+
+
+    // ─── Step 0 (start screen) ────────────────────────────────────────────────
+    document.getElementById('btn-go-booking').addEventListener('click', () => goToStep(1));
+    document.getElementById('btn-go-appointments').addEventListener('click', () => {
+      renderAppointments();
+      goToStep('appointments');
+    });
+
+    // ─── Appointments screen ──────────────────────────────────────────────────
+    function renderAppointments() {
+      // Show completed booking if any
+      const list = document.getElementById('appt-list');
+      const empty = document.getElementById('appt-empty-state');
+      if (window._completedAppointment) {
+        const a = window._completedAppointment;
+        empty.style.display = 'none';
+        list.style.display = 'block';
+        list.innerHTML = `
+          <div class="appt-card">
+            <p class="appt-card__service">${a.service}</p>
+            <p class="appt-card__clinic">${a.clinic} · ${a.doctor}</p>
+            <div class="appt-card__meta">
+              <span class="appt-card__date">${a.date}, ${a.time}</span>
+              <span class="appt-card__status appt-card__status--upcoming">Предстоит</span>
+            </div>
+          </div>
+        `;
+      } else {
+        empty.style.display = '';
+        list.style.display = 'none';
+      }
+    }
+
+    document.getElementById('btn-appt-go-booking').addEventListener('click', () => goToStep(1));
+
+    // ─── Init ─────────────────────────────────────────────────────────────────
+    const _params = new URLSearchParams(window.location.search);
+    if (_params.get('screen') === 'appointments') {
+      renderAppointments();
+      goToStep('appointments');
+    } else {
+      goToStep(0);
+    }
+  </script>
+</body>
+</html>
