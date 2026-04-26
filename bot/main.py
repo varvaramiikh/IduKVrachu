@@ -196,6 +196,7 @@ async def start_handler(message: types.Message):
     name = message.from_user.first_name or "друг"
 
     if user.consent_timestamp:
+        await enable_webapp_button(message.from_user.id)
         await message.answer(
             f"Добро пожаловать, {name}! 👋\n\n"
             "Вы можете пользоваться всеми функциями сервиса.",
@@ -271,6 +272,7 @@ async def consent_agree_handler(callback: types.CallbackQuery):
             await db.commit()
             logger.info("consent: принято telegram_id=%s", callback.from_user.id)
 
+    await enable_webapp_button(callback.from_user.id)
     await callback.message.edit_text(
         "✅ Согласие на обработку персональных данных принято.",
         parse_mode="HTML",
@@ -316,6 +318,16 @@ def get_main_kb():
     ]
     return InlineKeyboardMarkup(inline_keyboard=kb)
 
+async def enable_webapp_button(chat_id: int):
+    if is_https_url(settings.WEB_APP_URL):
+        await bot.set_chat_menu_button(
+            chat_id=chat_id,
+            menu_button=types.MenuButtonWebApp(
+                text="Записаться",
+                web_app=WebAppInfo(url=settings.WEB_APP_URL),
+            ),
+        )
+
 async def main():
     logger.info("Starting bot...")
     log_environment(logger)
@@ -329,16 +341,12 @@ async def main():
         ]),
     )
 
-    if is_https_url(settings.WEB_APP_URL):
-        await call_with_retry(
-            "set_chat_menu_button",
-            lambda: bot.set_chat_menu_button(
-                menu_button=types.MenuButtonWebApp(
-                    text="Записаться",
-                    web_app=WebAppInfo(url=settings.WEB_APP_URL),
-                )
-            ),
-        )
+    await call_with_retry(
+        "set_chat_menu_button",
+        lambda: bot.set_chat_menu_button(
+            menu_button=types.MenuButtonCommands()
+        ),
+    )
 
     scheduler.start()
     logger.info("=== Bot готов к работе ===")
