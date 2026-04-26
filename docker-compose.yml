@@ -17,6 +17,7 @@ services:
   bot:
     build: .
     container_name: idukvrachu_bot
+    restart: unless-stopped
     volumes:
       - db_data:/app/data
     env_file:
