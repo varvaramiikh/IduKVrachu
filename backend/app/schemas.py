@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import List, Optional
 from pydantic import BaseModel
 
@@ -72,6 +72,18 @@ class Appointment(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ProfileSaveRequest(BaseModel):
+    parent_fio: str
+    phone: str
+    child_fio: str
+    child_birth_date: date
+
+class ProfileResponse(BaseModel):
+    parent_fio: Optional[str] = None
+    phone: Optional[str] = None
+    child_fio: Optional[str] = None
+    child_birth_date: Optional[date] = None
 
 class SupportTicketCreate(BaseModel):
     message: str

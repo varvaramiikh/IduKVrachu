@@ -7,7 +7,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from typing import List, Optional
 import json
 import os
@@ -19,7 +19,7 @@ from alembic.config import Config
 from .database import get_db, ensure_storage
 from .seed import seed_if_empty
 from .logging_utils import configure_logging, log_environment, log_settings
-from .models import User, City, Clinic, Service, Appointment, SupportTicket, ContentModule, ContentItem, Purchase, Progress
+from .models import User, City, Clinic, Service, Appointment, SupportTicket, ContentModule, ContentItem, Purchase, Progress, ParentProfile, ChildProfile
 from .schemas import (
     User as UserSchema,
     City as CitySchema,
@@ -29,7 +29,9 @@ from .schemas import (
     AppointmentCreate,
     Appointment as AppointmentSchema,
     SupportTicketCreate,
-    SupportTicket as SupportTicketSchema
+    SupportTicket as SupportTicketSchema,
+    ProfileSaveRequest,
+    ProfileResponse,
 )
 from .auth import validate_init_data
 from .mis import mis_provider
@@ -257,6 +259,50 @@ async def accept_consent(version: str, user: User = Depends(get_current_user), d
                     exc_info=True,
                 )
 
+    return {"status": "ok"}
+
+
+@app.get("/api/profile", response_model=ProfileResponse)
+async def get_profile(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(ParentProfile)
+        .where(ParentProfile.user_id == user.id)
+        .options(selectinload(ParentProfile.children))
+    )
+    profile = result.scalar_one_or_none()
+    if not profile:
+        return ProfileResponse()
+    child = profile.children[0] if profile.children else None
+    return ProfileResponse(
+        parent_fio=profile.fio,
+        phone=profile.phone,
+        child_fio=child.fio if child else None,
+        child_birth_date=child.birth_date if child else None,
+    )
+
+
+@app.put("/api/profile")
+async def save_profile(data: ProfileSaveRequest, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(ParentProfile)
+        .where(ParentProfile.user_id == user.id)
+        .options(selectinload(ParentProfile.children))
+    )
+    profile = result.scalar_one_or_none()
+    if not profile:
+        profile = ParentProfile(user_id=user.id, fio=data.parent_fio, phone=data.phone)
+        db.add(profile)
+        await db.flush()
+        db.add(ChildProfile(parent_id=profile.id, fio=data.child_fio, birth_date=data.child_birth_date))
+    else:
+        profile.fio = data.parent_fio
+        profile.phone = data.phone
+        if profile.children:
+            profile.children[0].fio = data.child_fio
+            profile.children[0].birth_date = data.child_birth_date
+        else:
+            db.add(ChildProfile(parent_id=profile.id, fio=data.child_fio, birth_date=data.child_birth_date))
+    await db.commit()
     return {"status": "ok"}
 
 

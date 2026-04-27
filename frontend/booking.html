@@ -566,6 +566,39 @@
       font-size: 11px;
     }
 
+    /* Saved profile banner */
+    .profile-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: #E0F7F6;
+      border: 1px solid #16D0CA55;
+      margin-bottom: 6px;
+    }
+    .profile-banner__text {
+      margin: 0;
+      color: #128395;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    .profile-banner__clear {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      color: #128395;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 6px;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
     /* Loader dots */
     .loader {
       display: flex;
@@ -868,11 +901,11 @@
 
         <div class="start-actions">
           <button class="start-action-card" id="btn-go-booking" type="button">
-            <div class="start-action-icon" style="background: linear-gradient(135deg, #16D0CA, #006879);">
+            <div class="start-action-icon" style="background: #F0F9FA;">
               <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                <rect x="4" y="5" width="20" height="19" rx="3" stroke="white" stroke-width="2"/>
-                <path d="M4 11h20M10 4v4M18 4v4" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                <path d="M9 16h4M9 20h6" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                <rect x="4" y="5" width="20" height="19" rx="3" stroke="#128395" stroke-width="2"/>
+                <path d="M4 11h20M10 4v4M18 4v4" stroke="#128395" stroke-width="2" stroke-linecap="round"/>
+                <path d="M14 14v6M11 17h6" stroke="#128395" stroke-width="2" stroke-linecap="round"/>
               </svg>
             </div>
             <div class="start-action-body">
@@ -885,11 +918,11 @@
           </button>
 
           <button class="start-action-card" id="btn-go-appointments" type="button">
-            <div class="start-action-icon" style="background: linear-gradient(135deg, #f59e42, #d97706);">
+            <div class="start-action-icon" style="background: #F0F9FA;">
               <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                <rect x="4" y="5" width="20" height="19" rx="3" stroke="white" stroke-width="2"/>
-                <path d="M4 11h20M10 4v4M18 4v4" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                <path d="M8 16l2.5 2.5L19 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M9 6H7a2 2 0 00-2 2v15a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-2" stroke="#128395" stroke-width="2" stroke-linecap="round"/>
+                <rect x="9" y="3" width="10" height="5" rx="1.5" stroke="#128395" stroke-width="2"/>
+                <path d="M11 16l2 2 5-5" stroke="#128395" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
             <div class="start-action-body">
@@ -1144,6 +1177,11 @@
         <h2 class="step-title">Данные для записи</h2>
         <p class="step-subtitle">Пожалуйста, проверьте информацию перед записью</p>
 
+        <div class="profile-banner" id="profile-banner" style="display:none;">
+          <p class="profile-banner__text">Данные загружены из сохранённого профиля</p>
+          <button class="profile-banner__clear" type="button" id="btn-clear-profile">Очистить</button>
+        </div>
+
         <form class="booking-form" id="booking-form" novalidate>
           <p class="form-section-title">Родитель / Опекун</p>
 
@@ -1196,8 +1234,8 @@
           </p>
         </div>
 
-        <div class="booking-cta" style="position:static; padding: 0; margin: 0; background: transparent;">
-          <button class="btn-booking" id="btn-confirm" style="margin-bottom: 10px;">Записаться</button>
+        <div class="booking-cta" style="display:flex; flex-direction:column; gap:10px;">
+          <button class="btn-booking" id="btn-confirm">Записаться</button>
           <button class="btn-booking btn-booking--secondary" id="btn-edit">Изменить данные</button>
         </div>
       </div>
@@ -1244,6 +1282,82 @@
   </main>
 
   <script>
+    // ─── Profile (saved user data) ──────────────────────────────────────────
+    const PROFILE_KEY = 'booking_profile';
+
+    function getTgInitData() {
+      return window.Telegram?.WebApp?.initData || '';
+    }
+
+    function _profileFromLocalStorage() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(PROFILE_KEY));
+        if (!raw) return null;
+        // normalize old localStorage keys to API keys
+        return {
+          parent_fio: raw.parent_fio || raw.parentName || '',
+          phone: raw.phone || '',
+          child_fio: raw.child_fio || raw.childName || '',
+          child_birth_date: raw.child_birth_date || raw.childDob || '',
+        };
+      } catch { return null; }
+    }
+
+    async function fetchProfile() {
+      const initData = getTgInitData();
+      if (!initData) return _profileFromLocalStorage();
+      try {
+        const res = await fetch('/api/profile', {
+          headers: { 'X-Tg-Init-Data': initData },
+        });
+        if (!res.ok) return null;
+        return await res.json();
+      } catch { return null; }
+    }
+
+    async function persistProfile(data) {
+      const initData = getTgInitData();
+      if (!initData) {
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(data));
+        return;
+      }
+      try {
+        await fetch('/api/profile', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Tg-Init-Data': initData,
+          },
+          body: JSON.stringify(data),
+        });
+      } catch {}
+    }
+
+    function fillFormFromProfile(profile) {
+      document.getElementById('input-parent-name').value = profile.parent_fio || '';
+      document.getElementById('input-phone').value = profile.phone || '';
+      document.getElementById('input-child-name').value = profile.child_fio || '';
+      document.getElementById('input-child-dob').value = profile.child_birth_date || '';
+    }
+
+    async function clearProfile() {
+      localStorage.removeItem(PROFILE_KEY);
+      ['input-parent-name','input-phone','input-child-name','input-child-dob'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('profile-banner').style.display = 'none';
+      const initData = getTgInitData();
+      if (initData) {
+        try {
+          await fetch('/api/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-Tg-Init-Data': initData },
+            body: JSON.stringify({ parent_fio: '', phone: '', child_fio: '', child_birth_date: '2000-01-01' }),
+          });
+        } catch {}
+      }
+    }
+
     // ─── State ──────────────────────────────────────────────────────────────
     const state = {
       service: null,
@@ -1513,15 +1627,14 @@
     };
 
     function goToStep(n, back = false) {
-      document.querySelectorAll('.booking-step--active').forEach(el => el.classList.remove('booking-step--active'));
+      document.querySelectorAll('.booking-step--active').forEach(el => {
+        el.classList.remove('booking-step--active', 'booking-step--back');
+      });
 
       const next = document.getElementById(typeof n === 'number' ? `step-${n}` : `step-${n}`);
       if (back) next.classList.add('booking-step--back');
       else next.classList.remove('booking-step--back');
       next.classList.add('booking-step--active');
-
-      // remove back class after animation
-      if (back) setTimeout(() => next.classList.remove('booking-step--back'), 350);
 
       currentStep = n;
       localStorage.setItem(STORAGE_KEY, n);
@@ -1545,6 +1658,18 @@
       // appointments screen also hides progress
       if (n === 'appointments') {
         document.getElementById('booking-progress').style.display = 'none';
+      }
+
+      // Pre-fill form from saved profile when entering step 6
+      if (n === 6) {
+        fetchProfile().then(profile => {
+          if (profile && (profile.parent_fio || profile.child_fio)) {
+            fillFormFromProfile(profile);
+            document.getElementById('profile-banner').style.display = 'flex';
+          } else {
+            document.getElementById('profile-banner').style.display = 'none';
+          }
+        });
       }
 
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1696,7 +1821,7 @@
       return parent.length >= 2 && phone.length >= 11 && child.length >= 2 && dob;
     }
 
-    document.getElementById('btn-step6-next').addEventListener('click', () => {
+    document.getElementById('btn-step6-next').addEventListener('click', async () => {
       // Validate
       const fields = [
         { el: document.getElementById('input-parent-name'), min: 2 },
@@ -1719,6 +1844,12 @@
       state.childDob = document.getElementById('input-child-dob').value;
       state.comment = document.getElementById('input-comment').value.trim();
 
+      await persistProfile({
+        parent_fio: state.parentName,
+        phone: state.phone,
+        child_fio: state.childName,
+        child_birth_date: state.childDob,
+      });
       buildSummary();
       goToStep(7);
     });
@@ -1800,6 +1931,7 @@
     }
 
     document.getElementById('btn-appt-go-booking').addEventListener('click', () => goToStep(1));
+    document.getElementById('btn-clear-profile').addEventListener('click', clearProfile);
 
     // ─── Init ─────────────────────────────────────────────────────────────────
     const _params = new URLSearchParams(window.location.search);
