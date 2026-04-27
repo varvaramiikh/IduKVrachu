@@ -1319,18 +1319,20 @@
       const initData = getTgInitData();
       if (!initData) {
         localStorage.setItem(PROFILE_KEY, JSON.stringify(data));
-        return;
+        return null;
       }
       try {
-        await fetch('/api/profile', {
+        const res = await fetch('/api/profile', {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Tg-Init-Data': initData,
-          },
+          headers: { 'Content-Type': 'application/json', 'X-Tg-Init-Data': initData },
           body: JSON.stringify(data),
         });
+        if (res.ok) {
+          const json = await res.json();
+          return json.child_id || null;
+        }
       } catch {}
+      return null;
     }
 
     function fillFormFromProfile(profile) {
@@ -1373,7 +1375,11 @@
       childName: '',
       childDob: '',
       comment: '',
+      childId: null,       // DB id из ChildProfile
     };
+
+    // Маппинг ключей услуг → service_id из БД (по seed-данным)
+    const SERVICE_IDS = { dental: 1, blood: 3, pediatr: 1, neuro: 1 };
 
     // Restore persisted step
     const STORAGE_KEY = 'booking_step';
@@ -1665,6 +1671,7 @@
         fetchProfile().then(profile => {
           if (profile && (profile.parent_fio || profile.child_fio)) {
             fillFormFromProfile(profile);
+            state.childId = profile.child_id || null;
             document.getElementById('profile-banner').style.display = 'flex';
           } else {
             document.getElementById('profile-banner').style.display = 'none';
@@ -1844,12 +1851,13 @@
       state.childDob = document.getElementById('input-child-dob').value;
       state.comment = document.getElementById('input-comment').value.trim();
 
-      await persistProfile({
+      const savedChildId = await persistProfile({
         parent_fio: state.parentName,
         phone: state.phone,
         child_fio: state.childName,
         child_birth_date: state.childDob,
       });
+      if (savedChildId) state.childId = savedChildId;
       buildSummary();
       goToStep(7);
     });
@@ -1857,26 +1865,42 @@
     // ─── Step 7 logic (подтверждение) ────────────────────────────────────────
     document.getElementById('btn-edit').addEventListener('click', () => goToStep(6, true));
 
-    document.getElementById('btn-confirm').addEventListener('click', () => {
+    document.getElementById('btn-confirm').addEventListener('click', async () => {
       const btn = document.getElementById('btn-confirm');
       btn.disabled = true;
       btn.textContent = 'Отправка…';
 
-      // Simulate API call
-      setTimeout(() => {
-        buildSuccessCard();
-        // Save for appointments screen
-        const d = state.date;
-        window._completedAppointment = {
-          service: SERVICES[state.service] || '',
-          clinic: CLINICS[state.clinic]?.name || '',
-          doctor: state.doctorName || '',
-          date: d ? d.toLocaleDateString('ru-RU', {day:'numeric', month:'long', weekday:'short'}) : '',
-          time: state.slot || '',
-        };
-        goToStep(8);
-        localStorage.removeItem(STORAGE_KEY);
-      }, 1200);
+      const initData = getTgInitData();
+      if (initData && state.childId) {
+        const dt = new Date(state.date);
+        const [h, m] = state.slot.split(':');
+        dt.setHours(parseInt(h), parseInt(m), 0, 0);
+        try {
+          await fetch('/api/appointments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Tg-Init-Data': initData },
+            body: JSON.stringify({
+              clinic_id: parseInt(state.clinic),
+              service_id: SERVICE_IDS[state.service] || 1,
+              child_id: state.childId,
+              slot_datetime: dt.toISOString(),
+              comment: state.comment || null,
+            }),
+          });
+        } catch {}
+      }
+
+      buildSuccessCard();
+      const d = state.date;
+      window._completedAppointment = {
+        service: SERVICES[state.service] || '',
+        clinic: CLINICS[state.clinic]?.name || '',
+        doctor: state.doctorName || '',
+        date: d ? d.toLocaleDateString('ru-RU', {day:'numeric', month:'long', weekday:'short'}) : '',
+        time: state.slot || '',
+      };
+      goToStep(8);
+      localStorage.removeItem(STORAGE_KEY);
     });
 
     // ─── Step 6 logic ─────────────────────────────────────────────────────────
@@ -1906,10 +1930,46 @@
     });
 
     // ─── Appointments screen ──────────────────────────────────────────────────
-    function renderAppointments() {
-      // Show completed booking if any
+    async function renderAppointments() {
       const list = document.getElementById('appt-list');
       const empty = document.getElementById('appt-empty-state');
+
+      const initData = getTgInitData();
+      if (initData) {
+        try {
+          const res = await fetch('/api/appointments', {
+            headers: { 'X-Tg-Init-Data': initData },
+          });
+          if (res.ok) {
+            const appointments = await res.json();
+            if (appointments.length > 0) {
+              empty.style.display = 'none';
+              list.style.display = 'block';
+              list.innerHTML = appointments.map(a => {
+                const dt = new Date(a.slot_datetime);
+                const dateStr = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+                const timeStr = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                const upcoming = a.status === 'scheduled' && dt > new Date();
+                const statusLabel = upcoming ? 'Предстоит' : a.status === 'cancelled' ? 'Отменена' : 'Прошла';
+                const statusClass = upcoming ? 'appt-card__status--upcoming' : 'appt-card__status--past';
+                return `
+                  <div class="appt-card">
+                    <p class="appt-card__service">${a.service_name}</p>
+                    <p class="appt-card__clinic">${a.clinic_name}</p>
+                    <div class="appt-card__meta">
+                      <span class="appt-card__date">${dateStr}, ${timeStr}</span>
+                      <span class="appt-card__status ${statusClass}">${statusLabel}</span>
+                    </div>
+                  </div>
+                `;
+              }).join('');
+              return;
+            }
+          }
+        } catch {}
+      }
+
+      // Fallback: показываем только что созданную запись из памяти
       if (window._completedAppointment) {
         const a = window._completedAppointment;
         empty.style.display = 'none';

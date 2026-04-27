@@ -28,6 +28,7 @@ from .schemas import (
     SlotSchema,
     AppointmentCreate,
     Appointment as AppointmentSchema,
+    AppointmentDetail,
     SupportTicketCreate,
     SupportTicket as SupportTicketSchema,
     ProfileSaveRequest,
@@ -212,10 +213,27 @@ async def create_appointment(
     await db.refresh(appointment)
     return appointment
 
-@app.get("/api/appointments", response_model=List[AppointmentSchema])
+@app.get("/api/appointments", response_model=List[AppointmentDetail])
 async def get_my_appointments(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Appointment).where(Appointment.user_id == user.id))
-    return result.scalars().all()
+    result = await db.execute(
+        select(Appointment)
+        .where(Appointment.user_id == user.id)
+        .options(selectinload(Appointment.clinic), selectinload(Appointment.service))
+        .order_by(Appointment.slot_datetime.desc())
+    )
+    appointments = result.scalars().all()
+    return [
+        AppointmentDetail(
+            id=a.id,
+            service_name=a.service.name,
+            clinic_name=a.clinic.name,
+            slot_datetime=a.slot_datetime,
+            status=a.status,
+            comment=a.comment,
+            created_at=a.created_at,
+        )
+        for a in appointments
+    ]
 
 @app.post("/api/support", response_model=SupportTicketSchema)
 async def create_ticket(
@@ -278,6 +296,7 @@ async def get_profile(user: User = Depends(get_current_user), db: AsyncSession =
         phone=profile.phone,
         child_fio=child.fio if child else None,
         child_birth_date=child.birth_date if child else None,
+        child_id=child.id if child else None,
     )
 
 
@@ -301,9 +320,12 @@ async def save_profile(data: ProfileSaveRequest, user: User = Depends(get_curren
             profile.children[0].fio = data.child_fio
             profile.children[0].birth_date = data.child_birth_date
         else:
-            db.add(ChildProfile(parent_id=profile.id, fio=data.child_fio, birth_date=data.child_birth_date))
+            new_child = ChildProfile(parent_id=profile.id, fio=data.child_fio, birth_date=data.child_birth_date)
+            db.add(new_child)
+            profile.children.append(new_child)
     await db.commit()
-    return {"status": "ok"}
+    child_id = profile.children[0].id if profile.children else None
+    return {"status": "ok", "child_id": child_id}
 
 
 def _get_main_kb_for_notify():

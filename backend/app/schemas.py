@@ -84,6 +84,19 @@ class ProfileResponse(BaseModel):
     phone: Optional[str] = None
     child_fio: Optional[str] = None
     child_birth_date: Optional[date] = None
+    child_id: Optional[int] = None
+
+class AppointmentDetail(BaseModel):
+    id: int
+    service_name: str
+    clinic_name: str
+    slot_datetime: datetime
+    status: str
+    comment: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 class SupportTicketCreate(BaseModel):
     message: str
