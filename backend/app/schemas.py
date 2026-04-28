@@ -56,7 +56,7 @@ class SlotSchema(BaseModel):
 class AppointmentCreate(BaseModel):
     clinic_id: int
     service_id: int
-    child_id: int
+    child_id: Optional[int] = None
     slot_datetime: datetime
     comment: Optional[str] = None
 
@@ -64,7 +64,7 @@ class Appointment(BaseModel):
     id: int
     clinic_id: int
     service_id: int
-    child_id: int
+    child_id: Optional[int] = None
     slot_datetime: datetime
     status: str
     comment: Optional[str] = None

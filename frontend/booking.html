@@ -1871,7 +1871,7 @@
       btn.textContent = 'Отправка…';
 
       const initData = getTgInitData();
-      if (initData && state.childId) {
+      if (initData) {
         const dt = new Date(state.date);
         const [h, m] = state.slot.split(':');
         dt.setHours(parseInt(h), parseInt(m), 0, 0);
@@ -1882,7 +1882,7 @@
             body: JSON.stringify({
               clinic_id: parseInt(state.clinic),
               service_id: SERVICE_IDS[state.service] || 1,
-              child_id: state.childId,
+              child_id: state.childId || null,
               slot_datetime: dt.toISOString(),
               comment: state.comment || null,
             }),
