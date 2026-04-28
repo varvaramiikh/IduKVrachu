@@ -2302,17 +2302,56 @@
         const btnOk = document.getElementById('confirm-btn-ok');
         const btnCancel = document.getElementById('confirm-btn-cancel');
 
+        const sheet = overlay.querySelector('.confirm-sheet');
+
         const close = (result) => {
+          sheet.style.transition = '';
+          sheet.style.transform = '';
           overlay.classList.remove('confirm-overlay--visible');
-          overlay.addEventListener('transitionend', () => {}, { once: true });
           btnOk.removeEventListener('click', onOk);
           btnCancel.removeEventListener('click', onCancel);
           overlay.removeEventListener('click', onBackdrop);
+          sheet.removeEventListener('touchstart', onTouchStart);
           resolve(result);
         };
         const onOk = () => close(true);
         const onCancel = () => close(false);
         const onBackdrop = (e) => { if (e.target === overlay) close(false); };
+
+        // ── Swipe to dismiss ──────────────────────────────────────────────────
+        let startY = 0, lastY = 0, startTime = 0;
+
+        const onTouchStart = (e) => {
+          startY = e.touches[0].clientY;
+          lastY = startY;
+          startTime = Date.now();
+          sheet.style.transition = 'none';
+          sheet.addEventListener('touchmove', onTouchMove, { passive: true });
+          sheet.addEventListener('touchend', onTouchEnd, { once: true });
+        };
+
+        const onTouchMove = (e) => {
+          const dy = e.touches[0].clientY - startY;
+          lastY = e.touches[0].clientY;
+          if (dy > 0) sheet.style.transform = `translateY(${dy}px)`;
+        };
+
+        const onTouchEnd = () => {
+          sheet.removeEventListener('touchmove', onTouchMove);
+          const dy = lastY - startY;
+          const velocity = dy / (Date.now() - startTime);
+          if (dy > 120 || velocity > 0.5) {
+            sheet.style.transition = 'transform 0.25s ease';
+            sheet.style.transform = `translateY(100%)`;
+            setTimeout(() => close(false), 220);
+          } else {
+            sheet.style.transition = 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)';
+            sheet.style.transform = '';
+          }
+        };
+
+        sheet.addEventListener('touchstart', onTouchStart, { passive: true });
+        // ─────────────────────────────────────────────────────────────────────
 
         btnOk.addEventListener('click', onOk);
         btnCancel.addEventListener('click', onCancel);
