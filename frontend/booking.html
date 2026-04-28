@@ -1963,6 +1963,10 @@
       const list = document.getElementById('appt-list');
       const empty = document.getElementById('appt-empty-state');
 
+      empty.style.display = 'none';
+      list.style.display = 'block';
+      list.innerHTML = '<div class="loader"><div class="loader__dot"></div><div class="loader__dot"></div><div class="loader__dot"></div></div>';
+
       const initData = getTgInitData();
       if (initData) {
         try {
@@ -1972,8 +1976,6 @@
           if (res.ok) {
             const appointments = await res.json();
             if (appointments.length > 0) {
-              empty.style.display = 'none';
-              list.style.display = 'block';
               list.innerHTML = appointments.map(a => {
                 const dt = new Date(a.slot_datetime);
                 const dateStr = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
@@ -1994,15 +1996,16 @@
               }).join('');
               return;
             }
+            list.style.display = 'none';
+            list.innerHTML = '';
+            empty.style.display = '';
+            return;
           }
         } catch {}
       }
 
-      // Fallback: показываем только что созданную запись из памяти
       if (window._completedAppointment) {
         const a = window._completedAppointment;
-        empty.style.display = 'none';
-        list.style.display = 'block';
         list.innerHTML = `
           <div class="appt-card">
             <p class="appt-card__service">${a.service}</p>
@@ -2014,8 +2017,9 @@
           </div>
         `;
       } else {
-        empty.style.display = '';
         list.style.display = 'none';
+        list.innerHTML = '';
+        empty.style.display = '';
       }
     }
 
