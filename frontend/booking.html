@@ -907,6 +907,91 @@
     .appt-card__btn--reschedule { background: #E0F7F6; color: #128395; }
     .appt-card__btn--cancel { background: #FDECEC; color: #D14747; }
 
+    /* ─── Custom Confirm Modal ─── */
+    .confirm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 18, 29, 0.55);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .confirm-overlay--visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .confirm-sheet {
+      width: 100%;
+      max-width: 430px;
+      background: #fff;
+      border-radius: 24px 24px 0 0;
+      padding: 8px 20px 32px;
+      transform: translateY(100%);
+      transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+      box-shadow: 0 -8px 40px rgba(9, 18, 29, 0.15);
+    }
+    .confirm-overlay--visible .confirm-sheet {
+      transform: translateY(0);
+    }
+    .confirm-handle {
+      width: 40px;
+      height: 4px;
+      background: #D9E4EA;
+      border-radius: 99px;
+      margin: 8px auto 20px;
+    }
+    .confirm-icon {
+      width: 64px;
+      height: 64px;
+      background: #FDECEC;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .confirm-title {
+      font-family: "Inter", sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #3B3B3B;
+      text-align: center;
+      margin: 0 0 8px;
+    }
+    .confirm-desc {
+      font-family: "Inter", sans-serif;
+      font-size: 14px;
+      color: #848484;
+      text-align: center;
+      line-height: 1.5;
+      margin: 0 0 24px;
+    }
+    .confirm-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .confirm-btn {
+      width: 100%;
+      height: 50px;
+      border-radius: 99px;
+      border: none;
+      font-family: "Inter", sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s ease, transform 0.1s ease;
+    }
+    .confirm-btn:active { opacity: 0.75; transform: scale(0.98); }
+    .confirm-btn--danger { background: #D14747; color: #fff; }
+    .confirm-btn--neutral { background: #F0F4F5; color: #3B3B3B; }
+
   </style>
 </head>
 <body>
@@ -2198,14 +2283,7 @@
       const action = btn.dataset.action;
 
       if (action === 'cancel') {
-        const confirmFn = window.Telegram?.WebApp?.showConfirm;
-        const proceed = await new Promise((resolve) => {
-          if (typeof confirmFn === 'function') {
-            confirmFn.call(window.Telegram.WebApp, 'Отменить запись?', resolve);
-          } else {
-            resolve(window.confirm('Отменить запись?'));
-          }
-        });
+        const proceed = await showCancelConfirm();
         if (!proceed) return;
         await cancelAppointmentById(id);
       } else if (action === 'reschedule') {
@@ -2219,6 +2297,35 @@
     });
     document.getElementById('btn-clear-profile').addEventListener('click', clearProfile);
 
+    // ─── Custom confirm dialog ────────────────────────────────────────────────
+    function showCancelConfirm() {
+      return new Promise((resolve) => {
+        const overlay = document.getElementById('confirm-overlay');
+        const btnOk = document.getElementById('confirm-btn-ok');
+        const btnCancel = document.getElementById('confirm-btn-cancel');
+
+        const close = (result) => {
+          overlay.classList.remove('confirm-overlay--visible');
+          overlay.addEventListener('transitionend', () => {}, { once: true });
+          btnOk.removeEventListener('click', onOk);
+          btnCancel.removeEventListener('click', onCancel);
+          overlay.removeEventListener('click', onBackdrop);
+          resolve(result);
+        };
+        const onOk = () => close(true);
+        const onCancel = () => close(false);
+        const onBackdrop = (e) => { if (e.target === overlay) close(false); };
+
+        btnOk.addEventListener('click', onOk);
+        btnCancel.addEventListener('click', onCancel);
+        overlay.addEventListener('click', onBackdrop);
+
+        requestAnimationFrame(() => {
+          overlay.classList.add('confirm-overlay--visible');
+        });
+      });
+    }
+
     // ─── Init ─────────────────────────────────────────────────────────────────
     const _params = new URLSearchParams(window.location.search);
     if (_params.get('screen') === 'appointments') {
@@ -2228,5 +2335,24 @@
       goToStep(0);
     }
   </script>
+
+  <!-- ── Custom Cancel Confirm Modal ─────────────────────────────────────── -->
+  <div class="confirm-overlay" id="confirm-overlay" role="dialog" aria-modal="true">
+    <div class="confirm-sheet">
+      <div class="confirm-handle"></div>
+      <div class="confirm-icon">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <path d="M16 10v8M16 22v.5" stroke="#D14747" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="16" cy="16" r="13" stroke="#D14747" stroke-width="2"/>
+        </svg>
+      </div>
+      <h2 class="confirm-title">Отменить запись?</h2>
+      <p class="confirm-desc">Запись будет отменена.<br>Это действие нельзя отменить.</p>
+      <div class="confirm-actions">
+        <button class="confirm-btn confirm-btn--danger" id="confirm-btn-ok">Отменить запись</button>
+        <button class="confirm-btn confirm-btn--neutral" id="confirm-btn-cancel">Оставить</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
