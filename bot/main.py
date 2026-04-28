@@ -203,7 +203,7 @@ async def start_handler(message: types.Message):
         await message.answer(
             f"Добро пожаловать, {name}! 👋\n\n"
             "Вы можете пользоваться всеми функциями сервиса.",
-            reply_markup=get_main_kb(),
+            reply_markup=get_main_kb(message.from_user.id),
         )
         return
 
@@ -283,7 +283,7 @@ async def consent_agree_handler(callback: types.CallbackQuery):
     await callback.message.answer(
         f"Добро пожаловать, {callback.from_user.first_name or 'друг'}! 👋\n\n"
         "Теперь вам доступен полный функционал сервиса «Иду к врачу»! 🏥",
-        reply_markup=get_main_kb(),
+        reply_markup=get_main_kb(callback.from_user.id),
     )
     await callback.answer()
 
@@ -303,9 +303,15 @@ def get_consent_kb():
     ])
 
 
-def get_main_kb():
+def _append_tg_id(path: str, tg_id: int) -> str:
+    sep = "&" if "?" in path else "?"
+    return f"{path}{sep}tg_id={tg_id}"
+
+
+def get_main_kb(tg_id: int | None = None):
     def webapp_btn(text: str, path: str = "") -> InlineKeyboardButton:
-        url = settings.WEB_APP_URL + path
+        full_path = _append_tg_id(path, tg_id) if tg_id else path
+        url = settings.WEB_APP_URL + full_path
         if is_https_url(settings.WEB_APP_URL):
             return InlineKeyboardButton(text=text, web_app=WebAppInfo(url=url))
         return InlineKeyboardButton(text=text, url=url)
@@ -505,7 +511,7 @@ async def go_home(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.edit_text(
         "🏠 Главное меню",
-        reply_markup=get_main_kb(),
+        reply_markup=get_main_kb(callback.from_user.id),
     )
     await callback.answer()
 

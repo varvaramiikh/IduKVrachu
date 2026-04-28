@@ -1286,7 +1286,14 @@
     const PROFILE_KEY = 'booking_profile';
 
     function getTgInitData() {
-      return window.Telegram?.WebApp?.initData || '';
+      const real = window.Telegram?.WebApp?.initData || '';
+      if (real) return real;
+      const tgId = new URLSearchParams(window.location.search).get('tg_id');
+      if (tgId && /^\d+$/.test(tgId)) {
+        const userJson = JSON.stringify({ id: parseInt(tgId, 10) });
+        return 'user=' + encodeURIComponent(userJson);
+      }
+      return '';
     }
 
     function _profileFromLocalStorage() {

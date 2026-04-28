@@ -292,7 +292,7 @@ async def accept_consent(version: str, user: User = Depends(get_current_user), d
                     "✅ Вы дали согласие на обработку персональных данных.\n\n"
                     "Теперь вам доступен полный функционал сервиса «Иду к врачу»! 🏥\n"
                     "Нажмите кнопку ниже, чтобы открыть приложение.",
-                    reply_markup=_get_main_kb_for_notify(),
+                    reply_markup=_get_main_kb_for_notify(user.telegram_id),
                 )
                 await tg_bot.session.close()
                 logger.info("consent: уведомление отправлено telegram_id=%s", user.telegram_id)
@@ -364,17 +364,21 @@ async def save_profile(data: ProfileSaveRequest, user: User = Depends(get_curren
     return {"status": "ok", "child_id": child_id}
 
 
-def _get_main_kb_for_notify():
+def _get_main_kb_for_notify(tg_id: int | None = None):
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+    url = settings.WEB_APP_URL
+    if tg_id and not settings.WEB_APP_URL.startswith("https://"):
+        sep = "&" if "?" in url else "?"
+        url = f"{url}{sep}tg_id={tg_id}"
     open_button = (
         InlineKeyboardButton(
             text="🏥 Открыть приложение",
-            web_app=WebAppInfo(url=settings.WEB_APP_URL),
+            web_app=WebAppInfo(url=url),
         )
         if settings.WEB_APP_URL.startswith("https://")
         else InlineKeyboardButton(
             text="🏥 Открыть приложение",
-            url=settings.WEB_APP_URL,
+            url=url,
         )
     )
     return InlineKeyboardMarkup(inline_keyboard=[[open_button]])
