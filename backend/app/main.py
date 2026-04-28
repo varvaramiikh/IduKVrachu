@@ -312,7 +312,9 @@ async def save_profile(data: ProfileSaveRequest, user: User = Depends(get_curren
         profile = ParentProfile(user_id=user.id, fio=data.parent_fio, phone=data.phone)
         db.add(profile)
         await db.flush()
-        db.add(ChildProfile(parent_id=profile.id, fio=data.child_fio, birth_date=data.child_birth_date))
+        child = ChildProfile(parent_id=profile.id, fio=data.child_fio, birth_date=data.child_birth_date)
+        db.add(child)
+        profile.children.append(child)
     else:
         profile.fio = data.parent_fio
         profile.phone = data.phone
