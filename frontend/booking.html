@@ -1639,10 +1639,13 @@
     function buildSuccessCard() {
       const d = state.date;
       const dateStr = d ? d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'long' }) : '—';
+      const doctorLine = state.doctorName
+        ? `${state.doctorName}${state.doctorSpec ? ' · ' + state.doctorSpec : ''}`
+        : '—';
       document.getElementById('success-card').innerHTML = `
         <p class="success-remind-label">Ваша запись</p>
-        <p class="success-remind-text" style="margin-bottom:8px">${SERVICES[state.service]}</p>
-        <p class="success-remind-text" style="color:#848484; font-size:13px; font-weight:400; margin-bottom:4px">${CLINICS[state.clinic]?.name}</p>
+        <p class="success-remind-text" style="margin-bottom:8px">${doctorLine}</p>
+        <p class="success-remind-text" style="color:#848484; font-size:13px; font-weight:400; margin-bottom:4px">${CLINICS[state.clinic]?.name ?? ''}</p>
         <p class="success-remind-text" style="color:#128395">${dateStr}, ${state.slot}</p>
       `;
       document.getElementById('success-text').textContent =
