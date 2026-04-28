@@ -1405,6 +1405,7 @@
       childDob: '',
       comment: '',
       childId: null,       // DB id из ChildProfile
+      rescheduleId: null,  // если задано — режим переноса записи
     };
 
     // Маппинг ключей услуг → service_id из БД (по seed-данным)
@@ -1674,7 +1675,25 @@
       currentStep = n;
       localStorage.setItem(STORAGE_KEY, n);
 
-      document.getElementById('booking-badge-text').textContent = BADGE_LABELS[n] || 'Запись к врачу';
+      document.getElementById('booking-badge-text').textContent = state.rescheduleId
+        ? 'Перенос записи'
+        : (BADGE_LABELS[n] || 'Запись к врачу');
+
+      // Adjust step 7 confirm UI for reschedule mode
+      if (n === 7) {
+        const confirmBtn = document.getElementById('btn-confirm');
+        const editBtn = document.getElementById('btn-edit');
+        const subtitle = document.querySelector('#step-7 .step-subtitle');
+        if (state.rescheduleId) {
+          confirmBtn.textContent = 'Перенести запись';
+          editBtn.style.display = 'none';
+          if (subtitle) subtitle.textContent = 'Подтвердите новый день и время визита';
+        } else {
+          confirmBtn.textContent = 'Записаться';
+          editBtn.style.display = '';
+          if (subtitle) subtitle.textContent = 'Убедитесь, что всё верно, и нажмите «Записаться»';
+        }
+      }
 
       // Progress dots
       const dots = document.querySelectorAll('.booking-progress__dot');
@@ -1828,7 +1847,14 @@
       });
     }
 
-    document.getElementById('btn-step5-dr-next').addEventListener('click', () => goToStep(6));
+    document.getElementById('btn-step5-dr-next').addEventListener('click', () => {
+      if (state.rescheduleId) {
+        buildSummary();
+        goToStep(7);
+      } else {
+        goToStep(6);
+      }
+    });
 
 
 
@@ -1900,47 +1926,71 @@
       btn.textContent = 'Отправка…';
 
       const initData = getTgInitData();
+      const originalLabel = state.rescheduleId ? 'Перенести запись' : 'Записаться';
       if (initData) {
-        if (!state.childId) {
-          const newChildId = await persistProfile({
-            parent_fio: state.parentName,
-            phone: state.phone,
-            child_fio: state.childName,
-            child_birth_date: state.childDob,
-          });
-          if (newChildId) state.childId = newChildId;
-        }
-
         const dt = new Date(state.date);
         const [h, m] = state.slot.split(':');
         dt.setHours(parseInt(h), parseInt(m), 0, 0);
-        try {
-          const res = await fetch('/api/appointments', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Tg-Init-Data': initData },
-            body: JSON.stringify({
-              clinic_id: parseInt(state.clinic),
-              service_id: SERVICE_IDS[state.service] || 1,
-              child_id: state.childId || null,
-              slot_datetime: dt.toISOString(),
-              comment: state.comment || null,
-            }),
-          });
-          if (!res.ok) {
-            const errText = await res.text().catch(() => '');
-            alert(`Не удалось сохранить запись (${res.status}): ${errText}`);
+
+        if (state.rescheduleId) {
+          try {
+            const res = await fetch(`/api/appointments/${state.rescheduleId}/reschedule`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json', 'X-Tg-Init-Data': initData },
+              body: JSON.stringify({ slot_datetime: dt.toISOString() }),
+            });
+            if (!res.ok) {
+              const errText = await res.text().catch(() => '');
+              alert(`Не удалось перенести запись (${res.status}): ${errText}`);
+              btn.disabled = false;
+              btn.textContent = originalLabel;
+              return;
+            }
+          } catch (e) {
+            alert(`Ошибка сети: ${e?.message || e}`);
             btn.disabled = false;
-            btn.textContent = 'Записаться';
+            btn.textContent = originalLabel;
             return;
           }
-        } catch (e) {
-          alert(`Ошибка сети: ${e?.message || e}`);
-          btn.disabled = false;
-          btn.textContent = 'Записаться';
-          return;
+        } else {
+          if (!state.childId) {
+            const newChildId = await persistProfile({
+              parent_fio: state.parentName,
+              phone: state.phone,
+              child_fio: state.childName,
+              child_birth_date: state.childDob,
+            });
+            if (newChildId) state.childId = newChildId;
+          }
+          try {
+            const res = await fetch('/api/appointments', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Tg-Init-Data': initData },
+              body: JSON.stringify({
+                clinic_id: parseInt(state.clinic),
+                service_id: SERVICE_IDS[state.service] || 1,
+                child_id: state.childId || null,
+                slot_datetime: dt.toISOString(),
+                comment: state.comment || null,
+              }),
+            });
+            if (!res.ok) {
+              const errText = await res.text().catch(() => '');
+              alert(`Не удалось сохранить запись (${res.status}): ${errText}`);
+              btn.disabled = false;
+              btn.textContent = originalLabel;
+              return;
+            }
+          } catch (e) {
+            alert(`Ошибка сети: ${e?.message || e}`);
+            btn.disabled = false;
+            btn.textContent = originalLabel;
+            return;
+          }
         }
       }
 
+      const wasReschedule = !!state.rescheduleId;
       buildSuccessCard();
       const d = state.date;
       window._completedAppointment = {
@@ -1950,6 +2000,16 @@
         date: d ? d.toLocaleDateString('ru-RU', {day:'numeric', month:'long', weekday:'short'}) : '',
         time: state.slot || '',
       };
+      const successTitle = document.querySelector('#step-8 .success-title');
+      const successText = document.getElementById('success-text');
+      if (wasReschedule) {
+        if (successTitle) successTitle.textContent = 'Запись перенесена';
+        if (successText) successText.textContent = 'Новый день и время визита сохранены. Бот напомнит за 3 часа.';
+      } else {
+        if (successTitle) successTitle.textContent = 'Вы записаны!';
+        if (successText) successText.textContent = 'Ваша запись подтверждена. Бот напомнит за 3 часа до визита.';
+      }
+      state.rescheduleId = null;
       goToStep(8);
       localStorage.removeItem(STORAGE_KEY);
     });
@@ -1965,7 +2025,17 @@
 
     // ─── Back button logic ────────────────────────────────────────────────────
     document.getElementById('booking-back').addEventListener('click', () => {
+      if (state.rescheduleId && (currentStep === 4 || currentStep === 5 || currentStep === 7)) {
+        if (currentStep === 7) { goToStep(5, true); return; }
+        if (currentStep === 5) { goToStep(4, true); return; }
+        // currentStep === 4 → выходим из режима переноса в список записей
+        state.rescheduleId = null;
+        renderAppointments();
+        goToStep('appointments', true);
+        return;
+      }
       if (currentStep === 'appointments' || currentStep <= 1) {
+        state.rescheduleId = null;
         goToStep(0, true);
         return;
       }
@@ -1997,6 +2067,7 @@
           });
           if (res.ok) {
             const appointments = await res.json();
+            window._appointmentsCache = appointments;
             if (appointments.length > 0) {
               list.innerHTML = appointments.map(a => {
                 const dt = new Date(a.slot_datetime);
@@ -2076,6 +2147,45 @@
       }
     }
 
+    function serviceKeyFromAppointment(a) {
+      const byName = {
+        'Стоматология': 'dental',
+        'Сдача анализа крови': 'blood',
+        'Педиатр': 'pediatr',
+        'Невролог': 'neuro',
+      };
+      if (a.service_name && byName[a.service_name]) return byName[a.service_name];
+      const byId = Object.entries(SERVICE_IDS).find(([, id]) => id === a.service_id);
+      return byId ? byId[0] : 'dental';
+    }
+
+    function startReschedule(a) {
+      state.rescheduleId = a.id;
+      state.service = serviceKeyFromAppointment(a);
+      state.city = 'moscow';
+      state.clinic = String(a.clinic_id);
+      state.date = null;
+      state.slot = null;
+      state.doctorId = null;
+      state.doctorName = null;
+      state.doctorSpec = null;
+
+      const dt = new Date(a.slot_datetime);
+      calYear = dt.getFullYear();
+      calMonth = dt.getMonth();
+      renderCalendar();
+      renderSlots();
+      updateStep4CTA();
+
+      const stripClinic = document.getElementById('strip-clinic-text');
+      if (stripClinic) stripClinic.textContent = a.clinic_name || (CLINICS[state.clinic]?.name ?? '');
+
+      const badge = document.getElementById('booking-badge-text');
+      if (badge) badge.textContent = 'Перенос записи';
+
+      goToStep(4);
+    }
+
     document.getElementById('appt-list').addEventListener('click', async (ev) => {
       const btn = ev.target.closest('button[data-action]');
       if (!btn) return;
@@ -2094,7 +2204,12 @@
         if (!proceed) return;
         await cancelAppointmentById(id);
       } else if (action === 'reschedule') {
-        goToStep(1);
+        const appt = (window._appointmentsCache || []).find(x => x.id === id);
+        if (!appt) {
+          (window.Telegram?.WebApp?.showAlert || alert)('Не удалось загрузить данные записи');
+          return;
+        }
+        startReschedule(appt);
       }
     });
     document.getElementById('btn-clear-profile').addEventListener('click', clearProfile);

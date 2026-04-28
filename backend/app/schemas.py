@@ -88,6 +88,8 @@ class ProfileResponse(BaseModel):
 
 class AppointmentDetail(BaseModel):
     id: int
+    service_id: int
+    clinic_id: int
     service_name: str
     clinic_name: str
     slot_datetime: datetime
@@ -97,6 +99,9 @@ class AppointmentDetail(BaseModel):
 
     class Config:
         from_attributes = True
+
+class AppointmentReschedule(BaseModel):
+    slot_datetime: datetime
 
 class SupportTicketCreate(BaseModel):
     message: str

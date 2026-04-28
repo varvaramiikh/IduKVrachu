@@ -27,6 +27,7 @@ from .schemas import (
     Service as ServiceSchema,
     SlotSchema,
     AppointmentCreate,
+    AppointmentReschedule,
     Appointment as AppointmentSchema,
     AppointmentDetail,
     SupportTicketCreate,
@@ -244,6 +245,8 @@ async def get_my_appointments(user: User = Depends(get_current_user), db: AsyncS
     result = await db.execute(
         select(
             Appointment.id,
+            Appointment.service_id,
+            Appointment.clinic_id,
             Appointment.slot_datetime,
             Appointment.status,
             Appointment.comment,
@@ -259,6 +262,8 @@ async def get_my_appointments(user: User = Depends(get_current_user), db: AsyncS
     return [
         AppointmentDetail(
             id=row.id,
+            service_id=row.service_id,
+            clinic_id=row.clinic_id,
             service_name=row.service_name,
             clinic_name=row.clinic_name,
             slot_datetime=row.slot_datetime,
@@ -406,10 +411,46 @@ async def update_progress(item_id: int, status: str, user: User = Depends(get_cu
     await db.commit()
     return {"status": "ok"}
 
+@app.patch("/api/appointments/{appointment_id}/reschedule", response_model=AppointmentSchema)
+async def reschedule_appointment(
+    appointment_id: int,
+    data: AppointmentReschedule,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(Appointment).where(Appointment.id == appointment_id, Appointment.user_id == user.id)
+    )
+    appointment = result.scalar_one_or_none()
+
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
+    if appointment.status != "scheduled":
+        raise HTTPException(status_code=400, detail="Appointment already cancelled or completed")
+
+    new_slot = data.slot_datetime
+    if new_slot.tzinfo is not None:
+        new_slot = new_slot.astimezone(tz=None).replace(tzinfo=None)
+
+    if new_slot <= datetime.utcnow():
+        raise HTTPException(status_code=400, detail="New slot must be in the future")
+
+    try:
+        await mis_provider.reschedule_appointment(appointment.mis_external_id, new_slot)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    appointment.slot_datetime = new_slot
+    await db.commit()
+    await db.refresh(appointment)
+    logger.info("reschedule_appointment: id=%s user_id=%s new_slot=%s", appointment.id, user.id, new_slot)
+    return appointment
+
 @app.delete("/api/appointments/{appointment_id}")
 async def cancel_appointment(
-    appointment_id: int, 
-    user: User = Depends(get_current_user), 
+    appointment_id: int,
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(
