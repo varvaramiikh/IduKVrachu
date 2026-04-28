@@ -884,6 +884,28 @@
     }
     .appt-card__status--upcoming { background: #E0F7F6; color: #128395; }
     .appt-card__status--past { background: #F0F4F5; color: #848484; }
+    .appt-card__actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #EEF2F4;
+    }
+    .appt-card__btn {
+      flex: 1;
+      height: 38px;
+      border-radius: 99px;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity .15s ease;
+    }
+    .appt-card__btn:active { opacity: .7; }
+    .appt-card__btn:disabled { opacity: .5; cursor: not-allowed; }
+    .appt-card__btn--reschedule { background: #E0F7F6; color: #128395; }
+    .appt-card__btn--cancel { background: #FDECEC; color: #D14747; }
 
   </style>
 </head>
@@ -1983,6 +2005,13 @@
                 const upcoming = a.status === 'scheduled' && dt > new Date();
                 const statusLabel = upcoming ? 'Предстоит' : a.status === 'cancelled' ? 'Отменена' : 'Прошла';
                 const statusClass = upcoming ? 'appt-card__status--upcoming' : 'appt-card__status--past';
+                const canCancel = upcoming && (dt - new Date()) >= 24 * 60 * 60 * 1000;
+                const actions = upcoming ? `
+                    <div class="appt-card__actions">
+                      <button class="appt-card__btn appt-card__btn--reschedule" data-action="reschedule" data-id="${a.id}">Перенести</button>
+                      <button class="appt-card__btn appt-card__btn--cancel" data-action="cancel" data-id="${a.id}" ${canCancel ? '' : 'disabled title="Отмена возможна не позднее чем за 24 часа"'}>Отменить</button>
+                    </div>
+                ` : '';
                 return `
                   <div class="appt-card">
                     <p class="appt-card__service">${a.service_name}</p>
@@ -1991,6 +2020,7 @@
                       <span class="appt-card__date">${dateStr}, ${timeStr}</span>
                       <span class="appt-card__status ${statusClass}">${statusLabel}</span>
                     </div>
+                    ${actions}
                   </div>
                 `;
               }).join('');
@@ -2024,6 +2054,49 @@
     }
 
     document.getElementById('btn-appt-go-booking').addEventListener('click', () => goToStep(1));
+
+    async function cancelAppointmentById(id) {
+      const initData = getTgInitData();
+      if (!initData) {
+        (window.Telegram?.WebApp?.showAlert || alert)('Не удалось определить пользователя');
+        return;
+      }
+      try {
+        const res = await fetch(`/api/appointments/${id}`, {
+          method: 'DELETE',
+          headers: { 'X-Tg-Init-Data': initData },
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || 'Не удалось отменить запись');
+        }
+        await renderAppointments();
+      } catch (e) {
+        (window.Telegram?.WebApp?.showAlert || alert)(e.message || 'Ошибка отмены');
+      }
+    }
+
+    document.getElementById('appt-list').addEventListener('click', async (ev) => {
+      const btn = ev.target.closest('button[data-action]');
+      if (!btn) return;
+      const id = Number(btn.dataset.id);
+      const action = btn.dataset.action;
+
+      if (action === 'cancel') {
+        const confirmFn = window.Telegram?.WebApp?.showConfirm;
+        const proceed = await new Promise((resolve) => {
+          if (typeof confirmFn === 'function') {
+            confirmFn.call(window.Telegram.WebApp, 'Отменить запись?', resolve);
+          } else {
+            resolve(window.confirm('Отменить запись?'));
+          }
+        });
+        if (!proceed) return;
+        await cancelAppointmentById(id);
+      } else if (action === 'reschedule') {
+        goToStep(1);
+      }
+    });
     document.getElementById('btn-clear-profile').addEventListener('click', clearProfile);
 
     // ─── Init ─────────────────────────────────────────────────────────────────
