@@ -11,7 +11,7 @@ from sqlalchemy.orm import joinedload, selectinload
 from typing import List, Optional
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from alembic import command
 from alembic.config import Config
@@ -431,9 +431,9 @@ async def reschedule_appointment(
 
     new_slot = data.slot_datetime
     if new_slot.tzinfo is not None:
-        new_slot = new_slot.astimezone(tz=None).replace(tzinfo=None)
+        new_slot = new_slot.replace(tzinfo=None)
 
-    if new_slot <= datetime.utcnow():
+    if new_slot.replace(tzinfo=timezone.utc) <= datetime.now(tz=timezone.utc):
         raise HTTPException(status_code=400, detail="New slot must be in the future")
 
     try:
@@ -464,8 +464,9 @@ async def cancel_appointment(
     if appointment.status != "scheduled":
         raise HTTPException(status_code=400, detail="Appointment already cancelled or completed")
         
-    if appointment.slot_datetime - datetime.utcnow() < timedelta(hours=24):
-        raise HTTPException(status_code=400, detail="Cannot cancel less than 24h before appointment")
+    slot_dt = appointment.slot_datetime.replace(tzinfo=timezone.utc)
+    if slot_dt - datetime.now(tz=timezone.utc) < timedelta(hours=24):
+        raise HTTPException(status_code=400, detail="Отмена возможна не позднее чем за 24 часа до визита")
 
     try:
         await mis_provider.cancel_appointment(appointment.mis_external_id)

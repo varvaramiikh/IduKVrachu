@@ -2070,7 +2070,8 @@
             window._appointmentsCache = appointments;
             if (appointments.length > 0) {
               list.innerHTML = appointments.map(a => {
-                const dt = new Date(a.slot_datetime);
+                const dtStr = a.slot_datetime.includes('Z') || a.slot_datetime.includes('+') ? a.slot_datetime : a.slot_datetime + 'Z';
+                const dt = new Date(dtStr);
                 const dateStr = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
                 const timeStr = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                 const upcoming = a.status === 'scheduled' && dt > new Date();
@@ -2170,7 +2171,8 @@
       state.doctorName = null;
       state.doctorSpec = null;
 
-      const dt = new Date(a.slot_datetime);
+      const _rsDtStr = a.slot_datetime.includes('Z') || a.slot_datetime.includes('+') ? a.slot_datetime : a.slot_datetime + 'Z';
+      const dt = new Date(_rsDtStr);
       calYear = dt.getFullYear();
       calMonth = dt.getMonth();
       renderCalendar();
