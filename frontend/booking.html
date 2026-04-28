@@ -1734,9 +1734,9 @@
     }
 
     // ─── Step 1 logic ─────────────────────────────────────────────────────────
-    document.querySelectorAll('.service-card').forEach(card => {
+    document.querySelectorAll('.service-card[data-service]').forEach(card => {
       card.addEventListener('click', () => {
-        document.querySelectorAll('.service-card').forEach(c => c.classList.remove('service-card--selected'));
+        document.querySelectorAll('.service-card[data-service]').forEach(c => c.classList.remove('service-card--selected'));
         card.classList.add('service-card--selected');
         state.service = card.dataset.service;
         document.getElementById('btn-step1-next').disabled = false;
