@@ -242,23 +242,31 @@ async def create_appointment(
 @app.get("/api/appointments", response_model=List[AppointmentDetail])
 async def get_my_appointments(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     result = await db.execute(
-        select(Appointment)
+        select(
+            Appointment.id,
+            Appointment.slot_datetime,
+            Appointment.status,
+            Appointment.comment,
+            Appointment.created_at,
+            Service.name.label("service_name"),
+            Clinic.name.label("clinic_name"),
+        )
+        .join(Service, Appointment.service_id == Service.id)
+        .join(Clinic, Appointment.clinic_id == Clinic.id)
         .where(Appointment.user_id == user.id)
-        .options(selectinload(Appointment.clinic), selectinload(Appointment.service))
         .order_by(Appointment.slot_datetime.desc())
     )
-    appointments = result.scalars().all()
     return [
         AppointmentDetail(
-            id=a.id,
-            service_name=a.service.name,
-            clinic_name=a.clinic.name,
-            slot_datetime=a.slot_datetime,
-            status=a.status,
-            comment=a.comment,
-            created_at=a.created_at,
+            id=row.id,
+            service_name=row.service_name,
+            clinic_name=row.clinic_name,
+            slot_datetime=row.slot_datetime,
+            status=row.status,
+            comment=row.comment,
+            created_at=row.created_at,
         )
-        for a in appointments
+        for row in result.all()
     ]
 
 @app.post("/api/support", response_model=SupportTicketSchema)
