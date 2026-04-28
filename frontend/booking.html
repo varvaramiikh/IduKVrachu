@@ -1872,11 +1872,21 @@
 
       const initData = getTgInitData();
       if (initData) {
+        if (!state.childId) {
+          const newChildId = await persistProfile({
+            parent_fio: state.parentName,
+            phone: state.phone,
+            child_fio: state.childName,
+            child_birth_date: state.childDob,
+          });
+          if (newChildId) state.childId = newChildId;
+        }
+
         const dt = new Date(state.date);
         const [h, m] = state.slot.split(':');
         dt.setHours(parseInt(h), parseInt(m), 0, 0);
         try {
-          await fetch('/api/appointments', {
+          const res = await fetch('/api/appointments', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-Tg-Init-Data': initData },
             body: JSON.stringify({
@@ -1887,7 +1897,19 @@
               comment: state.comment || null,
             }),
           });
-        } catch {}
+          if (!res.ok) {
+            const errText = await res.text().catch(() => '');
+            alert(`Не удалось сохранить запись (${res.status}): ${errText}`);
+            btn.disabled = false;
+            btn.textContent = 'Записаться';
+            return;
+          }
+        } catch (e) {
+          alert(`Ошибка сети: ${e?.message || e}`);
+          btn.disabled = false;
+          btn.textContent = 'Записаться';
+          return;
+        }
       }
 
       buildSuccessCard();

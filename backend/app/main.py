@@ -174,20 +174,40 @@ async def get_slots(clinic_id: int, service_id: int, date: str, db: AsyncSession
 
 @app.post("/api/appointments", response_model=AppointmentSchema)
 async def create_appointment(
-    data: AppointmentCreate, 
-    user: User = Depends(get_current_user), 
+    data: AppointmentCreate,
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    logger.info("create_appointment: user_id=%s data=%s", user.id, data.model_dump())
+
     if not user.consent_timestamp:
+        logger.warning("create_appointment: отказ — нет consent_timestamp у user_id=%s", user.id)
         raise HTTPException(status_code=403, detail="Consent required")
-        
+
     clinic_result = await db.execute(select(Clinic).where(Clinic.id == data.clinic_id))
     clinic = clinic_result.scalar_one_or_none()
     service_result = await db.execute(select(Service).where(Service.id == data.service_id))
     service = service_result.scalar_one_or_none()
-    
+
     if not clinic or not service:
+        logger.warning("create_appointment: clinic=%s service=%s не найдены", data.clinic_id, data.service_id)
         raise HTTPException(status_code=404, detail="Clinic or Service not found")
+
+    child_id = data.child_id
+    if child_id is None:
+        prof_result = await db.execute(
+            select(ParentProfile)
+            .where(ParentProfile.user_id == user.id)
+            .options(selectinload(ParentProfile.children))
+        )
+        profile = prof_result.scalar_one_or_none()
+        if profile and profile.children:
+            child_id = profile.children[0].id
+            logger.info("create_appointment: child_id не передан, используем %s из профиля", child_id)
+
+    if child_id is None:
+        logger.warning("create_appointment: child_id отсутствует и не найден в профиле user_id=%s", user.id)
+        raise HTTPException(status_code=400, detail="Child profile is required")
 
     try:
         mis_id = await mis_provider.create_appointment({
@@ -197,20 +217,26 @@ async def create_appointment(
             "user_id": user.telegram_id
         })
     except Exception as e:
+        logger.exception("create_appointment: MIS ошибка user_id=%s", user.id)
         raise HTTPException(status_code=400, detail=str(e))
 
     appointment = Appointment(
         user_id=user.id,
         clinic_id=data.clinic_id,
         service_id=data.service_id,
-        child_id=data.child_id,
+        child_id=child_id,
         slot_datetime=data.slot_datetime,
         mis_external_id=mis_id,
         comment=data.comment
     )
     db.add(appointment)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        logger.exception("create_appointment: ошибка commit user_id=%s", user.id)
+        raise HTTPException(status_code=500, detail="DB error")
     await db.refresh(appointment)
+    logger.info("create_appointment: создана запись id=%s user_id=%s child_id=%s", appointment.id, user.id, child_id)
     return appointment
 
 @app.get("/api/appointments", response_model=List[AppointmentDetail])
@@ -314,7 +340,7 @@ async def save_profile(data: ProfileSaveRequest, user: User = Depends(get_curren
         await db.flush()
         child = ChildProfile(parent_id=profile.id, fio=data.child_fio, birth_date=data.child_birth_date)
         db.add(child)
-        profile.children.append(child)
+        await db.flush()
     else:
         profile.fio = data.parent_fio
         profile.phone = data.phone
@@ -324,9 +350,17 @@ async def save_profile(data: ProfileSaveRequest, user: User = Depends(get_curren
         else:
             new_child = ChildProfile(parent_id=profile.id, fio=data.child_fio, birth_date=data.child_birth_date)
             db.add(new_child)
-            profile.children.append(new_child)
+            await db.flush()
     await db.commit()
+
+    refetch = await db.execute(
+        select(ParentProfile)
+        .where(ParentProfile.user_id == user.id)
+        .options(selectinload(ParentProfile.children))
+    )
+    profile = refetch.scalar_one()
     child_id = profile.children[0].id if profile.children else None
+    logger.info("save_profile: user_id=%s child_id=%s children_count=%s", user.id, child_id, len(profile.children))
     return {"status": "ok", "child_id": child_id}
 
 
