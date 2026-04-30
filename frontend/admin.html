@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Админ-панель | Иду к врачу</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --brand: #12c7d4;
+      --brand-dark: #006879;
+      --btn-color: #00B9C2;
+      --app-bg: #f0f5f7;
+      --card: #ffffff;
+      --title: #3B3B3B;
+      --text: #848484;
+      --stroke: #d9e4ea;
+      --sidebar-w: 248px;
+      --shadow: 0 4px 20px rgba(18,37,45,0.08);
+      --shadow-lg: 0 8px 32px rgba(18,37,45,0.14);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: "Inter", Arial, sans-serif; background: var(--app-bg); color: var(--title); }
+    button { font: inherit; cursor: pointer; }
+    input, textarea, select { font: inherit; }
+    a { text-decoration: none; color: inherit; }
+
+    /* Layout */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-height: 100vh;
+      background: #fff;
+      border-right: 1px solid var(--stroke);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+    }
+    .sidebar-logo {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid var(--stroke);
+    }
+    .sidebar-logo-title {
+      font-family: "Unbounded", sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--brand-dark);
+      line-height: 1.2;
+    }
+    .sidebar-logo-sub {
+      font-size: 11px;
+      color: var(--text);
+      margin-top: 2px;
+    }
+    .sidebar-badge {
+      display: inline-flex;
+      align-items: center;
+      height: 20px;
+      padding: 0 8px;
+      border-radius: 99px;
+      background: rgba(18,199,212,0.12);
+      color: var(--brand-dark);
+      font-size: 10px;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+    .sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+    .nav-section-label {
+      padding: 14px 20px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #b0bec5;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      border-radius: 0;
+      background: none;
+      border: none;
+      width: 100%;
+      text-align: left;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.15s, color 0.15s;
+      position: relative;
+    }
+    .nav-item:hover { background: #f0f9fa; color: var(--brand-dark); }
+    .nav-item.active { background: rgba(18,199,212,0.10); color: var(--brand-dark); font-weight: 600; }
+    .nav-item.active::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 6px; bottom: 6px;
+      width: 3px;
+      border-radius: 0 2px 2px 0;
+      background: var(--btn-color);
+    }
+    .nav-icon {
+      width: 32px; height: 32px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      background: #f0f4f5;
+    }
+    .nav-item.active .nav-icon { background: rgba(18,199,212,0.18); }
+    .nav-icon svg { width: 16px; height: 16px; }
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--stroke);
+    }
+    .admin-user {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .admin-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 12px; font-weight: 700; flex-shrink: 0;
+    }
+    .admin-name { font-size: 13px; font-weight: 600; color: var(--title); }
+    .admin-role { font-size: 11px; color: var(--text); }
+
+    /* Main */
+    .main { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; display: flex; flex-direction: column; }
+    .topbar {
+      height: 60px;
+      background: #fff;
+      border-bottom: 1px solid var(--stroke);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-title { font-size: 16px; font-weight: 700; color: var(--title); }
+    .topbar-actions { display: flex; align-items: center; gap: 10px; }
+    .content { padding: 28px; flex: 1; }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+    .card-sm { padding: 16px; }
+
+    /* Stats row */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .stat-icon {
+      width: 44px; height: 44px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .stat-value { font-size: 26px; font-weight: 800; color: var(--title); line-height: 1; }
+    .stat-label { font-size: 12px; color: var(--text); margin-top: 4px; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text);
+      border-bottom: 1px solid var(--stroke);
+    }
+    tbody td {
+      padding: 13px 14px;
+      font-size: 14px;
+      color: var(--title);
+      border-bottom: 1px solid #f4f7f8;
+      vertical-align: middle;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #fafcfd; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 0 18px; height: 38px;
+      border-radius: 12px; border: none;
+      font-size: 13px; font-weight: 600;
+      transition: transform 0.15s, opacity 0.15s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--btn-color); color: #fff; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-secondary { background: #e9f5f7; color: var(--brand-dark); }
+    .btn-danger { background: #fef2f2; color: #e53e3e; }
+    .btn-sm { height: 30px; padding: 0 12px; font-size: 12px; border-radius: 8px; }
+    .btn-icon {
+      width: 32px; height: 32px; padding: 0;
+      border-radius: 8px; background: #f0f4f5; color: var(--text); border: none;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .btn-icon:hover { background: #e0f7f6; color: var(--brand-dark); }
+    .btn-icon svg { width: 14px; height: 14px; }
+
+    /* Section header */
+    .section-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px; gap: 12px; flex-wrap: wrap;
+    }
+    .section-title { font-size: 18px; font-weight: 700; color: var(--title); }
+    .section-sub { font-size: 13px; color: var(--text); margin-top: 2px; }
+
+    /* Badge */
+    .badge {
+      display: inline-flex; align-items: center;
+      height: 22px; padding: 0 8px;
+      border-radius: 99px; font-size: 11px; font-weight: 600;
+    }
+    .badge-teal { background: #e0f7f6; color: #128395; }
+    .badge-gray { background: #f0f4f5; color: #848484; }
+    .badge-orange { background: #fff4e6; color: #e67e22; }
+    .badge-green { background: #e8f8f0; color: #27ae60; }
+    .badge-red { background: #fef2f2; color: #e53e3e; }
+
+    /* Form */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .form-full { grid-column: 1 / -1; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-label { font-size: 12px; font-weight: 600; color: var(--title); }
+    .form-label span { color: var(--text); font-weight: 400; }
+    .form-input {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1.5px solid var(--stroke);
+      background: #fff;
+      color: var(--title);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus { border-color: var(--btn-color); }
+    .form-input::placeholder { color: #c0cdd4; }
+    select.form-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%23848484' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+    textarea.form-input { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.28);
+      z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .modal {
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: var(--shadow-lg);
+      width: 100%; max-width: 580px;
+      max-height: 90vh;
+      display: flex; flex-direction: column;
+      animation: modalIn 0.25s cubic-bezier(0.22,1,0.36,1);
+    }
+    .modal-lg { max-width: 720px; }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.96) translateY(12px); }
+      to { opacity: 1; transform: none; }
+    }
+    .modal-header {
+      padding: 22px 24px 18px;
+      border-bottom: 1px solid var(--stroke);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      flex-shrink: 0;
+    }
+    .modal-title { font-size: 16px; font-weight: 700; color: var(--title); }
+    .modal-body { padding: 22px 24px; overflow-y: auto; flex: 1; }
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--stroke);
+      display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+      flex-shrink: 0;
+    }
+    .modal-close {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: #f0f4f5; border: none;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text); flex-shrink: 0;
+    }
+    .modal-close:hover { background: #fef2f2; color: #e53e3e; }
+
+    /* Schedule grid */
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: 80px repeat(7, 1fr);
+      gap: 4px;
+      font-size: 12px;
+    }
+    .sch-head {
+      padding: 6px 4px;
+      text-align: center;
+      font-weight: 700;
+      color: var(--text);
+      font-size: 11px;
+    }
+    .sch-time {
+      padding: 8px 4px;
+      color: var(--text);
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+    }
+    .sch-slot {
+      padding: 6px 2px;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1.5px solid var(--stroke);
+      background: #fff;
+      color: var(--text);
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .sch-slot.active { background: #e0f7f6; border-color: var(--btn-color); color: var(--brand-dark); font-weight: 700; }
+    .sch-slot.busy { background: #f0f4f5; color: #c0cdd4; pointer-events: none; }
+
+    /* Content type icon */
+    .ctype-icon {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      background: #f0f9fa;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* Role permission matrix */
+    .perm-table table { table-layout: fixed; }
+    .perm-table thead th { text-align: center; }
+    .perm-table thead th:first-child { text-align: left; }
+    .perm-table tbody td { text-align: center; }
+    .perm-table tbody td:first-child { text-align: left; font-weight: 500; }
+    .perm-check {
+      width: 18px; height: 18px; border-radius: 5px;
+      border: 1.5px solid var(--stroke);
+      display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background 0.15s, border-color 0.15s;
+    }
+    .perm-check.on { background: var(--btn-color); border-color: var(--btn-color); }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 4px; background: #f0f4f5; border-radius: 12px; padding: 4px; width: fit-content; margin-bottom: 22px; }
+    .tab {
+      padding: 8px 16px; border-radius: 9px; border: none;
+      font-size: 13px; font-weight: 500; color: var(--text);
+      background: transparent; transition: background 0.15s, color 0.15s;
+    }
+    .tab.active { background: #fff; color: var(--brand-dark); font-weight: 600; box-shadow: 0 2px 6px rgba(18,37,45,0.08); }
+
+    /* Search */
+    .search-input-wrap { position: relative; }
+    .search-input-wrap svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text); pointer-events: none; }
+    .search-input { padding-left: 34px !important; }
+
+    /* Color dot */
+    .color-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+
+    /* Avatar initials */
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+
+    /* Day toggle */
+    .day-toggle {
+      display: flex; gap: 6px; flex-wrap: wrap;
+    }
+    .day-btn {
+      width: 36px; height: 36px; border-radius: 10px;
+      border: 1.5px solid var(--stroke);
+      background: #fff; font-size: 12px; font-weight: 600; color: var(--text);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .day-btn.on { background: #e0f7f6; border-color: var(--btn-color); color: var(--brand-dark); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d0dde3; border-radius: 3px; }
+
+    /* Responsive note */
+    @media (max-width: 900px) {
+      .stats-grid { grid-template-columns: repeat(2,1fr); }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-grid-3 { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useCallback } = React;
+
+// ── Icons ──────────────────────────────────────────────────
+const Icon = ({ d, size = 16, stroke = "currentColor", fill = "none" }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" fill={fill} stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d={d} />
+  </svg>
+);
+
+const icons = {
+  dashboard: "M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z",
+  services: "M8 1L9.8 5.5H14.5L10.7 8.3L12.1 13L8 10.2L3.9 13L5.3 8.3L1.5 5.5H6.2z",
+  city: "M8 1C5.24 1 3 3.24 3 6c0 4.25 5 9 5 9s5-4.75 5-9c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 8 4a1.5 1.5 0 0 1 0 3z",
+  clinic: "M2 7h12M7 2v12M2 2h12v12H2z",
+  doctor: "M8 1a3 3 0 1 0 0 6A3 3 0 0 0 8 1zM3 15c0-2.76 2.24-5 5-5s5 2.24 5 5",
+  schedule: "M2 3h12v10H2zM2 6h12M6 3v2M10 3v2M5 9h2M9 9h2",
+  content: "M2 3h12v10H2zM5 7h6M5 10h4",
+  roles: "M6 1a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM1 15c0-2.76 2.24-5 5-5M10 11l1.5 1.5L14 9",
+  plus: "M8 3v10M3 8h10",
+  edit: "M11.5 2.5a1.5 1.5 0 0 1 2.12 2.12L5 13H3v-2L11.5 2.5z",
+  trash: "M3 4h10M6 4V2h4v2M5 4v9a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V4",
+  search: "M7 13A6 6 0 1 0 7 1a6 6 0 0 0 0 12zM13 13l2 2",
+  close: "M3 3l10 10M13 3L3 13",
+  check: "M3 8l3.5 3.5L13 4",
+  video: "M2 4h8a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM11 6.5l4-2v7l-4-2",
+  book: "M3 2h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM5 2v12M5 6h4M5 9h3",
+  game: "M4 8h3M5.5 6.5v3M10 7.5h.01M11.5 9h.01M2 6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z",
+  doc: "M4 1h6l4 4v10H4V1zM10 1v4h4M6 8h5M6 11h3",
+  arrow_right: "M6 3l5 5-5 5",
+  logout: "M10 3h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-3M6 11l5-3-5-3M2 8h9",
+};
+
+const Ico = ({ name, size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d={icons[name]} />
+  </svg>
+);
+
+// ── API helper ────────────────────────────────────────────
+const EMPTY_DATA = { services: [], cities: [], clinics: [], doctors: [], content: [], roles: [] };
+
+async function apiFetch(path, options = {}) {
+  const token = localStorage.getItem("admin_token");
+  const res = await fetch(path, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
+  });
+  if (res.status === 401) {
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_username");
+    window.location.reload();
+    throw new Error("Unauthorized");
+  }
+  return res;
+}
+
+async function loadAllData() {
+  const [services, cities, clinics, doctors, content, roles] = await Promise.all([
+    apiFetch("/admin/api/services").then(r => r.json()),
+    apiFetch("/admin/api/cities").then(r => r.json()),
+    apiFetch("/admin/api/clinics").then(r => r.json()),
+    apiFetch("/admin/api/doctors").then(r => r.json()),
+    apiFetch("/admin/api/content").then(r => r.json()),
+    apiFetch("/admin/api/roles").then(r => r.json()),
+  ]);
+  return { services, cities, clinics, doctors, content, roles };
+}
+
+// ── Login screen ──────────────────────────────────────────
+function LoginScreen({ onLogin }) {
+  const [username, setUsername] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [error, setError] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/admin/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      if (res.ok) {
+        const { token, username: uname } = await res.json();
+        localStorage.setItem("admin_token", token);
+        localStorage.setItem("admin_username", uname);
+        onLogin(uname);
+      } else {
+        setError("Неверный логин или пароль");
+      }
+    } catch {
+      setError("Ошибка подключения к серверу");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "var(--app-bg)" }}>
+      <div style={{ background: "#fff", borderRadius: 20, padding: 40, width: 360, boxShadow: "var(--shadow-lg)" }}>
+        <div style={{ fontFamily: "Unbounded, sans-serif", fontSize: 15, fontWeight: 700, color: "var(--brand-dark)", marginBottom: 4 }}>Иду к врачу</div>
+        <div style={{ fontSize: 13, color: "var(--text)", marginBottom: 28 }}>Панель управления</div>
+        <form onSubmit={submit}>
+          <div className="form-group" style={{ marginBottom: 12 }}>
+            <label className="form-label">Логин</label>
+            <input className="form-input" value={username} onChange={e => setUsername(e.target.value)} placeholder="admin" autoFocus />
+          </div>
+          <div className="form-group" style={{ marginBottom: 20 }}>
+            <label className="form-label">Пароль</label>
+            <input className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
+          </div>
+          {error && <div style={{ color: "#e53e3e", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+          <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: "100%", justifyContent: "center" }}>
+            {loading ? "Входим…" : "Войти"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+const CONTENT_TYPES = ["Мультфильм", "Социальная история", "Игра-тренажёр", "Рекомендации для родителей"];
+const CONTENT_TYPE_ICONS = {
+  "Мультфильм": { icon: "video", bg: "#f0f9fa", color: "#128395" },
+  "Социальная история": { icon: "book", bg: "#f0f9fa", color: "#128395" },
+  "Игра-тренажёр": { icon: "game", bg: "#f0f9fa", color: "#128395" },
+  "Рекомендации для родителей": { icon: "doc", bg: "#e0f7f6", color: "#128395" },
+};
+const DAYS = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
+const PERM_LABELS = ["Просмотр","Создание","Редактирование","Удаление"];
+const PERM_SECTIONS = ["services","cities","clinics","doctors","content","roles"];
+const PERM_SECTION_NAMES = { services: "Услуги", cities: "Города", clinics: "Клиники", doctors: "Врачи", content: "Контент", roles: "Роли" };
+
+// ── Small shared components ───────────────────────────────
+function Modal({ title, onClose, children, footer, lg }) {
+  return (
+    <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className={`modal${lg ? " modal-lg" : ""}`}>
+        <div className="modal-header">
+          <span className="modal-title">{title}</span>
+          <button className="modal-close" onClick={onClose}><Ico name="close" size={14} /></button>
+        </div>
+        <div className="modal-body">{children}</div>
+        {footer && <div className="modal-footer">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+function Toggle({ on, onChange }) {
+  return (
+    <button
+      onClick={() => onChange(!on)}
+      style={{
+        width: 40, height: 22, borderRadius: 11, border: "none",
+        background: on ? "var(--btn-color)" : "#d9e4ea",
+        position: "relative", cursor: "pointer", transition: "background 0.2s", flexShrink: 0,
+      }}
+    >
+      <span style={{
+        position: "absolute", top: 3, left: on ? 20 : 3,
+        width: 16, height: 16, borderRadius: 8, background: "#fff",
+        transition: "left 0.2s", display: "block",
+      }} />
+    </button>
+  );
+}
+
+function PermCheck({ on, onChange }) {
+  return (
+    <div className={`perm-check${on ? " on" : ""}`} onClick={() => onChange(!on)}>
+      {on && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+    </div>
+  );
+}
+
+// ── Dashboard ─────────────────────────────────────────────
+function Dashboard({ data }) {
+  const stats = [
+    { label: "Услуг", value: data.services.length, icon: "services", color: "#e0f7f6", icolor: "#128395" },
+    { label: "Городов", value: data.cities.filter(c=>c.active).length, icon: "city", color: "#e8f8f0", icolor: "#27ae60" },
+    { label: "Врачей", value: data.doctors.length, icon: "doctor", color: "#f0edfb", icolor: "#8e44ad" },
+    { label: "Материалов", value: data.content.length, icon: "content", color: "#fff4e6", icolor: "#e67e22" },
+  ];
+  return (
+    <div>
+      <div className="stats-grid">
+        {stats.map(s => (
+          <div className="stat-card" key={s.label}>
+            <div className="stat-icon" style={{ background: s.color, color: s.icolor }}>
+              <Ico name={s.icon} size={20} />
+            </div>
+            <div>
+              <div className="stat-value">{s.value}</div>
+              <div className="stat-label">{s.label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div className="card">
+          <div className="section-head" style={{ marginBottom: 16 }}>
+            <div><div className="section-title" style={{ fontSize: 15 }}>Последние врачи</div></div>
+          </div>
+          {data.doctors.map(d => (
+            <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #f4f7f8" }}>
+              <div className="avatar" style={{ background: d.color }}>{d.initials}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--title)" }}>{d.name}</div>
+                <div style={{ fontSize: 12, color: "var(--text)" }}>{d.spec}</div>
+              </div>
+              <span className="badge badge-teal">{d.clinic.split(" ")[0]}</span>
+            </div>
+          ))}
+        </div>
+        <div className="card">
+          <div className="section-head" style={{ marginBottom: 16 }}>
+            <div><div className="section-title" style={{ fontSize: 15 }}>Материалы по услугам</div></div>
+          </div>
+          {data.services.map(s => {
+            const count = data.content.filter(c => c.service === s.name).length;
+            return (
+              <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #f4f7f8" }}>
+                <span style={{ fontSize: 20 }}>{s.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--title)" }}>{s.name}</div>
+                </div>
+                <span className="badge badge-teal">{count} мат.</span>
+                <span className={`badge ${s.active ? "badge-green" : "badge-gray"}`}>{s.active ? "Активна" : "Скрыта"}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Services ──────────────────────────────────────────────
+function ServicesSection({ data, setData }) {
+  const [modal, setModal] = useState(null);
+  const [form, setForm] = useState({});
+
+  const openAdd = () => { setForm({ name: "", desc: "", icon: "⚕️", active: true }); setModal("add"); };
+  const openEdit = (item) => { setForm({ ...item }); setModal("edit"); };
+
+  const save = async () => {
+    const url = modal === "add" ? "/admin/api/services" : `/admin/api/services/${form.id}`;
+    const res = await apiFetch(url, { method: modal === "add" ? "POST" : "PUT", body: JSON.stringify(form) });
+    const saved = await res.json();
+    if (modal === "add") setData(d => ({ ...d, services: [...d.services, saved] }));
+    else setData(d => ({ ...d, services: d.services.map(s => s.id === form.id ? saved : s) }));
+    setModal(null);
+  };
+  const del = async (id) => {
+    await apiFetch(`/admin/api/services/${id}`, { method: "DELETE" });
+    setData(d => ({ ...d, services: d.services.filter(s => s.id !== id) }));
+  };
+  const toggle = async (id) => {
+    const svc = data.services.find(s => s.id === id);
+    const res = await apiFetch(`/admin/api/services/${id}`, { method: "PUT", body: JSON.stringify({ ...svc, active: !svc.active }) });
+    const saved = await res.json();
+    setData(d => ({ ...d, services: d.services.map(s => s.id === id ? saved : s) }));
+  };
+
+  return (
+    <div>
+      <div className="section-head">
+        <div>
+          <div className="section-title">Услуги</div>
+          <div className="section-sub">Управление медицинскими направлениями</div>
+        </div>
+        <button className="btn btn-primary" onClick={openAdd}><Ico name="plus" size={14} /> Добавить услугу</button>
+      </div>
+      <div className="card" style={{ padding: 0 }}>
+        <div className="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Услуга</th><th>Описание</th><th>Материалов</th><th>Статус</th><th style={{width:100}}>Действия</th>
+            </tr></thead>
+            <tbody>
+              {data.services.map(s => (
+                <tr key={s.id}>
+                  <td><span style={{ fontSize: 18, marginRight: 8 }}>{s.icon}</span><strong>{s.name}</strong></td>
+                  <td style={{ color: "var(--text)", fontSize: 13 }}>{s.desc}</td>
+                  <td><span className="badge badge-teal">{data.content.filter(c => c.service === s.name).length}</span></td>
+                  <td><Toggle on={s.active} onChange={() => toggle(s.id)} /></td>
+                  <td>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button className="btn-icon" onClick={() => openEdit(s)}><Ico name="edit" /></button>
+                      <button className="btn-icon btn-danger" style={{ background: "#fef2f2", color: "#e53e3e" }} onClick={() => del(s.id)}><Ico name="trash" /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {modal && (
+        <Modal title={modal === "add" ? "Добавить услугу" : "Редактировать услугу"} onClose={() => setModal(null)}
+          footer={<><button className="btn btn-secondary" onClick={() => setModal(null)}>Отмена</button><button className="btn btn-primary" onClick={save}>Сохранить</button></>}>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Иконка (эмодзи)</label>
+              <input className="form-input" value={form.icon || ""} onChange={e => setForm(f => ({ ...f, icon: e.target.value }))} placeholder="⚕️" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Название услуги</label>
+              <input className="form-input" value={form.name || ""} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Например: Стоматология" />
+            </div>
+            <div className="form-group form-full">
+              <label className="form-label">Описание</label>
+              <input className="form-input" value={form.desc || ""} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))} placeholder="Краткое описание для пользователя" />
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── Cities ────────────────────────────────────────────────
+function CitiesSection({ data, setData }) {
+  const [modal, setModal] = useState(null);
+  const [form, setForm] = useState({});
+
+  const openAdd = () => { setForm({ name: "", region: "", active: false, clinicsCount: 0 }); setModal("add"); };
+  const openEdit = (item) => { setForm({ ...item }); setModal("edit"); };
+  const save = async () => {
+    const url = modal === "add" ? "/admin/api/cities" : `/admin/api/cities/${form.id}`;
+    const res = await apiFetch(url, { method: modal === "add" ? "POST" : "PUT", body: JSON.stringify(form) });
+    const saved = await res.json();
+    if (modal === "add") setData(d => ({ ...d, cities: [...d.cities, saved] }));
+    else setData(d => ({ ...d, cities: d.cities.map(c => c.id === form.id ? saved : c) }));
+    setModal(null);
+  };
+  const del = async (id) => {
+    await apiFetch(`/admin/api/cities/${id}`, { method: "DELETE" });
+    setData(d => ({ ...d, cities: d.cities.filter(c => c.id !== id) }));
+  };
+  const toggle = async (id) => {
+    const city = data.cities.find(c => c.id === id);
+    const res = await apiFetch(`/admin/api/cities/${id}`, { method: "PUT", body: JSON.stringify({ ...city, active: !city.active }) });
+    const saved = await res.json();
+    setData(d => ({ ...d, cities: d.cities.map(c => c.id === id ? saved : c) }));
+  };
+
+  return (
+    <div>
+      <div className="section-head">
+        <div><div className="section-title">Города</div><div className="section-sub">Регионы присутствия</div></div>
+        <button className="btn btn-primary" onClick={openAdd}><Ico name="plus" size={14} /> Добавить город</button>
+      </div>
+      <div className="card" style={{ padding: 0 }}>
+        <div className="table-wrap"><table>
+          <thead><tr><th>Город</th><th>Регион</th><th>Клиник</th><th>Статус</th><th style={{width:100}}>Действия</th></tr></thead>
+          <tbody>{data.cities.map(c => (
+            <tr key={c.id}>
+              <td><strong>{c.name}</strong></td>
+              <td style={{ color: "var(--text)", fontSize: 13 }}>{c.region}</td>
+              <td><span className="badge badge-teal">{c.clinicsCount || data.clinics.filter(cl => cl.city === c.name).length}</span></td>
+              <td>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Toggle on={c.active} onChange={() => toggle(c.id)} />
+                  <span style={{ fontSize: 12, color: "var(--text)" }}>{c.active ? "Доступен" : "Скрыт"}</span>
+                </div>
+              </td>
+              <td><div style={{ display: "flex", gap: 6 }}>
+                <button className="btn-icon" onClick={() => openEdit(c)}><Ico name="edit" /></button>
+                <button className="btn-icon" style={{ background: "#fef2f2", color: "#e53e3e" }} onClick={() => del(c.id)}><Ico name="trash" /></button>
+              </div></td>
+            </tr>
+          ))}</tbody>
+        </table></div>
+      </div>
+      {modal && (
+        <Modal title={modal === "add" ? "Добавить город" : "Редактировать город"} onClose={() => setModal(null)}
+          footer={<><button className="btn btn-secondary" onClick={() => setModal(null)}>Отмена</button><button className="btn btn-primary" onClick={save}>Сохранить</button></>}>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Название города</label>
+              <input className="form-input" value={form.name || ""} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Москва" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Регион</label>
+              <input className="form-input" value={form.region || ""} onChange={e => setForm(f => ({ ...f, region: e.target.value }))} placeholder="Московская область" />
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── Clinics ───────────────────────────────────────────────
+function ClinicsSection({ data, setData }) {
+  const [modal, setModal] = useState(null);
+  const [form, setForm] = useState({});
+  const firstCity = data.cities[0];
+  const empty = { name: "", city: firstCity?.name || "", city_id: firstCity?.id || null, addr: "", phone: "", services: [], service_ids: [], worktime: "", active: true };
+
+  const toPayload = (f) => ({
+    name: f.name, city_id: f.city_id || (data.cities.find(c => c.name === f.city)?.id),
+    addr: f.addr, phone: f.phone, service_ids: f.service_ids || [], worktime: f.worktime, active: f.active,
+  });
+
+  const save = async () => {
+    const url = modal === "add" ? "/admin/api/clinics" : `/admin/api/clinics/${form.id}`;
+    const res = await apiFetch(url, { method: modal === "add" ? "POST" : "PUT", body: JSON.stringify(toPayload(form)) });
+    const saved = await res.json();
+    if (modal === "add") setData(d => ({ ...d, clinics: [...d.clinics, saved] }));
+    else setData(d => ({ ...d, clinics: d.clinics.map(c => c.id === form.id ? saved : c) }));
+    setModal(null);
+  };
+  const del = async (id) => {
+    await apiFetch(`/admin/api/clinics/${id}`, { method: "DELETE" });
+    setData(d => ({ ...d, clinics: d.clinics.filter(c => c.id !== id) }));
+  };
+  const toggle = async (id) => {
+    const clinic = data.clinics.find(c => c.id === id);
+    const res = await apiFetch(`/admin/api/clinics/${id}`, { method: "PUT", body: JSON.stringify(toPayload({ ...clinic, active: !clinic.active })) });
+    const saved = await res.json();
+    setData(d => ({ ...d, clinics: d.clinics.map(c => c.id === id ? saved : c) }));
+  };
+  const toggleSvc = (svcId) => {
+    const ids = form.service_ids || [];
+    setForm(f => ({ ...f, service_ids: ids.includes(svcId) ? ids.filter(x => x !== svcId) : [...ids, svcId] }));
+  };
+
+  return (
+    <div>
+      <div className="section-head">
+        <div><div className="section-title">Клиники</div><div className="section-sub">Медицинские учреждения</div></div>
+        <button className="btn btn-primary" onClick={() => { setForm({ ...empty }); setModal("add"); }}><Ico name="plus" size={14} /> Добавить клинику</button>
+      </div>
+      <div className="card" style={{ padding: 0 }}>
+        <div className="table-wrap"><table>
+          <thead><tr><th>Название</th><th>Город</th><th>Адрес</th><th>Услуги</th><th>Статус</th><th style={{width:100}}>Действия</th></tr></thead>
+          <tbody>{data.clinics.map(c => (
+            <tr key={c.id}>
+              <td><strong>{c.name}</strong><div style={{ fontSize: 12, color: "var(--text)" }}>{c.phone}</div></td>
+              <td>{c.city}</td>
+              <td style={{ fontSize: 13, color: "var(--text)", maxWidth: 160 }}>{c.addr}</td>
+              <td><div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>{(c.services || []).map(s => <span key={s} className="badge badge-teal" style={{ fontSize: 10 }}>{s}</span>)}</div></td>
+              <td><Toggle on={c.active} onChange={() => toggle(c.id)} /></td>
+              <td><div style={{ display: "flex", gap: 6 }}>
+                <button className="btn-icon" onClick={() => { setForm({ ...c }); setModal("edit"); }}><Ico name="edit" /></button>
+                <button className="btn-icon" style={{ background: "#fef2f2", color: "#e53e3e" }} onClick={() => del(c.id)}><Ico name="trash" /></button>
+              </div></td>
+            </tr>
+          ))}</tbody>
+        </table></div>
+      </div>
+      {modal && (
+        <Modal title={modal === "add" ? "Добавить клинику" : "Редактировать клинику"} onClose={() => setModal(null)}
+          footer={<><button className="btn btn-secondary" onClick={() => setModal(null)}>Отмена</button><button className="btn btn-primary" onClick={save}>Сохранить</button></>}>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Название клиники</label>
+              <input className="form-input" value={form.name || ""} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Зубная фея" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Город</label>
+              <select className="form-input" value={form.city_id || ""} onChange={e => { const c = data.cities.find(x => x.id === +e.target.value); setForm(f => ({ ...f, city_id: +e.target.value, city: c?.name || "" })); }}>
+                {data.cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group form-full">
+              <label className="form-label">Адрес</label>
+              <input className="form-input" value={form.addr || ""} onChange={e => setForm(f => ({ ...f, addr: e.target.value }))} placeholder="ул. Пушкина, д. 12" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Телефон</label>
+              <input className="form-input" value={form.phone || ""} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+7 495 000-00-00" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Часы работы</label>
+              <input className="form-input" value={form.worktime || ""} onChange={e => setForm(f => ({ ...f, worktime: e.target.value }))} placeholder="Пн–Пт 9:00–19:00" />
+            </div>
+            <div className="form-group form-full">
+              <label className="form-label">Услуги</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
+                {data.services.map(s => {
+                  const on = (form.service_ids || []).includes(s.id);
+                  return (
+                    <button key={s.id} onClick={() => toggleSvc(s.id)}
+                      style={{ padding: "6px 14px", borderRadius: 99, border: `1.5px solid ${on ? "var(--btn-color)" : "var(--stroke)"}`,
+                        background: on ? "#e0f7f6" : "#fff", color: on ? "var(--brand-dark)" : "var(--text)",
+                        fontWeight: on ? 600 : 400, fontSize: 13, cursor: "pointer" }}>
+                      {s.icon} {s.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── Doctors ───────────────────────────────────────────────
+function DoctorsSection({ data, setData }) {
+  const [modal, setModal] = useState(null);
+  const [form, setForm] = useState({});
+  const [scheduleDoctor, setScheduleDoctor] = useState(null);
+
+  const COLORS = ["#16a085","#2980b9","#8e44ad","#e74c3c","#e67e22","#27ae60","#2c3e50"];
+  const firstClinic = data.clinics[0];
+  const empty = { name: "", spec: "", clinic: firstClinic?.name || "", clinic_id: firstClinic?.id || null, exp: 0, minAge: 0, color: COLORS[0], initials: "", active: true };
+
+  const save = async () => {
+    const url = modal === "add" ? "/admin/api/doctors" : `/admin/api/doctors/${form.id}`;
+    const res = await apiFetch(url, { method: modal === "add" ? "POST" : "PUT", body: JSON.stringify(form) });
+    const saved = await res.json();
+    if (modal === "add") setData(d => ({ ...d, doctors: [...d.doctors, saved] }));
+    else setData(d => ({ ...d, doctors: d.doctors.map(dr => dr.id === form.id ? saved : dr) }));
+    setModal(null);
+  };
+  const del = async (id) => {
+    await apiFetch(`/admin/api/doctors/${id}`, { method: "DELETE" });
+    setData(d => ({ ...d, doctors: d.doctors.filter(dr => dr.id !== id) }));
+  };
+  const toggle = async (id) => {
+    const dr = data.doctors.find(d => d.id === id);
+    const res = await apiFetch(`/admin/api/doctors/${id}`, { method: "PUT", body: JSON.stringify({ ...dr, active: !dr.active }) });
+    const saved = await res.json();
+    setData(d => ({ ...d, doctors: d.doctors.map(dr => dr.id === id ? saved : dr) }));
+  };
+
+  return (
+    <div>
+      <div className="section-head">
+        <div><div className="section-title">Врачи</div><div className="section-sub">Специалисты клиник</div></div>
+        <button className="btn btn-primary" onClick={() => { setForm({ ...empty }); setModal("add"); }}><Ico name="plus" size={14} /> Добавить врача</button>
+      </div>
+      <div className="card" style={{ padding: 0 }}>
+        <div className="table-wrap"><table>
+          <thead><tr><th>Специалист</th><th>Специализация</th><th>Клиника</th><th>Стаж</th><th>Мин. возраст</th><th>Статус</th><th style={{width:120}}>Действия</th></tr></thead>
+          <tbody>{data.doctors.map(dr => (
+            <tr key={dr.id}>
+              <td><div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div className="avatar" style={{ background: dr.color, width: 32, height: 32, fontSize: 11 }}>{dr.initials}</div>
+                <strong style={{ fontSize: 13 }}>{dr.name}</strong>
+              </div></td>
+              <td style={{ fontSize: 13, color: "var(--text)" }}>{dr.spec}</td>
+              <td style={{ fontSize: 13 }}>{dr.clinic}</td>
+              <td>{dr.exp} лет</td>
+              <td>с {dr.minAge} лет</td>
+              <td><Toggle on={dr.active} onChange={() => toggle(dr.id)} /></td>
+              <td><div style={{ display: "flex", gap: 6 }}>
+                <button className="btn-icon" title="Расписание" onClick={() => setScheduleDoctor(dr)} style={{ background: "#e0f7f6", color: "#128395" }}><Ico name="schedule" /></button>
+                <button className="btn-icon" onClick={() => { setForm({ ...dr }); setModal("edit"); }}><Ico name="edit" /></button>
+                <button className="btn-icon" style={{ background: "#fef2f2", color: "#e53e3e" }} onClick={() => del(dr.id)}><Ico name="trash" /></button>
+              </div></td>
+            </tr>
+          ))}</tbody>
+        </table></div>
+      </div>
+      {modal && (
+        <Modal title={modal === "add" ? "Добавить врача" : "Редактировать врача"} onClose={() => setModal(null)}
+          footer={<><button className="btn btn-secondary" onClick={() => setModal(null)}>Отмена</button><button className="btn btn-primary" onClick={save}>Сохранить</button></>}>
+          <div className="form-grid">
+            <div className="form-group form-full">
+              <label className="form-label">ФИО врача</label>
+              <input className="form-input" value={form.name || ""} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Петрова Анна Викторовна" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Специализация</label>
+              <input className="form-input" value={form.spec || ""} onChange={e => setForm(f => ({ ...f, spec: e.target.value }))} placeholder="Стоматолог-терапевт" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Клиника</label>
+              <select className="form-input" value={form.clinic_id || ""} onChange={e => { const c = data.clinics.find(x => x.id === +e.target.value); setForm(f => ({ ...f, clinic_id: +e.target.value, clinic: c?.name || "" })); }}>
+                {data.clinics.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Стаж (лет)</label>
+              <input className="form-input" type="number" value={form.exp || ""} onChange={e => setForm(f => ({ ...f, exp: +e.target.value }))} placeholder="12" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Минимальный возраст</label>
+              <input className="form-input" type="number" value={form.minAge ?? ""} onChange={e => setForm(f => ({ ...f, minAge: +e.target.value }))} placeholder="3" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Инициалы (для аватара)</label>
+              <input className="form-input" value={form.initials || ""} onChange={e => setForm(f => ({ ...f, initials: e.target.value }))} placeholder="АП" maxLength={2} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Цвет аватара</label>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
+                {COLORS.map(c => (
+                  <button key={c} onClick={() => setForm(f => ({ ...f, color: c }))}
+                    style={{ width: 28, height: 28, borderRadius: 8, background: c, border: form.color === c ? "2px solid var(--title)" : "2px solid transparent", cursor: "pointer" }} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {scheduleDoctor && <ScheduleModal doctor={scheduleDoctor} onClose={() => setScheduleDoctor(null)} />}
+    </div>
+  );
+}
+
+// ── Schedule modal ────────────────────────────────────────
+function ScheduleModal({ doctor, onClose }) {
+  const TIMES = ["09:00","09:30","10:00","10:30","11:00","11:30","12:00","13:00","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30"];
+  const emptySlots = () => {
+    const s = {};
+    DAYS.forEach((d, di) => { s[di] = {}; TIMES.forEach(t => { s[di][t] = false; }); });
+    return s;
+  };
+  const [slots, setSlots] = useState(emptySlots);
+  const [workDays, setWorkDays] = useState([0,1,2,3,4]);
+  const [saving, setSaving] = React.useState(false);
+
+  React.useEffect(() => {
+    apiFetch(`/admin/api/doctors/${doctor.id}/schedule`).then(r => r.json()).then(({ slots: raw }) => {
+      const s = emptySlots();
+      for (const [day, times] of Object.entries(raw || {})) {
+        for (const [t, v] of Object.entries(times)) { if (s[+day]) s[+day][t] = !!v; }
+      }
+      setSlots(s);
+      const activeDays = Object.entries(raw || {}).filter(([, times]) => Object.values(times).some(Boolean)).map(([d]) => +d);
+      if (activeDays.length) setWorkDays(activeDays);
+    });
+  }, [doctor.id]);
+
+  const toggle = (di, t) => setSlots(s => ({ ...s, [di]: { ...s[di], [t]: !s[di][t] } }));
+  const toggleDay = (di) => setWorkDays(w => w.includes(di) ? w.filter(x => x !== di) : [...w, di]);
+
+  const saveSchedule = async () => {
+    setSaving(true);
+    const payload = {};
+    DAYS.forEach((d, di) => { payload[String(di)] = {}; TIMES.forEach(t => { payload[String(di)][t] = workDays.includes(di) && !!slots[di]?.[t]; }); });
+    await apiFetch(`/admin/api/doctors/${doctor.id}/schedule`, { method: "PUT", body: JSON.stringify({ slots: payload }) });
+    setSaving(false);
+    onClose();
+  };
+
+  return (
+    <Modal title={`Расписание — ${doctor.name}`} onClose={onClose} lg
+      footer={<><button className="btn btn-secondary" onClick={onClose}>Отмена</button><button className="btn btn-primary" onClick={saveSchedule} disabled={saving}>{saving ? "Сохраняем…" : "Сохранить расписание"}</button></>}>
+      <div style={{ marginBottom: 16 }}>
+        <div className="form-label" style={{ marginBottom: 8 }}>Рабочие дни</div>
+        <div className="day-toggle">
+          {DAYS.map((d, di) => (
+            <button key={di} className={`day-btn${workDays.includes(di) ? " on" : ""}`} onClick={() => toggleDay(di)}>{d}</button>
+          ))}
+        </div>
+      </div>
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--text)", marginBottom: 8 }}>
+          <span className="badge badge-teal">■ Доступен</span>
+          <span className="badge badge-gray">■ Недоступен</span>
+          <span style={{ marginLeft: "auto" }}>Нажмите на ячейку для переключения</span>
+        </div>
+      </div>
+      <div style={{ overflowX: "auto" }}>
+        <div className="schedule-grid" style={{ minWidth: 520 }}>
+          <div className="sch-head">Время</div>
+          {DAYS.map((d, di) => (
+            <div key={di} className="sch-head" style={{ color: workDays.includes(di) ? "var(--brand-dark)" : "#c0cdd4" }}>{d}</div>
+          ))}
+          {TIMES.map(t => (
+            <React.Fragment key={t}>
+              <div className="sch-time">{t}</div>
+              {DAYS.map((d, di) => (
+                <button key={di}
+                  className={`sch-slot${!workDays.includes(di) ? " busy" : slots[di]?.[t] ? " active" : ""}`}
+                  onClick={() => workDays.includes(di) && toggle(di, t)}
+                  style={{ cursor: workDays.includes(di) ? "pointer" : "default" }}>
+                  {workDays.includes(di) ? (slots[di]?.[t] ? "✓" : "—") : "—"}
+                </button>
+              ))}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// ── Content ───────────────────────────────────────────────
+function ContentSection({ data, setData }) {
+  const [modal, setModal] = useState(null);
+  const [form, setForm] = useState({});
+  const [filterSvc, setFilterSvc] = useState("all");
+  const firstSvc = data.services[0];
+  const empty = { service: firstSvc?.name || "", service_id: firstSvc?.id || null, type: CONTENT_TYPES[0], title: "", desc: "", duration: 4, url: "", active: true };
+
+  const filtered = filterSvc === "all" ? data.content : data.content.filter(c => c.service === filterSvc);
+
+  const toPayload = (f) => ({ service_id: f.service_id, type: f.type, title: f.title, desc: f.desc, duration: f.duration || null, url: f.url, active: f.active });
+
+  const save = async () => {
+    const url = modal === "add" ? "/admin/api/content" : `/admin/api/content/${form.id}`;
+    const res = await apiFetch(url, { method: modal === "add" ? "POST" : "PUT", body: JSON.stringify(toPayload(form)) });
+    const saved = await res.json();
+    if (modal === "add") setData(d => ({ ...d, content: [...d.content, saved] }));
+    else setData(d => ({ ...d, content: d.content.map(c => c.id === form.id ? saved : c) }));
+    setModal(null);
+  };
+  const del = async (id) => {
+    await apiFetch(`/admin/api/content/${id}`, { method: "DELETE" });
+    setData(d => ({ ...d, content: d.content.filter(c => c.id !== id) }));
+  };
+  const toggle = async (id) => {
+    const item = data.content.find(c => c.id === id);
+    const res = await apiFetch(`/admin/api/content/${id}`, { method: "PUT", body: JSON.stringify(toPayload({ ...item, active: !item.active })) });
+    const saved = await res.json();
+    setData(d => ({ ...d, content: d.content.map(c => c.id === id ? saved : c) }));
+  };
+
+  const typeInfo = (type) => CONTENT_TYPE_ICONS[type] || { icon: "doc", bg: "#f0f9fa", color: "#128395" };
+
+  return (
+    <div>
+      <div className="section-head">
+        <div><div className="section-title">Материалы для адаптации</div><div className="section-sub">Контент, отображаемый пользователям перед визитом</div></div>
+        <button className="btn btn-primary" onClick={() => { setForm({ ...empty }); setModal("add"); }}><Ico name="plus" size={14} /> Добавить материал</button>
+      </div>
+
+      <div className="tabs">
+        <button className={`tab${filterSvc === "all" ? " active" : ""}`} onClick={() => setFilterSvc("all")}>Все</button>
+        {data.services.map(s => (
+          <button key={s.id} className={`tab${filterSvc === s.name ? " active" : ""}`} onClick={() => setFilterSvc(s.name)}>{s.icon} {s.name}</button>
+        ))}
+      </div>
+
+      <div style={{ display: "grid", gap: 10 }}>
+        {filtered.map((item, idx) => {
+          const ti = typeInfo(item.type);
+          return (
+            <div key={item.id} style={{ background: "#fff", borderRadius: 16, padding: "16px 20px", boxShadow: "var(--shadow)", display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ color: "#d0d8dc", cursor: "grab", fontSize: 16, flexShrink: 0 }}>⠿</div>
+              <div className="ctype-icon" style={{ background: ti.bg, color: ti.color }}>
+                <Ico name={ti.icon} size={18} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#128395", marginBottom: 2 }}>{item.type}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--title)", marginBottom: 2 }}>{item.title}</div>
+                <div style={{ fontSize: 12, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.desc}</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                {item.duration && <span className="badge badge-gray">⏱ {item.duration} мин</span>}
+                <span className="badge badge-teal">{item.service}</span>
+              </div>
+              <Toggle on={item.active} onChange={() => toggle(item.id)} />
+              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                <button className="btn-icon" onClick={() => { setForm({ ...item }); setModal("edit"); }}><Ico name="edit" /></button>
+                <button className="btn-icon" style={{ background: "#fef2f2", color: "#e53e3e" }} onClick={() => del(item.id)}><Ico name="trash" /></button>
+              </div>
+            </div>
+          );
+        })}
+        {filtered.length === 0 && (
+          <div className="card" style={{ textAlign: "center", color: "var(--text)", padding: "40px 24px" }}>
+            Нет материалов для выбранного фильтра
+          </div>
+        )}
+      </div>
+
+      {modal && (
+        <Modal title={modal === "add" ? "Добавить материал" : "Редактировать материал"} onClose={() => setModal(null)} lg
+          footer={<><button className="btn btn-secondary" onClick={() => setModal(null)}>Отмена</button><button className="btn btn-primary" onClick={save}>Сохранить</button></>}>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Услуга</label>
+              <select className="form-input" value={form.service_id || ""} onChange={e => { const s = data.services.find(x => x.id === +e.target.value); setForm(f => ({ ...f, service_id: +e.target.value, service: s?.name || "" })); }}>
+                {data.services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Тип материала</label>
+              <select className="form-input" value={form.type || ""} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
+                {CONTENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="form-group form-full">
+              <label className="form-label">Название</label>
+              <input className="form-input" value={form.title || ""} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Иду к стоматологу" />
+            </div>
+            <div className="form-group form-full">
+              <label className="form-label">Описание</label>
+              <textarea className="form-input" value={form.desc || ""} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))} placeholder="Краткое описание для пользователя" rows={3} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Длительность <span>(мин, необяз.)</span></label>
+              <input className="form-input" type="number" value={form.duration || ""} onChange={e => setForm(f => ({ ...f, duration: +e.target.value || null }))} placeholder="4" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Ссылка на контент <span>(URL)</span></label>
+              <input className="form-input" value={form.url || ""} onChange={e => setForm(f => ({ ...f, url: e.target.value }))} placeholder="https://..." />
+            </div>
+            <div className="form-group form-full" style={{ padding: "12px 16px", background: "#f0f9fa", borderRadius: 12, border: "1px dashed var(--btn-color)" }}>
+              <label className="form-label" style={{ marginBottom: 8 }}>Загрузить файл <span>(видео, PDF, изображение)</span></label>
+              <input type="file" style={{ fontSize: 13, color: "var(--text)" }} />
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── Roles ─────────────────────────────────────────────────
+function RolesSection({ data, setData }) {
+  const [modal, setModal] = useState(null);
+  const [form, setForm] = useState({});
+  const COLORS = ["#e53e3e","#2980b9","#27ae60","#e67e22","#8e44ad","#16a085"];
+  const emptyPerms = () => Object.fromEntries(PERM_SECTIONS.map(s => [s, [0,0,0,0]]));
+  const empty = { name: "", desc: "", color: COLORS[0], perms: emptyPerms() };
+
+  const save = async () => {
+    const url = modal === "add" ? "/admin/api/roles" : `/admin/api/roles/${form.id}`;
+    const res = await apiFetch(url, { method: modal === "add" ? "POST" : "PUT", body: JSON.stringify(form) });
+    const saved = await res.json();
+    if (modal === "add") setData(d => ({ ...d, roles: [...d.roles, saved] }));
+    else setData(d => ({ ...d, roles: d.roles.map(r => r.id === form.id ? saved : r) }));
+    setModal(null);
+  };
+  const del = async (id) => {
+    await apiFetch(`/admin/api/roles/${id}`, { method: "DELETE" });
+    setData(d => ({ ...d, roles: d.roles.filter(r => r.id !== id) }));
+  };
+  const togglePerm = (sec, idx) => {
+    setForm(f => {
+      const perms = { ...f.perms, [sec]: f.perms[sec].map((v, i) => i === idx ? (v ? 0 : 1) : v) };
+      return { ...f, perms };
+    });
+  };
+
+  return (
+    <div>
+      <div className="section-head">
+        <div><div className="section-title">Роли и права</div><div className="section-sub">Управление доступом пользователей</div></div>
+        <button className="btn btn-primary" onClick={() => { setForm({ ...empty, perms: emptyPerms() }); setModal("add"); }}><Ico name="plus" size={14} /> Создать роль</button>
+      </div>
+
+      <div style={{ display: "grid", gap: 16 }}>
+        {data.roles.map(role => (
+          <div key={role.id} className="card">
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 12, height: 12, borderRadius: 4, background: role.color, flexShrink: 0, marginTop: 2 }} />
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "var(--title)" }}>{role.name}</div>
+                  <div style={{ fontSize: 13, color: "var(--text)" }}>{role.desc}</div>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button className="btn-icon" onClick={() => { setForm({ ...role, perms: JSON.parse(JSON.stringify(role.perms)) }); setModal("edit"); }}><Ico name="edit" /></button>
+                {role.id !== 1 && <button className="btn-icon" style={{ background: "#fef2f2", color: "#e53e3e" }} onClick={() => del(role.id)}><Ico name="trash" /></button>}
+              </div>
+            </div>
+            <div className="perm-table">
+              <div style={{ overflowX: "auto" }}>
+                <table>
+                  <thead><tr>
+                    <th style={{ width: 130 }}>Раздел</th>
+                    {PERM_LABELS.map(l => <th key={l}>{l}</th>)}
+                  </tr></thead>
+                  <tbody>{PERM_SECTIONS.map(sec => (
+                    <tr key={sec}>
+                      <td>{PERM_SECTION_NAMES[sec]}</td>
+                      {(role.perms[sec] || [0,0,0,0]).map((v, i) => (
+                        <td key={i}><div style={{ display: "flex", justifyContent: "center" }}>
+                          {v ? <span className="badge badge-teal" style={{ fontSize: 10 }}>✓</span> : <span className="badge badge-gray" style={{ fontSize: 10 }}>—</span>}
+                        </div></td>
+                      ))}
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {modal && (
+        <Modal title={modal === "add" ? "Создать роль" : "Редактировать роль"} onClose={() => setModal(null)} lg
+          footer={<><button className="btn btn-secondary" onClick={() => setModal(null)}>Отмена</button><button className="btn btn-primary" onClick={save}>Сохранить</button></>}>
+          <div className="form-grid" style={{ marginBottom: 20 }}>
+            <div className="form-group">
+              <label className="form-label">Название роли</label>
+              <input className="form-input" value={form.name || ""} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Администратор" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Цвет метки</label>
+              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                {COLORS.map(c => <button key={c} onClick={() => setForm(f => ({ ...f, color: c }))} style={{ width: 28, height: 28, borderRadius: 8, background: c, border: form.color === c ? "2px solid var(--title)" : "2px solid transparent", cursor: "pointer" }} />)}
+              </div>
+            </div>
+            <div className="form-group form-full">
+              <label className="form-label">Описание</label>
+              <input className="form-input" value={form.desc || ""} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))} placeholder="Краткое описание прав роли" />
+            </div>
+          </div>
+          <div className="form-label" style={{ marginBottom: 12 }}>Матрица прав доступа</div>
+          <div className="perm-table">
+            <div style={{ overflowX: "auto" }}>
+              <table>
+                <thead><tr>
+                  <th style={{ width: 130 }}>Раздел</th>
+                  {PERM_LABELS.map(l => <th key={l}>{l}</th>)}
+                </tr></thead>
+                <tbody>{PERM_SECTIONS.map(sec => (
+                  <tr key={sec}>
+                    <td>{PERM_SECTION_NAMES[sec]}</td>
+                    {(form.perms?.[sec] || [0,0,0,0]).map((v, i) => (
+                      <td key={i}><div style={{ display: "flex", justifyContent: "center" }}>
+                        <PermCheck on={!!v} onChange={() => togglePerm(sec, i)} />
+                      </div></td>
+                    ))}
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────
+const NAV = [
+  { id: "dashboard", label: "Дашборд", icon: "dashboard", group: null },
+  { id: "services", label: "Услуги", icon: "services", group: "Каталог" },
+  { id: "cities", label: "Города", icon: "city", group: "Каталог" },
+  { id: "clinics", label: "Клиники", icon: "clinic", group: "Каталог" },
+  { id: "doctors", label: "Врачи", icon: "doctor", group: "Каталог" },
+  { id: "content", label: "Контент", icon: "content", group: "Материалы" },
+  { id: "roles", label: "Роли и права", icon: "roles", group: "Система" },
+];
+
+function App() {
+  const [token, setToken] = React.useState(localStorage.getItem("admin_token"));
+  const [adminUser, setAdminUser] = React.useState(localStorage.getItem("admin_username") || "");
+  const [page, setPage] = useState("dashboard");
+  const [data, setData] = useState(EMPTY_DATA);
+  const [loading, setLoading] = React.useState(false);
+
+  const PAGE_TITLES = {
+    dashboard: "Дашборд", services: "Услуги", cities: "Города",
+    clinics: "Клиники", doctors: "Врачи", content: "Материалы для адаптации", roles: "Роли и права",
+  };
+
+  React.useEffect(() => {
+    if (!token) return;
+    setLoading(true);
+    loadAllData().then(d => { setData(d); setLoading(false); }).catch(() => setLoading(false));
+  }, [token]);
+
+  const handleLogin = (uname) => {
+    setToken(localStorage.getItem("admin_token"));
+    setAdminUser(uname);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_username");
+    setToken(null);
+    setData(EMPTY_DATA);
+  };
+
+  if (!token) return <LoginScreen onLogin={handleLogin} />;
+
+  const initials = adminUser ? adminUser.slice(0, 2).toUpperCase() : "АД";
+  const groups = [...new Set(NAV.map(n => n.group))];
+
+  return (
+    <div className="layout">
+      <aside className="sidebar">
+        <div className="sidebar-logo">
+          <div className="sidebar-logo-title">Иду к врачу</div>
+          <div className="sidebar-logo-sub">Панель управления</div>
+          <div className="sidebar-badge">Admin</div>
+        </div>
+        <nav className="sidebar-nav">
+          {groups.map(group => {
+            const items = NAV.filter(n => n.group === group);
+            return (
+              <React.Fragment key={group || "top"}>
+                {group && <div className="nav-section-label">{group}</div>}
+                {items.map(item => (
+                  <button key={item.id} className={`nav-item${page === item.id ? " active" : ""}`} onClick={() => setPage(item.id)}>
+                    <div className="nav-icon"><Ico name={item.icon} size={15} /></div>
+                    {item.label}
+                  </button>
+                ))}
+              </React.Fragment>
+            );
+          })}
+        </nav>
+        <div className="sidebar-footer">
+          <div className="admin-user">
+            <div className="admin-avatar">{initials}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="admin-name">{adminUser}</div>
+              <div className="admin-role">Администратор</div>
+            </div>
+            <button onClick={handleLogout} title="Выйти" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text)", padding: 4 }}>
+              <Ico name="logout" size={16} />
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <div className="main">
+        <header className="topbar">
+          <span className="topbar-title">{PAGE_TITLES[page]}</span>
+          <div className="topbar-actions">
+            {loading && <span style={{ fontSize: 12, color: "var(--text)" }}>Загрузка…</span>}
+            <div className="admin-avatar" style={{ width: 34, height: 34, fontSize: 12 }}>{initials}</div>
+          </div>
+        </header>
+        <div className="content">
+          {page === "dashboard" && <Dashboard data={data} />}
+          {page === "services" && <ServicesSection data={data} setData={setData} />}
+          {page === "cities" && <CitiesSection data={data} setData={setData} />}
+          {page === "clinics" && <ClinicsSection data={data} setData={setData} />}
+          {page === "doctors" && <DoctorsSection data={data} setData={setData} />}
+          {page === "content" && <ContentSection data={data} setData={setData} />}
+          {page === "roles" && <RolesSection data={data} setData={setData} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
