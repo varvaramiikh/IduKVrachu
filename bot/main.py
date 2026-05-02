@@ -302,10 +302,7 @@ async def pay_support_handler(message: types.Message):
 @dp.message(Command("admin"))
 async def admin_link_handler(message: types.Message):
     url = settings.WEB_APP_URL.rstrip("/") + "/admin"
-    if is_https_url(settings.WEB_APP_URL):
-        button = InlineKeyboardButton(text="🛠 Открыть админ-панель", web_app=WebAppInfo(url=url))
-    else:
-        button = InlineKeyboardButton(text="🛠 Открыть админ-панель", url=url)
+    button = InlineKeyboardButton(text="🛠 Открыть админ-панель в браузере", url=url)
     await message.answer(
         f"🔐 <b>Админ-панель</b>\n\n"
         f"<a href=\"{url}\">{url}</a>\n\n"
