@@ -296,6 +296,25 @@ async def pay_support_handler(message: types.Message):
         "пожалуйста, напишите нашему оператору: @admin_handle"
     )
 
+
+# Скрытая команда: не регистрируется в set_my_commands, поэтому не отображается
+# в подсказках Telegram, но сработает, если её ввести вручную.
+@dp.message(Command("admin"))
+async def admin_link_handler(message: types.Message):
+    url = settings.WEB_APP_URL.rstrip("/") + "/admin"
+    if is_https_url(settings.WEB_APP_URL):
+        button = InlineKeyboardButton(text="🛠 Открыть админ-панель", web_app=WebAppInfo(url=url))
+    else:
+        button = InlineKeyboardButton(text="🛠 Открыть админ-панель", url=url)
+    await message.answer(
+        f"🔐 <b>Админ-панель</b>\n\n"
+        f"<a href=\"{url}\">{url}</a>\n\n"
+        "Для входа требуются логин и пароль администратора.",
+        parse_mode="HTML",
+        disable_web_page_preview=True,
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[[button]]),
+    )
+
 def get_consent_kb():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Начать", callback_data="consent_agree")],

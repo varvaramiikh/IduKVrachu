@@ -72,6 +72,8 @@ from .schemas import (
     AppointmentReschedule,
     City as CitySchema,
     Clinic as ClinicSchema,
+    Doctor as DoctorSchema,
+    DoctorSlot,
     ProfileResponse,
     ProfileSaveRequest,
     Service as ServiceSchema,
@@ -224,12 +226,59 @@ async def get_cities(db: AsyncSession = Depends(get_db)):
 @app.get("/api/clinics", response_model=List[ClinicSchema])
 async def get_clinics(city_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Clinic).where(Clinic.city_id == city_id, Clinic.is_active == True))
-    return result.scalars().all()
+    clinics = result.scalars().all()
+    return [
+        ClinicSchema(
+            id=c.id, name=c.name, city_id=c.city_id, address=c.address,
+            phone=c.phone, worktime=c.worktime, is_active=c.is_active,
+            service_ids=json.loads(c.services_json or "[]"),
+        )
+        for c in clinics
+    ]
 
 @app.get("/api/services", response_model=List[ServiceSchema])
 async def get_services(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Service).where(Service.is_active == True))
     return result.scalars().all()
+
+@app.get("/api/doctors", response_model=List[DoctorSchema])
+async def get_doctors(clinic_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(Doctor).where(Doctor.clinic_id == clinic_id, Doctor.is_active == True)
+    )
+    return result.scalars().all()
+
+
+@app.get("/api/doctors/{doctor_id}/slots", response_model=List[DoctorSlot])
+async def get_doctor_slots(doctor_id: int, date: str, db: AsyncSession = Depends(get_db)):
+    doctor = (await db.execute(select(Doctor).where(Doctor.id == doctor_id))).scalar_one_or_none()
+    if not doctor or not doctor.is_active:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+    try:
+        target = datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format, expected YYYY-MM-DD")
+    rows = (await db.execute(
+        select(DoctorSchedule).where(
+            DoctorSchedule.doctor_id == doctor_id,
+            DoctorSchedule.day_of_week == target.weekday(),
+        )
+    )).scalars().all()
+    times = sorted({r.time_slot for r in rows})
+    if not times:
+        return []
+    day_start = datetime.combine(target, datetime.min.time())
+    day_end = day_start + timedelta(days=1)
+    busy_query = select(Appointment.slot_datetime).where(
+        Appointment.status == "scheduled",
+        Appointment.slot_datetime >= day_start,
+        Appointment.slot_datetime < day_end,
+    )
+    if doctor.clinic_id is not None:
+        busy_query = busy_query.where(Appointment.clinic_id == doctor.clinic_id)
+    busy_rows = (await db.execute(busy_query)).scalars().all()
+    busy_times = {dt.strftime("%H:%M") for dt in busy_rows}
+    return [DoctorSlot(time=t, busy=t in busy_times) for t in times]
 
 @app.get("/api/slots", response_model=List[SlotSchema])
 async def get_slots(clinic_id: int, service_id: int, date: str, db: AsyncSession = Depends(get_db)):

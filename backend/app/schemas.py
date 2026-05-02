@@ -22,35 +22,50 @@ class User(UserBase):
 
 # ── Public catalog ────────────────────────────────────────────
 
-class CityBase(BaseModel):
-    name: str
-    is_active: bool = True
-
-class City(CityBase):
+class City(BaseModel):
     id: int
+    name: str
+    region: Optional[str] = None
+    is_active: bool = True
     class Config:
         from_attributes = True
 
-class ClinicBase(BaseModel):
+class Clinic(BaseModel):
+    id: int
     name: str
-    address: Optional[str] = None
     city_id: int
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    worktime: Optional[str] = None
     is_active: bool = True
+    service_ids: List[int] = []
 
-class Clinic(ClinicBase):
+class Service(BaseModel):
     id: int
-    class Config:
-        from_attributes = True
-
-class ServiceBase(BaseModel):
     name: str
+    description: Optional[str] = None
+    icon: Optional[str] = None
     service_type: str
     is_active: bool = True
-
-class Service(ServiceBase):
-    id: int
     class Config:
         from_attributes = True
+
+class Doctor(BaseModel):
+    id: int
+    name: str
+    spec: Optional[str] = None
+    clinic_id: Optional[int] = None
+    exp_years: int = 0
+    min_age: int = 0
+    color: Optional[str] = None
+    initials: Optional[str] = None
+    is_active: bool = True
+    class Config:
+        from_attributes = True
+
+class DoctorSlot(BaseModel):
+    time: str
+    busy: bool
 
 class SlotSchema(BaseModel):
     datetime: datetime

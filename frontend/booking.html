@@ -1067,73 +1067,7 @@
         <h2 class="step-title">Выберите услугу</h2>
         <p class="step-subtitle">Укажите направление, по которому хотите записать ребёнка</p>
 
-        <div class="service-list">
-          <div class="service-card" data-service="dental" tabindex="0">
-            <div class="service-card__icon">
-              <img src="materials/svg/icon-tooth.svg" alt="">
-            </div>
-            <div class="service-card__body">
-              <p class="service-card__title">Стоматология</p>
-              <p class="service-card__desc">Осмотр, лечение, профилактика</p>
-            </div>
-            <div class="service-card__check">
-              <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
-                <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-          </div>
-
-          <div class="service-card" data-service="blood" tabindex="0">
-            <div class="service-card__icon">
-              <img src="materials/svg/icon-syringe.svg" alt="">
-            </div>
-            <div class="service-card__body">
-              <p class="service-card__title">Сдача анализа крови</p>
-              <p class="service-card__desc">Забор крови из вены или пальца</p>
-            </div>
-            <div class="service-card__check">
-              <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
-                <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-          </div>
-
-          <div class="service-card" data-service="pediatr" tabindex="0">
-            <div class="service-card__icon">
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style="color:#128395">
-                <circle cx="14" cy="9" r="4" stroke="currentColor" stroke-width="2"/>
-                <path d="M6 24c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <div class="service-card__body">
-              <p class="service-card__title">Педиатр</p>
-              <p class="service-card__desc">Плановый осмотр, консультация</p>
-            </div>
-            <div class="service-card__check">
-              <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
-                <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-          </div>
-
-          <div class="service-card" data-service="neuro" tabindex="0">
-            <div class="service-card__icon">
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style="color:#128395">
-                <path d="M14 4C10 4 7 7 7 11c0 2.5 1.2 4.7 3 6.1V22h8v-4.9c1.8-1.4 3-3.6 3-6.1 0-4-3-7-7-7z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                <path d="M11 22h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <div class="service-card__body">
-              <p class="service-card__title">Невролог</p>
-              <p class="service-card__desc">Консультация и обследование</p>
-            </div>
-            <div class="service-card__check">
-              <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
-                <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-          </div>
-        </div>
+        <div class="service-list" id="service-list"></div>
 
         <div class="booking-cta">
           <button class="btn-booking" id="btn-step1-next" disabled>Выбрать город →</button>
@@ -1153,57 +1087,10 @@
           <p class="selection-strip__text" id="strip-service-text">—</p>
         </div>
 
-        <div class="service-list">
-          <div class="service-card service-card--selected" data-city="moscow" tabindex="0" id="city-moscow">
-            <div class="service-card__icon">
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style="color:#128395">
-                <path d="M14 3C9.58 3 6 6.58 6 11c0 6.56 8 14 8 14s8-7.44 8-14c0-4.42-3.58-8-8-8z" stroke="currentColor" stroke-width="2"/>
-                <circle cx="14" cy="11" r="2.5" stroke="currentColor" stroke-width="2"/>
-              </svg>
-            </div>
-            <div class="service-card__body">
-              <p class="service-card__title">Москва</p>
-              <p class="service-card__desc">1 клиника доступна</p>
-            </div>
-            <div class="service-card__check">
-              <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
-                <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-          </div>
-
-          <!-- Другие города — недоступны -->
-          <div class="service-card" style="opacity:0.4; pointer-events:none;" tabindex="-1">
-            <div class="service-card__icon">
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style="color:#848484">
-                <path d="M14 3C9.58 3 6 6.58 6 11c0 6.56 8 14 8 14s8-7.44 8-14c0-4.42-3.58-8-8-8z" stroke="currentColor" stroke-width="2"/>
-                <circle cx="14" cy="11" r="2.5" stroke="currentColor" stroke-width="2"/>
-              </svg>
-            </div>
-            <div class="service-card__body">
-              <p class="service-card__title" style="color:#848484">Санкт-Петербург</p>
-              <p class="service-card__desc">Скоро</p>
-            </div>
-            <div class="service-card__check" style="border-color:#D9E4EA"></div>
-          </div>
-
-          <div class="service-card" style="opacity:0.4; pointer-events:none;" tabindex="-1">
-            <div class="service-card__icon">
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style="color:#848484">
-                <path d="M14 3C9.58 3 6 6.58 6 11c0 6.56 8 14 8 14s8-7.44 8-14c0-4.42-3.58-8-8-8z" stroke="currentColor" stroke-width="2"/>
-                <circle cx="14" cy="11" r="2.5" stroke="currentColor" stroke-width="2"/>
-              </svg>
-            </div>
-            <div class="service-card__body">
-              <p class="service-card__title" style="color:#848484">Казань</p>
-              <p class="service-card__desc">Скоро</p>
-            </div>
-            <div class="service-card__check" style="border-color:#D9E4EA"></div>
-          </div>
-        </div>
+        <div class="service-list" id="city-list"></div>
 
         <div class="booking-cta">
-          <button class="btn-booking" id="btn-step2-next">Выбрать клинику →</button>
+          <button class="btn-booking" id="btn-step2-next" disabled>Выбрать клинику →</button>
         </div>
       </div>
 
@@ -1216,19 +1103,10 @@
             <path d="M8 2C5.24 2 3 4.24 3 7c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5z" stroke="#128395" stroke-width="1.5"/>
             <circle cx="8" cy="7" r="1.5" stroke="#128395" stroke-width="1.5"/>
           </svg>
-          <p class="selection-strip__text" id="strip-city-text">Москва</p>
+          <p class="selection-strip__text" id="strip-city-text">—</p>
         </div>
 
-        <div class="clinic-list">
-          <div class="clinic-card" data-clinic="1" tabindex="0">
-            <p class="clinic-card__name">Зубная фея</p>
-            <p class="clinic-card__addr">ул. Пушкина, д. Колотушкина</p>
-            <div class="clinic-card__meta">
-              <span class="clinic-tag">Пн–Пт 9:00–19:00</span>
-              <span class="clinic-tag">Стоматология</span>
-            </div>
-          </div>
-        </div>
+        <div class="clinic-list" id="clinic-list"></div>
 
         <div class="booking-cta">
           <button class="btn-booking" id="btn-step3-clinic-next" disabled>Выбрать дату и время →</button>
@@ -1244,7 +1122,7 @@
             <path d="M8 2C5.24 2 3 4.24 3 7c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5z" stroke="#128395" stroke-width="1.5"/>
             <circle cx="8" cy="7" r="1.5" stroke="#128395" stroke-width="1.5"/>
           </svg>
-          <p class="selection-strip__text" id="strip-clinic-text">Зубная фея</p>
+          <p class="selection-strip__text" id="strip-clinic-text">—</p>
         </div>
 
         <!-- Mini calendar -->
@@ -1474,12 +1352,17 @@
 
     // ─── State ──────────────────────────────────────────────────────────────
     const state = {
-      service: null,
-      city: null,
-      clinic: null,
+      serviceId: null,
+      serviceName: '',
+      cityId: null,
+      cityName: '',
+      clinicId: null,
+      clinicName: '',
+      clinicAddr: '',
       doctorId: null,
       doctorName: null,
       doctorSpec: null,
+      doctorSlots: [],     // [{time, busy}] for selected date
       date: null,          // Date object
       slot: null,          // "HH:MM"
       parentName: '',
@@ -1491,59 +1374,40 @@
       rescheduleId: null,  // если задано — режим переноса записи
     };
 
-    // Маппинг ключей услуг → service_id из БД (по seed-данным)
-    const SERVICE_IDS = { dental: 1, blood: 3, pediatr: 1, neuro: 1 };
-
     // Restore persisted step
     const STORAGE_KEY = 'booking_step';
     let currentStep = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
     if (typeof currentStep === 'number' && currentStep > 7) currentStep = 0;
 
-    // ─── Data ───────────────────────────────────────────────────────────────
-    const SERVICES = {
-      dental:  'Стоматология',
-      blood:   'Сдача анализа крови',
-      pediatr: 'Педиатр',
-      neuro:   'Невролог',
-    };
-    const CLINICS = {
-      '1': { name: 'Зубная фея', addr: 'ул. Пушкина, д. Колотушкина' },
-    };
+    // ─── Catalog cache (always reloaded from API) ──────────────────────────
+    let SERVICES = [];          // [{id, name, description, icon, ...}]
+    let CITIES = [];            // [{id, name, region, is_active}]
+    let CLINICS = [];           // [{id, name, city_id, address, phone, worktime, service_ids, is_active}]
+    let DOCTORS = [];           // [{id, name, spec, clinic_id, exp_years, min_age, color, initials, is_active}]
 
-
-    const DOCTORS = [
-      {
-        id: 1,
-        name: 'Петрова Анна Викторовна',
-        spec: 'Стоматолог-терапевт',
-        exp: 'Стаж: 12 лет',
-        age: 'С 3 лет',
-        color: '#16a085',
-        initials: 'АП',
-        slots: ['09:00','09:30','11:00','14:00','15:30','17:00'],
-      },
-      {
-        id: 2,
-        name: 'Смирнов Дмитрий Олегович',
-        spec: 'Стоматолог-хирург',
-        exp: 'Стаж: 8 лет',
-        age: 'С 12 лет',
-        color: '#2980b9',
-        initials: 'ДС',
-        slots: ['10:00','10:30','13:00','16:00','16:30'],
-      },
-    ];
-
-    // Mock time slots per weekday (0=Sun busy)
-    function getSlots(date) {
-      if (!date) return [];
-      const day = date.getDay();
-      if (day === 0) return []; // Воскресенье
-      const base = ['09:00','09:30','10:00','10:30','11:00','11:30','14:00','14:30','15:00','15:30','16:00','17:00'];
-      // pseudo-random busy
-      const seed = date.getDate() + date.getMonth() * 31;
-      return base.map((t, i) => ({ time: t, busy: (seed + i * 7) % 5 === 0 }));
+    function localDateStr(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
     }
+
+    async function fetchJson(url) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`${url} ${res.status}`);
+      return res.json();
+    }
+
+    async function loadServices()     { SERVICES = await fetchJson('/api/services'); }
+    async function loadCities()       { CITIES   = await fetchJson('/api/cities'); }
+    async function loadClinics(cityId){ CLINICS  = await fetchJson(`/api/clinics?city_id=${cityId}`); }
+    async function loadDoctors(clinicId){ DOCTORS = await fetchJson(`/api/doctors?clinic_id=${clinicId}`); }
+    async function loadDoctorSlots(doctorId, date) {
+      return fetchJson(`/api/doctors/${doctorId}/slots?date=${localDateStr(date)}`);
+    }
+
+    function getServiceById(id) { return SERVICES.find(s => s.id === id); }
+    function getClinicById(id)  { return CLINICS.find(c => c.id === id); }
 
     // ─── Calendar state ──────────────────────────────────────────────────────
     const today = new Date();
@@ -1607,49 +1471,12 @@
     function selectDate(date) {
       state.date = date;
       state.slot = null;
+      state.doctorId = null;
+      state.doctorName = null;
+      state.doctorSpec = null;
+      state.doctorSlots = [];
       renderCalendar();
-      renderSlots();
       updateStep4CTA();
-    }
-
-    function renderSlots() {
-      const label = document.getElementById('slots-day-label');
-      const grid = document.getElementById('slots-grid');
-      if (!label || !grid) return;
-
-      if (!state.date) {
-        label.textContent = 'Выберите дату';
-        grid.innerHTML = '';
-        return;
-      }
-
-      const d = state.date;
-      const dateStr = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-      label.textContent = `Время — ${dateStr}`;
-
-      const slots = getSlots(d);
-      if (slots.length === 0) {
-        grid.innerHTML = '<p style="color:#848484;font-size:13px;grid-column:1/-1">Нет доступных слотов</p>';
-        return;
-      }
-
-      grid.innerHTML = '';
-      slots.forEach(s => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'slot-btn' + (s.busy ? ' slot-btn--busy' : '') + (state.slot === s.time && !s.busy ? ' slot-btn--selected' : '');
-        btn.textContent = s.time;
-        if (!s.busy) {
-          btn.addEventListener('click', () => {
-            state.slot = s.time;
-            renderSlots();
-            updateStep4CTA();
-          });
-        } else {
-          btn.disabled = true;
-        }
-        grid.appendChild(btn);
-      });
     }
 
     function updateStep4CTA() {
@@ -1665,12 +1492,12 @@
         {
           icon: `<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 8l2 2 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
           label: 'Услуга',
-          value: SERVICES[state.service] || '—'
+          value: state.serviceName || '—'
         },
         {
           icon: `<svg viewBox="0 0 16 16" fill="none"><path d="M8 2C5.24 2 3 4.24 3 7c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5z" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="7" r="1.5" stroke="currentColor" stroke-width="1.5"/></svg>`,
           label: 'Клиника',
-          value: state.clinic ? `${CLINICS[state.clinic].name}\n${CLINICS[state.clinic].addr}` : '—'
+          value: state.clinicId ? `${state.clinicName}\n${state.clinicAddr || ''}`.trim() : '—'
         },
         {
           icon: `<svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2 7h12M6 2v2M10 2v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
@@ -1728,7 +1555,7 @@
       document.getElementById('success-card').innerHTML = `
         <p class="success-remind-label">Ваша запись</p>
         <p class="success-remind-text" style="margin-bottom:8px">${doctorLine}</p>
-        <p class="success-remind-text" style="color:#848484; font-size:13px; font-weight:400; margin-bottom:4px">${CLINICS[state.clinic]?.name ?? ''}</p>
+        <p class="success-remind-text" style="color:#848484; font-size:13px; font-weight:400; margin-bottom:4px">${state.clinicName || ''}</p>
         <p class="success-remind-text" style="color:#128395">${dateStr}, ${state.slot}</p>
       `;
       document.getElementById('success-text').textContent =
@@ -1816,42 +1643,157 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // ─── Step 1 logic ─────────────────────────────────────────────────────────
-    document.querySelectorAll('.service-card[data-service]').forEach(card => {
-      card.addEventListener('click', () => {
-        document.querySelectorAll('.service-card[data-service]').forEach(c => c.classList.remove('service-card--selected'));
-        card.classList.add('service-card--selected');
-        state.service = card.dataset.service;
-        document.getElementById('btn-step1-next').disabled = false;
+    // ─── Step 1 logic (услуга) ────────────────────────────────────────────────
+    function renderServices() {
+      const list = document.getElementById('service-list');
+      list.innerHTML = '';
+      if (!SERVICES.length) {
+        list.innerHTML = '<p style="color:#848484;font-size:13px;text-align:center;padding:24px 0">Нет доступных услуг</p>';
+        document.getElementById('btn-step1-next').disabled = true;
+        return;
+      }
+      SERVICES.forEach(svc => {
+        const selected = state.serviceId === svc.id;
+        const card = document.createElement('div');
+        card.className = 'service-card' + (selected ? ' service-card--selected' : '');
+        card.tabIndex = 0;
+        card.dataset.serviceId = String(svc.id);
+        const icon = svc.icon || '⚕️';
+        card.innerHTML = `
+          <div class="service-card__icon"><span style="font-size:26px;line-height:1">${icon}</span></div>
+          <div class="service-card__body">
+            <p class="service-card__title">${svc.name}</p>
+            <p class="service-card__desc">${svc.description || ''}</p>
+          </div>
+          <div class="service-card__check">
+            <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+              <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        `;
+        card.addEventListener('click', () => {
+          state.serviceId = svc.id;
+          state.serviceName = svc.name;
+          // выбор услуги меняет дальнейший каталог — сбрасываем нижестоящий выбор
+          if (state.clinicId && getClinicById(state.clinicId) && !(getClinicById(state.clinicId).service_ids || []).includes(svc.id)) {
+            state.clinicId = null; state.clinicName = ''; state.clinicAddr = '';
+            state.doctorId = null; state.doctorName = null; state.doctorSpec = null;
+          }
+          renderServices();
+          document.getElementById('btn-step1-next').disabled = false;
+        });
+        list.appendChild(card);
       });
-    });
+      document.getElementById('btn-step1-next').disabled = !state.serviceId;
+    }
 
-    document.getElementById('btn-step1-next').addEventListener('click', () => {
-      document.getElementById('strip-service-text').textContent = SERVICES[state.service];
+    document.getElementById('btn-step1-next').addEventListener('click', async () => {
+      document.getElementById('strip-service-text').textContent = state.serviceName || '—';
+      try { await loadCities(); } catch (e) { /* ignore */ }
+      renderCities();
       goToStep(2);
     });
 
     // ─── Step 2 logic (город) ─────────────────────────────────────────────────
-    state.city = 'moscow';
-    document.getElementById('btn-step2-next').addEventListener('click', () => {
+    function renderCities() {
+      const list = document.getElementById('city-list');
+      list.innerHTML = '';
+      const active = CITIES.filter(c => c.is_active);
+      if (!active.length) {
+        list.innerHTML = '<p style="color:#848484;font-size:13px;text-align:center;padding:24px 0">Нет доступных городов</p>';
+        document.getElementById('btn-step2-next').disabled = true;
+        return;
+      }
+      active.forEach(city => {
+        const selected = state.cityId === city.id;
+        const card = document.createElement('div');
+        card.className = 'service-card' + (selected ? ' service-card--selected' : '');
+        card.tabIndex = 0;
+        card.innerHTML = `
+          <div class="service-card__icon">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style="color:#128395">
+              <path d="M14 3C9.58 3 6 6.58 6 11c0 6.56 8 14 8 14s8-7.44 8-14c0-4.42-3.58-8-8-8z" stroke="currentColor" stroke-width="2"/>
+              <circle cx="14" cy="11" r="2.5" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="service-card__body">
+            <p class="service-card__title">${city.name}</p>
+            <p class="service-card__desc">${city.region || ''}</p>
+          </div>
+          <div class="service-card__check">
+            <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+              <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        `;
+        card.addEventListener('click', () => {
+          if (state.cityId !== city.id) {
+            state.cityId = city.id;
+            state.cityName = city.name;
+            // city сменился — сбрасываем клинику/врача
+            state.clinicId = null; state.clinicName = ''; state.clinicAddr = '';
+            state.doctorId = null; state.doctorName = null; state.doctorSpec = null;
+          }
+          renderCities();
+          document.getElementById('btn-step2-next').disabled = false;
+        });
+        list.appendChild(card);
+      });
+      document.getElementById('btn-step2-next').disabled = !state.cityId;
+    }
+
+    document.getElementById('btn-step2-next').addEventListener('click', async () => {
+      try { await loadClinics(state.cityId); } catch (e) { /* ignore */ }
+      renderClinics();
       goToStep(3);
     });
 
     // ─── Step 3 logic (клиника) ───────────────────────────────────────────────
-    document.querySelectorAll('.clinic-card').forEach(card => {
-      card.addEventListener('click', () => {
-        document.querySelectorAll('.clinic-card').forEach(c => c.classList.remove('clinic-card--selected'));
-        card.classList.add('clinic-card--selected');
-        state.clinic = card.dataset.clinic;
-        document.getElementById('btn-step3-clinic-next').disabled = false;
+    function renderClinics() {
+      const list = document.getElementById('clinic-list');
+      list.innerHTML = '';
+      const filtered = CLINICS.filter(c =>
+        c.is_active && (state.serviceId == null || (c.service_ids || []).includes(state.serviceId))
+      );
+      const stripCity = document.getElementById('strip-city-text');
+      if (stripCity) stripCity.textContent = state.cityName || '—';
+      if (!filtered.length) {
+        list.innerHTML = '<p style="color:#848484;font-size:13px;text-align:center;padding:24px 0">Нет клиник, оказывающих выбранную услугу в этом городе</p>';
+        document.getElementById('btn-step3-clinic-next').disabled = true;
+        return;
+      }
+      filtered.forEach(clinic => {
+        const selected = state.clinicId === clinic.id;
+        const card = document.createElement('div');
+        card.className = 'clinic-card' + (selected ? ' clinic-card--selected' : '');
+        card.tabIndex = 0;
+        const tags = [];
+        if (clinic.worktime) tags.push(`<span class="clinic-tag">${clinic.worktime}</span>`);
+        if (state.serviceName) tags.push(`<span class="clinic-tag">${state.serviceName}</span>`);
+        card.innerHTML = `
+          <p class="clinic-card__name">${clinic.name}</p>
+          <p class="clinic-card__addr">${clinic.address || ''}</p>
+          <div class="clinic-card__meta">${tags.join('')}</div>
+        `;
+        card.addEventListener('click', () => {
+          if (state.clinicId !== clinic.id) {
+            state.clinicId = clinic.id;
+            state.clinicName = clinic.name;
+            state.clinicAddr = clinic.address || '';
+            state.doctorId = null; state.doctorName = null; state.doctorSpec = null;
+          }
+          renderClinics();
+          document.getElementById('btn-step3-clinic-next').disabled = false;
+        });
+        list.appendChild(card);
       });
-    });
+      document.getElementById('btn-step3-clinic-next').disabled = !state.clinicId;
+    }
 
     document.getElementById('btn-step3-clinic-next').addEventListener('click', () => {
-      const c = CLINICS[state.clinic];
-      document.getElementById('strip-clinic-text').textContent = `${c.name} · ${c.addr}`;
+      const stripClinic = document.getElementById('strip-clinic-text');
+      if (stripClinic) stripClinic.textContent = state.clinicAddr ? `${state.clinicName} · ${state.clinicAddr}` : state.clinicName;
       renderCalendar();
-      renderSlots();
       goToStep(4);
     });
 
@@ -1871,7 +1813,7 @@
 
     document.getElementById('btn-step4-dt-next').addEventListener('click', () => { renderDoctors(); goToStep(5); });
     // ─── Step 5 logic (врач) ──────────────────────────────────────────────────────
-    function renderDoctors() {
+    async function renderDoctors() {
       const d = state.date;
       if (d) {
         const dateStr = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'long' });
@@ -1879,50 +1821,77 @@
       }
 
       const list = document.getElementById('doctor-list');
+      list.innerHTML = '<div class="loader"><div class="loader__dot"></div><div class="loader__dot"></div><div class="loader__dot"></div></div>';
+
+      try {
+        if (state.clinicId) await loadDoctors(state.clinicId);
+      } catch (e) { DOCTORS = []; }
+
       list.innerHTML = '';
+      if (!DOCTORS.length) {
+        list.innerHTML = '<p style="color:#848484;font-size:13px;text-align:center;padding:24px 0">В выбранной клинике нет доступных врачей</p>';
+        document.getElementById('btn-step5-dr-next').disabled = true;
+        return;
+      }
+
+      // Загружаем слоты по каждому врачу для выбранной даты
+      const slotsByDoctor = {};
+      await Promise.all(DOCTORS.map(async doc => {
+        try { slotsByDoctor[doc.id] = await loadDoctorSlots(doc.id, state.date); }
+        catch { slotsByDoctor[doc.id] = []; }
+      }));
 
       DOCTORS.forEach(doc => {
         const card = document.createElement('div');
-        card.className = 'doctor-card' + (state.doctorId === doc.id ? ' doctor-card--selected' : '');
+        const isSelected = state.doctorId === doc.id;
+        card.className = 'doctor-card' + (isSelected ? ' doctor-card--selected' : '');
+        const initials = doc.initials || (doc.name || '').split(' ').map(p => p[0]).filter(Boolean).slice(0,2).join('').toUpperCase();
+        const expLabel = `Стаж: ${doc.exp_years || 0} лет`;
+        const ageLabel = `С ${doc.min_age || 0} лет`;
+        const addrLabel = state.clinicAddr || (getClinicById(doc.clinic_id)?.address || '');
+        const slots = slotsByDoctor[doc.id] || [];
+        const slotsHtml = slots.length
+          ? slots.map(s =>
+              `<button class="doctor-slot${s.busy ? ' doctor-slot--busy' : ''}${isSelected && state.slot === s.time && !s.busy ? ' doctor-slot--selected' : ''}" data-doctor="${doc.id}" data-time="${s.time}" ${s.busy ? 'disabled' : ''}>${s.time}</button>`
+            ).join('')
+          : '<p style="color:#848484;font-size:12px;margin:4px 0">Нет доступного времени</p>';
+
         card.innerHTML = `
           <div class="doctor-card__top">
-            <div class="doctor-card__avatar" style="background:${doc.color}">
-              ${doc.initials}
+            <div class="doctor-card__avatar" style="background:${doc.color || '#16a085'}">
+              ${initials}
               <div class="doctor-card__avatar-dot"></div>
             </div>
             <div class="doctor-card__info">
               <p class="doctor-card__name">${doc.name}</p>
-              <p class="doctor-card__spec">${doc.spec}</p>
+              <p class="doctor-card__spec">${doc.spec || ''}</p>
             </div>
             <span class="doctor-card__price">Бесплатно</span>
           </div>
           <div class="doctor-card__tags">
             <span class="doctor-tag">
               <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/><path d="M6 3.5v3l1.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-              ${doc.exp}
+              ${expLabel}
             </span>
             <span class="doctor-tag">
               <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="4.5" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M2 11c0-2.21 1.79-4 4-4s4 1.79 4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-              ${doc.age}
+              ${ageLabel}
             </span>
-            <span class="doctor-tag">
+            ${addrLabel ? `<span class="doctor-tag">
               <svg viewBox="0 0 12 12" fill="none"><path d="M6 1.5C4.07 1.5 2.5 3.07 2.5 5c0 2.63 3.5 6.5 3.5 6.5S9.5 7.63 9.5 5c0-1.93-1.57-3.5-3.5-3.5z" stroke="currentColor" stroke-width="1.2"/></svg>
-              ул. Пушкина, д. Колотушкина
-            </span>
+              ${addrLabel}
+            </span>` : ''}
           </div>
           <p class="doctor-slots-label">Доступное время:</p>
-          <div class="doctor-slots">
-            ${doc.slots.map(t => `<button class="doctor-slot${state.doctorId === doc.id && state.slot === t ? ' doctor-slot--selected' : ''}" data-doctor="${doc.id}" data-time="${t}">${t}</button>`).join('')}
-          </div>
+          <div class="doctor-slots">${slotsHtml}</div>
         `;
 
-        // Slot click
-        card.querySelectorAll('.doctor-slot').forEach(btn => {
+        card.querySelectorAll('.doctor-slot:not([disabled])').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
             state.doctorId = doc.id;
             state.doctorName = doc.name;
-            state.doctorSpec = doc.spec;
+            state.doctorSpec = doc.spec || '';
             state.slot = btn.dataset.time;
             renderDoctors();
             document.getElementById('btn-step5-dr-next').disabled = false;
@@ -1931,6 +1900,8 @@
 
         list.appendChild(card);
       });
+
+      document.getElementById('btn-step5-dr-next').disabled = !(state.doctorId && state.slot);
     }
 
     document.getElementById('btn-step5-dr-next').addEventListener('click', () => {
@@ -2053,8 +2024,8 @@
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'X-Tg-Init-Data': initData },
               body: JSON.stringify({
-                clinic_id: parseInt(state.clinic),
-                service_id: SERVICE_IDS[state.service] || 1,
+                clinic_id: state.clinicId,
+                service_id: state.serviceId,
                 child_id: state.childId || null,
                 slot_datetime: dt.toISOString(),
                 comment: state.comment || null,
@@ -2080,8 +2051,8 @@
       buildSuccessCard();
       const d = state.date;
       window._completedAppointment = {
-        service: SERVICES[state.service] || '',
-        clinic: CLINICS[state.clinic]?.name || '',
+        service: state.serviceName || '',
+        clinic: state.clinicName || '',
         doctor: state.doctorName || '',
         date: d ? d.toLocaleDateString('ru-RU', {day:'numeric', month:'long', weekday:'short'}) : '',
         time: state.slot || '',
@@ -2130,7 +2101,12 @@
 
 
     // ─── Step 0 (start screen) ────────────────────────────────────────────────
-    document.getElementById('btn-go-booking').addEventListener('click', () => goToStep(1));
+    async function startBookingFlow() {
+      try { await loadServices(); } catch (e) { /* network errors показываем пустым списком */ }
+      renderServices();
+      goToStep(1);
+    }
+    document.getElementById('btn-go-booking').addEventListener('click', startBookingFlow);
     document.getElementById('btn-go-appointments').addEventListener('click', () => {
       renderAppointments();
       goToStep('appointments');
@@ -2211,7 +2187,7 @@
       }
     }
 
-    document.getElementById('btn-appt-go-booking').addEventListener('click', () => goToStep(1));
+    document.getElementById('btn-appt-go-booking').addEventListener('click', startBookingFlow);
 
     async function cancelAppointmentById(id) {
       const initData = getTgInitData();
@@ -2234,39 +2210,55 @@
       }
     }
 
-    function serviceKeyFromAppointment(a) {
-      const byName = {
-        'Стоматология': 'dental',
-        'Сдача анализа крови': 'blood',
-        'Педиатр': 'pediatr',
-        'Невролог': 'neuro',
-      };
-      if (a.service_name && byName[a.service_name]) return byName[a.service_name];
-      const byId = Object.entries(SERVICE_IDS).find(([, id]) => id === a.service_id);
-      return byId ? byId[0] : 'dental';
-    }
-
-    function startReschedule(a) {
+    async function startReschedule(a) {
       state.rescheduleId = a.id;
-      state.service = serviceKeyFromAppointment(a);
-      state.city = 'moscow';
-      state.clinic = String(a.clinic_id);
+      state.serviceId = a.service_id;
+      state.serviceName = a.service_name || '';
+      state.clinicId = a.clinic_id;
+      state.clinicName = a.clinic_name || '';
+      state.clinicAddr = '';
+      state.cityId = null;
+      state.cityName = '';
       state.date = null;
       state.slot = null;
       state.doctorId = null;
       state.doctorName = null;
       state.doctorSpec = null;
 
+      // Подтягиваем фактическую клинику, чтобы знать её адрес и город
+      try {
+        if (!SERVICES.length) await loadServices();
+        const svc = getServiceById(a.service_id);
+        if (svc) state.serviceName = svc.name;
+      } catch {}
+      try {
+        if (!CITIES.length) await loadCities();
+        // Найдём город клиники через /api/clinics для каждого активного города
+        for (const city of CITIES.filter(c => c.is_active)) {
+          const list = await fetchJson(`/api/clinics?city_id=${city.id}`);
+          const found = list.find(c => c.id === a.clinic_id);
+          if (found) {
+            state.cityId = city.id;
+            state.cityName = city.name;
+            state.clinicAddr = found.address || '';
+            CLINICS = list;
+            break;
+          }
+        }
+      } catch {}
+
       const _rsDtStr = a.slot_datetime.includes('Z') || a.slot_datetime.includes('+') ? a.slot_datetime : a.slot_datetime + 'Z';
       const dt = new Date(_rsDtStr);
       calYear = dt.getFullYear();
       calMonth = dt.getMonth();
       renderCalendar();
-      renderSlots();
       updateStep4CTA();
 
       const stripClinic = document.getElementById('strip-clinic-text');
-      if (stripClinic) stripClinic.textContent = a.clinic_name || (CLINICS[state.clinic]?.name ?? '');
+      if (stripClinic) stripClinic.textContent = state.clinicAddr ? `${state.clinicName} · ${state.clinicAddr}` : state.clinicName;
+
+      const stripService = document.getElementById('strip-service-text');
+      if (stripService) stripService.textContent = state.serviceName || '—';
 
       const badge = document.getElementById('booking-badge-text');
       if (badge) badge.textContent = 'Перенос записи';
