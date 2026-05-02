@@ -1063,40 +1063,20 @@
         <div class="booking-progress__dot" data-dot="7"></div>
       </div>
 
-      <!-- ── STEP 1: Выбор услуги ─────────────────────────── -->
+      <!-- ── STEP 1: Выбор города ─────────────────────────── -->
       <div class="booking-step" id="step-1" data-step="1">
-        <h2 class="step-title">Выберите услугу</h2>
-        <p class="step-subtitle">Укажите направление, по которому хотите записать ребёнка</p>
-
-        <div class="service-list" id="service-list"></div>
-
-        <div class="booking-cta">
-          <button class="btn-booking" id="btn-step1-next" disabled>Выбрать город →</button>
-        </div>
-      </div>
-
-      <!-- ── STEP 2: Выбор города ────────────────────────── -->
-      <div class="booking-step" id="step-2" data-step="2">
         <h2 class="step-title">Выберите город</h2>
         <p class="step-subtitle">В других городах запись скоро появится</p>
-
-        <div class="selection-strip" id="strip-service">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0">
-            <circle cx="8" cy="8" r="7" stroke="#128395" stroke-width="1.5"/>
-            <path d="M5.5 8l2 2 3-3" stroke="#128395" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <p class="selection-strip__text" id="strip-service-text">—</p>
-        </div>
 
         <div class="service-list" id="city-list"></div>
 
         <div class="booking-cta">
-          <button class="btn-booking" id="btn-step2-next" disabled>Выбрать клинику →</button>
+          <button class="btn-booking" id="btn-step1-next" disabled>Выбрать клинику →</button>
         </div>
       </div>
 
-      <!-- ── STEP 3: Выбор клиники ───────────────────────── -->
-      <div class="booking-step" id="step-3" data-step="3">
+      <!-- ── STEP 2: Выбор клиники ────────────────────────── -->
+      <div class="booking-step" id="step-2" data-step="2">
         <h2 class="step-title">Выберите клинику</h2>
 
         <div class="selection-strip" id="strip-city">
@@ -1110,13 +1090,14 @@
         <div class="clinic-list" id="clinic-list"></div>
 
         <div class="booking-cta">
-          <button class="btn-booking" id="btn-step3-clinic-next" disabled>Выбрать дату и время →</button>
+          <button class="btn-booking" id="btn-step2-next" disabled>Выбрать услугу →</button>
         </div>
       </div>
 
-      <!-- ── STEP 4: Дата и время ────────────────────────── -->
-      <div class="booking-step" id="step-4" data-step="4">
-        <h2 class="step-title">Дата и время</h2>
+      <!-- ── STEP 3: Выбор услуги ───────────────────────── -->
+      <div class="booking-step" id="step-3" data-step="3">
+        <h2 class="step-title">Выберите услугу</h2>
+        <p class="step-subtitle">Укажите направление, по которому хотите записать ребёнка</p>
 
         <div class="selection-strip" id="strip-clinic">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0">
@@ -1124,6 +1105,25 @@
             <circle cx="8" cy="7" r="1.5" stroke="#128395" stroke-width="1.5"/>
           </svg>
           <p class="selection-strip__text" id="strip-clinic-text">—</p>
+        </div>
+
+        <div class="service-list" id="service-list"></div>
+
+        <div class="booking-cta">
+          <button class="btn-booking" id="btn-step3-next" disabled>Выбрать дату и время →</button>
+        </div>
+      </div>
+
+      <!-- ── STEP 4: Дата и время ────────────────────────── -->
+      <div class="booking-step" id="step-4" data-step="4">
+        <h2 class="step-title">Дата и время</h2>
+
+        <div class="selection-strip" id="strip-service">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0">
+            <circle cx="8" cy="8" r="7" stroke="#128395" stroke-width="1.5"/>
+            <path d="M5.5 8l2 2 3-3" stroke="#128395" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <p class="selection-strip__text" id="strip-service-text">—</p>
         </div>
 
         <!-- Mini calendar -->
@@ -1565,9 +1565,9 @@
 
     // ─── Step navigation ─────────────────────────────────────────────────────
     const BADGE_LABELS = {
-      1: 'Услуга',
-      2: 'Город',
-      3: 'Клиника',
+      1: 'Город',
+      2: 'Клиника',
+      3: 'Услуга',
       4: 'Дата',
       5: 'Врач',
       6: 'Ваши данные',
@@ -1644,67 +1644,14 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // ─── Step 1 logic (услуга) ────────────────────────────────────────────────
-    function renderServices() {
-      const list = document.getElementById('service-list');
-      list.innerHTML = '';
-      if (!SERVICES.length) {
-        list.innerHTML = '<p style="color:#848484;font-size:13px;text-align:center;padding:24px 0">Нет доступных услуг</p>';
-        document.getElementById('btn-step1-next').disabled = true;
-        return;
-      }
-      SERVICES.forEach(svc => {
-        const selected = state.serviceId === svc.id;
-        const card = document.createElement('div');
-        card.className = 'service-card' + (selected ? ' service-card--selected' : '');
-        card.tabIndex = 0;
-        card.dataset.serviceId = String(svc.id);
-        const iconHtml = (window.renderServiceIconHTML
-          ? window.renderServiceIconHTML(svc.icon, 28)
-          : `<span style="font-size:24px;line-height:1">${svc.icon || '⚕️'}</span>`);
-        card.innerHTML = `
-          <div class="service-card__icon" style="color:#128395">${iconHtml}</div>
-          <div class="service-card__body">
-            <p class="service-card__title">${svc.name}</p>
-            <p class="service-card__desc">${svc.description || ''}</p>
-          </div>
-          <div class="service-card__check">
-            <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
-              <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-        `;
-        card.addEventListener('click', () => {
-          state.serviceId = svc.id;
-          state.serviceName = svc.name;
-          // выбор услуги меняет дальнейший каталог — сбрасываем нижестоящий выбор
-          if (state.clinicId && getClinicById(state.clinicId) && !(getClinicById(state.clinicId).service_ids || []).includes(svc.id)) {
-            state.clinicId = null; state.clinicName = ''; state.clinicAddr = '';
-            state.doctorId = null; state.doctorName = null; state.doctorSpec = null;
-          }
-          renderServices();
-          document.getElementById('btn-step1-next').disabled = false;
-        });
-        list.appendChild(card);
-      });
-      document.getElementById('btn-step1-next').disabled = !state.serviceId;
-    }
-
-    document.getElementById('btn-step1-next').addEventListener('click', async () => {
-      document.getElementById('strip-service-text').textContent = state.serviceName || '—';
-      try { await loadCities(); } catch (e) { /* ignore */ }
-      renderCities();
-      goToStep(2);
-    });
-
-    // ─── Step 2 logic (город) ─────────────────────────────────────────────────
+    // ─── Step 1 logic (город) ─────────────────────────────────────────────────
     function renderCities() {
       const list = document.getElementById('city-list');
       list.innerHTML = '';
       const active = CITIES.filter(c => c.is_active);
       if (!active.length) {
         list.innerHTML = '<p style="color:#848484;font-size:13px;text-align:center;padding:24px 0">Нет доступных городов</p>';
-        document.getElementById('btn-step2-next').disabled = true;
+        document.getElementById('btn-step1-next').disabled = true;
         return;
       }
       active.forEach(city => {
@@ -1733,36 +1680,35 @@
           if (state.cityId !== city.id) {
             state.cityId = city.id;
             state.cityName = city.name;
-            // city сменился — сбрасываем клинику/врача
+            // город сменился — сбрасываем нижестоящий выбор
             state.clinicId = null; state.clinicName = ''; state.clinicAddr = '';
+            state.serviceId = null; state.serviceName = '';
             state.doctorId = null; state.doctorName = null; state.doctorSpec = null;
           }
           renderCities();
-          document.getElementById('btn-step2-next').disabled = false;
+          document.getElementById('btn-step1-next').disabled = false;
         });
         list.appendChild(card);
       });
-      document.getElementById('btn-step2-next').disabled = !state.cityId;
+      document.getElementById('btn-step1-next').disabled = !state.cityId;
     }
 
-    document.getElementById('btn-step2-next').addEventListener('click', async () => {
+    document.getElementById('btn-step1-next').addEventListener('click', async () => {
       try { await loadClinics(state.cityId); } catch (e) { /* ignore */ }
       renderClinics();
-      goToStep(3);
+      goToStep(2);
     });
 
-    // ─── Step 3 logic (клиника) ───────────────────────────────────────────────
+    // ─── Step 2 logic (клиника) ───────────────────────────────────────────────
     function renderClinics() {
       const list = document.getElementById('clinic-list');
       list.innerHTML = '';
-      const filtered = CLINICS.filter(c =>
-        c.is_active && (state.serviceId == null || (c.service_ids || []).includes(state.serviceId))
-      );
       const stripCity = document.getElementById('strip-city-text');
       if (stripCity) stripCity.textContent = state.cityName || '—';
+      const filtered = CLINICS.filter(c => c.is_active);
       if (!filtered.length) {
-        list.innerHTML = '<p style="color:#848484;font-size:13px;text-align:center;padding:24px 0">Нет клиник, оказывающих выбранную услугу в этом городе</p>';
-        document.getElementById('btn-step3-clinic-next').disabled = true;
+        list.innerHTML = '<p style="color:#848484;font-size:13px;text-align:center;padding:24px 0">В выбранном городе нет доступных клиник</p>';
+        document.getElementById('btn-step2-next').disabled = true;
         return;
       }
       filtered.forEach(clinic => {
@@ -1772,7 +1718,6 @@
         card.tabIndex = 0;
         const tags = [];
         if (clinic.worktime) tags.push(`<span class="clinic-tag">${clinic.worktime}</span>`);
-        if (state.serviceName) tags.push(`<span class="clinic-tag">${state.serviceName}</span>`);
         card.innerHTML = `
           <p class="clinic-card__name">${clinic.name}</p>
           <p class="clinic-card__addr">${clinic.address || ''}</p>
@@ -1783,19 +1728,73 @@
             state.clinicId = clinic.id;
             state.clinicName = clinic.name;
             state.clinicAddr = clinic.address || '';
+            // клиника сменилась — сбрасываем услугу/врача
+            state.serviceId = null; state.serviceName = '';
             state.doctorId = null; state.doctorName = null; state.doctorSpec = null;
           }
           renderClinics();
-          document.getElementById('btn-step3-clinic-next').disabled = false;
+          document.getElementById('btn-step2-next').disabled = false;
         });
         list.appendChild(card);
       });
-      document.getElementById('btn-step3-clinic-next').disabled = !state.clinicId;
+      document.getElementById('btn-step2-next').disabled = !state.clinicId;
     }
 
-    document.getElementById('btn-step3-clinic-next').addEventListener('click', () => {
+    document.getElementById('btn-step2-next').addEventListener('click', async () => {
       const stripClinic = document.getElementById('strip-clinic-text');
       if (stripClinic) stripClinic.textContent = state.clinicAddr ? `${state.clinicName} · ${state.clinicAddr}` : state.clinicName;
+      try { if (!SERVICES.length) await loadServices(); } catch (e) { /* ignore */ }
+      renderServices();
+      goToStep(3);
+    });
+
+    // ─── Step 3 logic (услуга) ────────────────────────────────────────────────
+    function renderServices() {
+      const list = document.getElementById('service-list');
+      list.innerHTML = '';
+      // показываем только услуги, оказываемые выбранной клиникой
+      const clinic = getClinicById(state.clinicId);
+      const allowedIds = new Set(clinic ? (clinic.service_ids || []) : []);
+      const available = SERVICES.filter(s => allowedIds.has(s.id));
+      if (!available.length) {
+        list.innerHTML = '<p style="color:#848484;font-size:13px;text-align:center;padding:24px 0">У выбранной клиники нет услуг — отметьте их в админке</p>';
+        document.getElementById('btn-step3-next').disabled = true;
+        return;
+      }
+      available.forEach(svc => {
+        const selected = state.serviceId === svc.id;
+        const card = document.createElement('div');
+        card.className = 'service-card' + (selected ? ' service-card--selected' : '');
+        card.tabIndex = 0;
+        card.dataset.serviceId = String(svc.id);
+        const iconHtml = (window.renderServiceIconHTML
+          ? window.renderServiceIconHTML(svc.icon, 28)
+          : `<span style="font-size:24px;line-height:1">${svc.icon || '⚕️'}</span>`);
+        card.innerHTML = `
+          <div class="service-card__icon" style="color:#128395">${iconHtml}</div>
+          <div class="service-card__body">
+            <p class="service-card__title">${svc.name}</p>
+            <p class="service-card__desc">${svc.description || ''}</p>
+          </div>
+          <div class="service-card__check">
+            <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+              <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        `;
+        card.addEventListener('click', () => {
+          state.serviceId = svc.id;
+          state.serviceName = svc.name;
+          renderServices();
+          document.getElementById('btn-step3-next').disabled = false;
+        });
+        list.appendChild(card);
+      });
+      document.getElementById('btn-step3-next').disabled = !state.serviceId;
+    }
+
+    document.getElementById('btn-step3-next').addEventListener('click', () => {
+      document.getElementById('strip-service-text').textContent = state.serviceName || '—';
       renderCalendar();
       goToStep(4);
     });
@@ -2105,8 +2104,8 @@
 
     // ─── Step 0 (start screen) ────────────────────────────────────────────────
     async function startBookingFlow() {
-      try { await loadServices(); } catch (e) { /* network errors показываем пустым списком */ }
-      renderServices();
+      try { await loadCities(); } catch (e) { /* network errors показываем пустым списком */ }
+      renderCities();
       goToStep(1);
     }
     document.getElementById('btn-go-booking').addEventListener('click', startBookingFlow);
