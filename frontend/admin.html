@@ -10,6 +10,7 @@
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="/frontend/service-icons.js"></script>
   <style>
     :root {
       --brand: #12c7d4;
@@ -387,6 +388,34 @@
       font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
     }
 
+    /* Service icon picker */
+    .icon-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .icon-pick {
+      aspect-ratio: 1;
+      border-radius: 12px;
+      border: 1.5px solid var(--stroke);
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text);
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+      padding: 0;
+    }
+    .icon-pick:hover { border-color: var(--btn-color); color: var(--brand-dark); background: #f0f9fa; }
+    .icon-pick--on {
+      border-color: var(--btn-color);
+      background: #e0f7f6;
+      color: var(--brand-dark);
+    }
+    @media (max-width: 700px) { .icon-grid { grid-template-columns: repeat(4, 1fr); } }
+
     /* Day toggle */
     .day-toggle {
       display: flex; gap: 6px; flex-wrap: wrap;
@@ -453,6 +482,14 @@ const Ico = ({ name, size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <path d={icons[name]} />
   </svg>
+);
+
+// Рендер иконки услуги: SVG из общего набора по ключу либо эмодзи/текст.
+const ServiceIcon = ({ icon, size = 22, color = "#128395" }) => (
+  <span
+    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", color, width: size, height: size }}
+    dangerouslySetInnerHTML={{ __html: window.renderServiceIconHTML ? window.renderServiceIconHTML(icon, size) : (icon || "⚕️") }}
+  />
 );
 
 // ── API helper ────────────────────────────────────────────
@@ -646,7 +683,7 @@ function Dashboard({ data }) {
             const count = data.content.filter(c => c.service === s.name).length;
             return (
               <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #f4f7f8" }}>
-                <span style={{ fontSize: 20 }}>{s.icon}</span>
+                <ServiceIcon icon={s.icon} size={22} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: "var(--title)" }}>{s.name}</div>
                 </div>
@@ -666,7 +703,7 @@ function ServicesSection({ data, setData }) {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
 
-  const openAdd = () => { setForm({ name: "", desc: "", icon: "⚕️", active: true }); setModal("add"); };
+  const openAdd = () => { setForm({ name: "", desc: "", icon: "doctor", active: true }); setModal("add"); };
   const openEdit = (item) => { setForm({ ...item }); setModal("edit"); };
 
   const save = async () => {
@@ -706,7 +743,7 @@ function ServicesSection({ data, setData }) {
             <tbody>
               {data.services.map(s => (
                 <tr key={s.id}>
-                  <td><span style={{ fontSize: 18, marginRight: 8 }}>{s.icon}</span><strong>{s.name}</strong></td>
+                  <td><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><ServiceIcon icon={s.icon} size={20} /><strong>{s.name}</strong></span></td>
                   <td style={{ color: "var(--text)", fontSize: 13 }}>{s.desc}</td>
                   <td><span className="badge badge-teal">{data.content.filter(c => c.service === s.name).length}</span></td>
                   <td><Toggle on={s.active} onChange={() => toggle(s.id)} /></td>
@@ -726,13 +763,33 @@ function ServicesSection({ data, setData }) {
         <Modal title={modal === "add" ? "Добавить услугу" : "Редактировать услугу"} onClose={() => setModal(null)}
           footer={<><button className="btn btn-secondary" onClick={() => setModal(null)}>Отмена</button><button className="btn btn-primary" onClick={save}>Сохранить</button></>}>
           <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label">Иконка (эмодзи)</label>
-              <input className="form-input" value={form.icon || ""} onChange={e => setForm(f => ({ ...f, icon: e.target.value }))} placeholder="⚕️" />
-            </div>
-            <div className="form-group">
+            <div className="form-group form-full">
               <label className="form-label">Название услуги</label>
               <input className="form-input" value={form.name || ""} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Например: Стоматология" />
+            </div>
+            <div className="form-group form-full">
+              <label className="form-label">Иконка <span>(в стиле сайта)</span></label>
+              <div className="icon-grid">
+                {(window.SERVICE_ICONS || []).map(item => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    title={item.label}
+                    className={`icon-pick${form.icon === item.key ? " icon-pick--on" : ""}`}
+                    onClick={() => setForm(f => ({ ...f, icon: item.key }))}
+                  >
+                    <ServiceIcon icon={item.key} size={26} />
+                  </button>
+                ))}
+              </div>
+              <label className="form-label" style={{ marginTop: 10 }}>Или собственный эмодзи</label>
+              <input
+                className="form-input"
+                value={window.isKnownServiceIcon && window.isKnownServiceIcon(form.icon) ? "" : (form.icon || "")}
+                onChange={e => setForm(f => ({ ...f, icon: e.target.value }))}
+                placeholder="⚕️"
+                maxLength={4}
+              />
             </div>
             <div className="form-group form-full">
               <label className="form-label">Описание</label>
@@ -912,8 +969,8 @@ function ClinicsSection({ data, setData }) {
                     <button key={s.id} onClick={() => toggleSvc(s.id)}
                       style={{ padding: "6px 14px", borderRadius: 99, border: `1.5px solid ${on ? "var(--btn-color)" : "var(--stroke)"}`,
                         background: on ? "#e0f7f6" : "#fff", color: on ? "var(--brand-dark)" : "var(--text)",
-                        fontWeight: on ? 600 : 400, fontSize: 13, cursor: "pointer" }}>
-                      {s.icon} {s.name}
+                        fontWeight: on ? 600 : 400, fontSize: 13, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <ServiceIcon icon={s.icon} size={16} /> {s.name}
                     </button>
                   );
                 })}
@@ -1153,7 +1210,7 @@ function ContentSection({ data, setData }) {
       <div className="tabs">
         <button className={`tab${filterSvc === "all" ? " active" : ""}`} onClick={() => setFilterSvc("all")}>Все</button>
         {data.services.map(s => (
-          <button key={s.id} className={`tab${filterSvc === s.name ? " active" : ""}`} onClick={() => setFilterSvc(s.name)}>{s.icon} {s.name}</button>
+          <button key={s.id} className={`tab${filterSvc === s.name ? " active" : ""}`} onClick={() => setFilterSvc(s.name)} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><ServiceIcon icon={s.icon} size={16} /> {s.name}</button>
         ))}
       </div>
 

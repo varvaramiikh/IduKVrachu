@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles/main.css">
+  <script src="/frontend/service-icons.js" defer></script>
   <style>
     /* ─── Booking-specific additions ─── */
 
@@ -1658,9 +1659,11 @@
         card.className = 'service-card' + (selected ? ' service-card--selected' : '');
         card.tabIndex = 0;
         card.dataset.serviceId = String(svc.id);
-        const icon = svc.icon || '⚕️';
+        const iconHtml = (window.renderServiceIconHTML
+          ? window.renderServiceIconHTML(svc.icon, 28)
+          : `<span style="font-size:24px;line-height:1">${svc.icon || '⚕️'}</span>`);
         card.innerHTML = `
-          <div class="service-card__icon"><span style="font-size:26px;line-height:1">${icon}</span></div>
+          <div class="service-card__icon" style="color:#128395">${iconHtml}</div>
           <div class="service-card__body">
             <p class="service-card__title">${svc.name}</p>
             <p class="service-card__desc">${svc.description || ''}</p>
