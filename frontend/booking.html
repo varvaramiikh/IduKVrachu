@@ -1854,7 +1854,7 @@
         const slots = slotsByDoctor[doc.id] || [];
         const slotsHtml = slots.length
           ? slots.map(s =>
-              `<button class="doctor-slot${s.busy ? ' doctor-slot--busy' : ''}${isSelected && state.slot === s.time && !s.busy ? ' doctor-slot--selected' : ''}" data-doctor="${doc.id}" data-time="${s.time}" ${s.busy ? 'disabled' : ''}>${s.time}</button>`
+              `<button type="button" class="doctor-slot${s.busy ? ' doctor-slot--busy' : ''}${isSelected && state.slot === s.time && !s.busy ? ' doctor-slot--selected' : ''}" data-doctor="${doc.id}" data-time="${s.time}" ${s.busy ? 'disabled' : ''}>${s.time}</button>`
             ).join('')
           : '<p style="color:#848484;font-size:12px;margin:4px 0">Нет доступного времени</p>';
 
@@ -1890,6 +1890,7 @@
 
         card.querySelectorAll('.doctor-slot:not([disabled])').forEach(btn => {
           btn.addEventListener('click', (e) => {
+            e.preventDefault();
             e.stopPropagation();
             state.doctorId = doc.id;
             state.doctorName = doc.name;
