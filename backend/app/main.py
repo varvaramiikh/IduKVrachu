@@ -140,10 +140,7 @@ async def index():
 
 @app.get("/booking.html", include_in_schema=False)
 async def booking():
-    return FileResponse(
-        os.path.join(BASE_DIR, "frontend", "booking.html"),
-        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
-    )
+    return FileResponse(os.path.join(BASE_DIR, "frontend", "booking.html"))
 
 @app.get("/admin", include_in_schema=False)
 async def admin_panel():
