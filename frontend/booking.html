@@ -1860,8 +1860,10 @@
 
         card.innerHTML = `
           <div class="doctor-card__top">
-            <div class="doctor-card__avatar" style="background:${doc.color || '#16a085'}">
-              ${initials}
+            <div class="doctor-card__avatar" style="background:${doc.color || '#16a085'};${doc.avatar ? 'overflow:hidden;' : ''}">
+              ${doc.avatar
+                ? `<img src="${doc.avatar}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+                : initials}
               <div class="doctor-card__avatar-dot"></div>
             </div>
             <div class="doctor-card__info">

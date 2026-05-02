@@ -783,6 +783,7 @@ async def _doctor_to_item(doctor: Doctor, db: AsyncSession) -> AdminDoctorItem:
         clinic=clinic_name, clinic_id=doctor.clinic_id,
         exp=doctor.exp_years, minAge=doctor.min_age,
         color=doctor.color or "#16a085", initials=doctor.initials or "",
+        avatar=doctor.avatar,
         active=doctor.is_active,
     )
 
@@ -798,7 +799,8 @@ async def admin_create_doctor(data: AdminDoctorCreate, admin: str = Depends(get_
     doctor = Doctor(
         name=data.name, spec=data.spec, clinic_id=data.clinic_id,
         exp_years=data.exp, min_age=data.minAge,
-        color=data.color, initials=data.initials, is_active=data.active,
+        color=data.color, initials=data.initials,
+        avatar=data.avatar, is_active=data.active,
     )
     db.add(doctor)
     await db.commit()
@@ -818,6 +820,7 @@ async def admin_update_doctor(doctor_id: int, data: AdminDoctorUpdate, admin: st
     doctor.min_age = data.minAge
     doctor.color = data.color
     doctor.initials = data.initials
+    doctor.avatar = data.avatar
     doctor.is_active = data.active
     await db.commit()
     return await _doctor_to_item(doctor, db)

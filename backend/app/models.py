@@ -118,6 +118,7 @@ class Doctor(Base):
     min_age: Mapped[int] = mapped_column(Integer, default=0)
     color: Mapped[Optional[str]] = mapped_column(String(20))
     initials: Mapped[Optional[str]] = mapped_column(String(10))
+    avatar: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     clinic = relationship("Clinic", back_populates="doctors")

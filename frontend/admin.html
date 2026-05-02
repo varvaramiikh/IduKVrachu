@@ -666,7 +666,9 @@ function Dashboard({ data }) {
           </div>
           {data.doctors.map(d => (
             <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #f4f7f8" }}>
-              <div className="avatar" style={{ background: d.color }}>{d.initials}</div>
+              {d.avatar
+                ? <img src={d.avatar} alt="" className="avatar" style={{ objectFit: "cover" }} />
+                : <div className="avatar" style={{ background: d.color }}>{d.initials}</div>}
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: "var(--title)" }}>{d.name}</div>
                 <div style={{ fontSize: 12, color: "var(--text)" }}>{d.spec}</div>
@@ -991,7 +993,7 @@ function DoctorsSection({ data, setData }) {
 
   const COLORS = ["#16a085","#2980b9","#8e44ad","#e74c3c","#e67e22","#27ae60","#2c3e50"];
   const firstClinic = data.clinics[0];
-  const empty = { name: "", spec: "", clinic: firstClinic?.name || "", clinic_id: firstClinic?.id || null, exp: 0, minAge: 0, color: COLORS[0], initials: "", active: true };
+  const empty = { name: "", spec: "", clinic: firstClinic?.name || "", clinic_id: firstClinic?.id || null, exp: 0, minAge: 0, color: COLORS[0], initials: "", avatar: null, active: true };
 
   const save = async () => {
     const url = modal === "add" ? "/admin/api/doctors" : `/admin/api/doctors/${form.id}`;
@@ -1024,7 +1026,9 @@ function DoctorsSection({ data, setData }) {
           <tbody>{data.doctors.map(dr => (
             <tr key={dr.id}>
               <td><div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div className="avatar" style={{ background: dr.color, width: 32, height: 32, fontSize: 11 }}>{dr.initials}</div>
+                {dr.avatar
+                  ? <img src={dr.avatar} alt="" className="avatar" style={{ width: 32, height: 32, objectFit: "cover" }} />
+                  : <div className="avatar" style={{ background: dr.color, width: 32, height: 32, fontSize: 11 }}>{dr.initials}</div>}
                 <strong style={{ fontSize: 13 }}>{dr.name}</strong>
               </div></td>
               <td style={{ fontSize: 13, color: "var(--text)" }}>{dr.spec}</td>
@@ -1067,6 +1071,30 @@ function DoctorsSection({ data, setData }) {
               <label className="form-label">Минимальный возраст</label>
               <input className="form-input" type="number" value={form.minAge ?? ""} onChange={e => setForm(f => ({ ...f, minAge: +e.target.value }))} placeholder="3" />
             </div>
+            <div className="form-group form-full">
+              <label className="form-label">Фото врача</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
+                {form.avatar
+                  ? <img src={form.avatar} alt="" style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover" }} />
+                  : <div className="avatar" style={{ background: form.color || COLORS[0], width: 56, height: 56, fontSize: 16 }}>{form.initials || "?"}</div>}
+                <label className="btn btn-secondary" style={{ cursor: "pointer", margin: 0 }}>
+                  {form.avatar ? "Заменить" : "Загрузить"}
+                  <input type="file" accept="image/*" style={{ display: "none" }}
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 2 * 1024 * 1024) { alert("Файл больше 2 МБ"); return; }
+                      const reader = new FileReader();
+                      reader.onload = () => setForm(f => ({ ...f, avatar: reader.result }));
+                      reader.readAsDataURL(file);
+                      e.target.value = "";
+                    }} />
+                </label>
+                {form.avatar && (
+                  <button className="btn btn-secondary" onClick={() => setForm(f => ({ ...f, avatar: null }))}>Удалить</button>
+                )}
+              </div>
+            </div>
             <div className="form-group">
               <label className="form-label">Инициалы (для аватара)</label>
               <input className="form-input" value={form.initials || ""} onChange={e => setForm(f => ({ ...f, initials: e.target.value }))} placeholder="АП" maxLength={2} />
@@ -1090,7 +1118,7 @@ function DoctorsSection({ data, setData }) {
 
 // ── Schedule modal ────────────────────────────────────────
 function ScheduleModal({ doctor, onClose }) {
-  const TIMES = ["09:00","09:30","10:00","10:30","11:00","11:30","12:00","13:00","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30"];
+  const TIMES = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","12:00","13:00","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30","20:00","20:30","21:00","21:30"];
   const emptySlots = () => {
     const s = {};
     DAYS.forEach((d, di) => { s[di] = {}; TIMES.forEach(t => { s[di][t] = false; }); });

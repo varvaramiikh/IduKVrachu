@@ -59,6 +59,7 @@ class Doctor(BaseModel):
     min_age: int = 0
     color: Optional[str] = None
     initials: Optional[str] = None
+    avatar: Optional[str] = None
     is_active: bool = True
     class Config:
         from_attributes = True
@@ -219,6 +220,7 @@ class AdminDoctorItem(BaseModel):
     minAge: int
     color: str
     initials: str
+    avatar: Optional[str] = None
     active: bool
 
 class AdminDoctorCreate(BaseModel):
@@ -229,6 +231,7 @@ class AdminDoctorCreate(BaseModel):
     minAge: int = 0
     color: str = "#16a085"
     initials: str = ""
+    avatar: Optional[str] = None
     active: bool = True
 
 class AdminDoctorUpdate(AdminDoctorCreate):
