@@ -1895,7 +1895,12 @@
             state.doctorName = doc.name;
             state.doctorSpec = doc.spec || '';
             state.slot = btn.dataset.time;
-            renderDoctors();
+
+            list.querySelectorAll('.doctor-card--selected').forEach(c => c.classList.remove('doctor-card--selected'));
+            list.querySelectorAll('.doctor-slot--selected').forEach(s => s.classList.remove('doctor-slot--selected'));
+            card.classList.add('doctor-card--selected');
+            btn.classList.add('doctor-slot--selected');
+
             document.getElementById('btn-step5-dr-next').disabled = false;
           });
         });
