@@ -985,11 +985,145 @@ function ClinicsSection({ data, setData }) {
   );
 }
 
+// ── Avatar crop dialog ────────────────────────────────────
+function AvatarCropDialog({ src, onConfirm, onCancel }) {
+  const SIZE = 240;
+  const OUTPUT = 256;
+  const canvasRef = React.useRef(null);
+  const imgRef = React.useRef(null);
+  const dragRef = React.useRef(null);
+  const [imgSize, setImgSize] = React.useState({ w: 0, h: 0 });
+  const [scale, setScale] = React.useState(1);
+  const [offset, setOffset] = React.useState({ x: 0, y: 0 });
+  const [ready, setReady] = React.useState(false);
+
+  const minScale = imgSize.w ? Math.max(SIZE / imgSize.w, SIZE / imgSize.h) : 1;
+  const maxScale = minScale * 4;
+
+  const clamp = (ox, oy, sc) => ({
+    x: Math.min(0, Math.max(SIZE - imgSize.w * sc, ox)),
+    y: Math.min(0, Math.max(SIZE - imgSize.h * sc, oy)),
+  });
+
+  const onImgLoad = () => {
+    const img = imgRef.current;
+    if (!img) return;
+    const w = img.naturalWidth, h = img.naturalHeight;
+    const sc = Math.max(SIZE / w, SIZE / h);
+    setImgSize({ w, h });
+    setScale(sc);
+    setOffset({ x: (SIZE - w * sc) / 2, y: (SIZE - h * sc) / 2 });
+    setReady(true);
+  };
+
+  const startDrag = (cx, cy) => { dragRef.current = { cx, cy, ox: offset.x, oy: offset.y }; };
+  const moveDrag = (cx, cy) => {
+    if (!dragRef.current) return;
+    const { cx: sx, cy: sy, ox, oy } = dragRef.current;
+    setOffset(clamp(ox + cx - sx, oy + cy - sy, scale));
+  };
+  const endDrag = () => { dragRef.current = null; };
+
+  const handleScaleChange = (newSc) => {
+    if (!scale) return;
+    const cx = SIZE / 2, cy = SIZE / 2;
+    const newOx = cx - (cx - offset.x) / scale * newSc;
+    const newOy = cy - (cy - offset.y) / scale * newSc;
+    setScale(newSc);
+    setOffset(clamp(newOx, newOy, newSc));
+  };
+
+  const handleConfirm = () => {
+    const canvas = canvasRef.current;
+    canvas.width = OUTPUT;
+    canvas.height = OUTPUT;
+    const ctx = canvas.getContext("2d");
+    const srcX = -offset.x / scale;
+    const srcY = -offset.y / scale;
+    const srcSide = SIZE / scale;
+    ctx.drawImage(imgRef.current, srcX, srcY, srcSide, srcSide, 0, 0, OUTPUT, OUTPUT);
+    onConfirm(canvas.toDataURL("image/jpeg", 0.92));
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 10000,
+      background: "rgba(15, 23, 42, 0.55)", display: "flex",
+      alignItems: "center", justifyContent: "center", padding: 16,
+    }}>
+      <div style={{
+        background: "#fff", borderRadius: 18, padding: "22px 22px 20px",
+        width: 320, maxWidth: "100%",
+        boxShadow: "0 20px 60px rgba(15, 23, 42, 0.28)",
+      }}>
+        <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700, color: "var(--title)" }}>Выбор области фото</h3>
+        <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--text)" }}>Перетащите изображение и настройте масштаб</p>
+
+        <div style={{ position: "relative", width: SIZE, height: SIZE, margin: "0 auto 18px" }}>
+          <div
+            style={{
+              position: "absolute", inset: 0, borderRadius: "50%",
+              overflow: "hidden", cursor: "grab",
+              background: "#f3f4f6", userSelect: "none",
+              touchAction: "none",
+              boxShadow: "0 0 0 3px var(--brand)",
+            }}
+            onMouseDown={e => { e.preventDefault(); startDrag(e.clientX, e.clientY); }}
+            onMouseMove={e => moveDrag(e.clientX, e.clientY)}
+            onMouseUp={endDrag}
+            onMouseLeave={endDrag}
+            onTouchStart={e => startDrag(e.touches[0].clientX, e.touches[0].clientY)}
+            onTouchMove={e => { e.preventDefault(); moveDrag(e.touches[0].clientX, e.touches[0].clientY); }}
+            onTouchEnd={endDrag}
+          >
+            <img
+              ref={imgRef}
+              src={src}
+              alt=""
+              draggable={false}
+              onLoad={onImgLoad}
+              style={{
+                position: "absolute",
+                left: offset.x, top: offset.y,
+                width: imgSize.w * scale || "auto",
+                height: imgSize.h * scale || "auto",
+                maxWidth: "none",
+                pointerEvents: "none",
+              }}
+            />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+          <span style={{ fontSize: 18, color: "#9ca3af", lineHeight: 1, width: 12, textAlign: "center" }}>−</span>
+          <input
+            type="range"
+            style={{ flex: 1, accentColor: "var(--brand)" }}
+            min={minScale} max={maxScale}
+            step={(maxScale - minScale) / 100 || 0.01}
+            value={scale}
+            disabled={!ready}
+            onChange={e => handleScaleChange(parseFloat(e.target.value))}
+          />
+          <span style={{ fontSize: 18, color: "#9ca3af", lineHeight: 1, width: 12, textAlign: "center" }}>+</span>
+        </div>
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button className="btn btn-secondary" style={{ flex: 1 }} onClick={onCancel}>Отмена</button>
+          <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleConfirm} disabled={!ready}>Применить</button>
+        </div>
+        <canvas ref={canvasRef} style={{ display: "none" }} />
+      </div>
+    </div>
+  );
+}
+
 // ── Doctors ───────────────────────────────────────────────
 function DoctorsSection({ data, setData }) {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [scheduleDoctor, setScheduleDoctor] = useState(null);
+  const [cropDialog, setCropDialog] = useState(null);
 
   const COLORS = ["#16a085","#2980b9","#8e44ad","#e74c3c","#e67e22","#27ae60","#2c3e50"];
   const firstClinic = data.clinics[0];
@@ -1083,9 +1217,9 @@ function DoctorsSection({ data, setData }) {
                     onChange={e => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      if (file.size > 2 * 1024 * 1024) { alert("Файл больше 2 МБ"); return; }
+                      if (file.size > 5 * 1024 * 1024) { alert("Файл больше 5 МБ"); return; }
                       const reader = new FileReader();
-                      reader.onload = () => setForm(f => ({ ...f, avatar: reader.result }));
+                      reader.onload = () => setCropDialog({ src: reader.result });
                       reader.readAsDataURL(file);
                       e.target.value = "";
                     }} />
@@ -1112,6 +1246,13 @@ function DoctorsSection({ data, setData }) {
         </Modal>
       )}
       {scheduleDoctor && <ScheduleModal doctor={scheduleDoctor} onClose={() => setScheduleDoctor(null)} />}
+      {cropDialog && (
+        <AvatarCropDialog
+          src={cropDialog.src}
+          onConfirm={cropped => { setForm(f => ({ ...f, avatar: cropped })); setCropDialog(null); }}
+          onCancel={() => setCropDialog(null)}
+        />
+      )}
     </div>
   );
 }
