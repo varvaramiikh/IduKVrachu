@@ -493,7 +493,7 @@ const ServiceIcon = ({ icon, size = 22, color = "#128395" }) => (
 );
 
 // ── API helper ────────────────────────────────────────────
-const EMPTY_DATA = { services: [], cities: [], clinics: [], doctors: [], content: [], roles: [] };
+const EMPTY_DATA = { services: [], cities: [], clinics: [], doctors: [], content: [], roles: [], adminUsers: [] };
 
 async function apiFetch(path, options = {}) {
   const token = localStorage.getItem("admin_token");
@@ -514,16 +514,19 @@ async function apiFetch(path, options = {}) {
   return res;
 }
 
-async function loadAllData() {
-  const [services, cities, clinics, doctors, content, roles] = await Promise.all([
+async function loadAllData(me) {
+  const isSuper = !!(me && me.is_superadmin);
+  const tasks = [
     apiFetch("/admin/api/services").then(r => r.json()),
     apiFetch("/admin/api/cities").then(r => r.json()),
     apiFetch("/admin/api/clinics").then(r => r.json()),
     apiFetch("/admin/api/doctors").then(r => r.json()),
     apiFetch("/admin/api/content").then(r => r.json()),
-    apiFetch("/admin/api/roles").then(r => r.json()),
-  ]);
-  return { services, cities, clinics, doctors, content, roles };
+    isSuper ? apiFetch("/admin/api/roles").then(r => r.json()) : Promise.resolve([]),
+    isSuper ? apiFetch("/admin/api/admin-users").then(r => r.json()) : Promise.resolve([]),
+  ];
+  const [services, cities, clinics, doctors, content, roles, adminUsers] = await Promise.all(tasks);
+  return { services, cities, clinics, doctors, content, roles, adminUsers };
 }
 
 // ── Login screen ──────────────────────────────────────────
@@ -544,10 +547,10 @@ function LoginScreen({ onLogin }) {
         body: JSON.stringify({ username, password }),
       });
       if (res.ok) {
-        const { token, username: uname } = await res.json();
-        localStorage.setItem("admin_token", token);
-        localStorage.setItem("admin_username", uname);
-        onLogin(uname);
+        const data = await res.json();
+        localStorage.setItem("admin_token", data.token);
+        localStorage.setItem("admin_username", data.username);
+        onLogin(data.username);
       } else {
         setError("Неверный логин или пароль");
       }
@@ -701,16 +704,27 @@ function Dashboard({ data }) {
 }
 
 // ── Services ──────────────────────────────────────────────
-function ServicesSection({ data, setData }) {
+function ServicesSection({ data, setData, me }) {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
+  const isSuper = !!me?.is_superadmin;
+  const defaultClinicId = isSuper ? (data.clinics[0]?.id ?? null) : me?.clinic_id ?? null;
 
-  const openAdd = () => { setForm({ name: "", desc: "", icon: "doctor", active: true }); setModal("add"); };
+  const openAdd = () => {
+    setForm({ name: "", desc: "", icon: "doctor", active: true, clinic_id: defaultClinicId });
+    setModal("add");
+  };
   const openEdit = (item) => { setForm({ ...item }); setModal("edit"); };
+
+  const toPayload = (f) => ({
+    clinic_id: isSuper ? (f.clinic_id ?? defaultClinicId) : (me?.clinic_id ?? null),
+    name: f.name, desc: f.desc || "", icon: f.icon || "", active: !!f.active,
+  });
 
   const save = async () => {
     const url = modal === "add" ? "/admin/api/services" : `/admin/api/services/${form.id}`;
-    const res = await apiFetch(url, { method: modal === "add" ? "POST" : "PUT", body: JSON.stringify(form) });
+    const res = await apiFetch(url, { method: modal === "add" ? "POST" : "PUT", body: JSON.stringify(toPayload(form)) });
+    if (!res.ok) { alert("Не удалось сохранить услугу"); return; }
     const saved = await res.json();
     if (modal === "add") setData(d => ({ ...d, services: [...d.services, saved] }));
     else setData(d => ({ ...d, services: d.services.map(s => s.id === form.id ? saved : s) }));
@@ -722,32 +736,39 @@ function ServicesSection({ data, setData }) {
   };
   const toggle = async (id) => {
     const svc = data.services.find(s => s.id === id);
-    const res = await apiFetch(`/admin/api/services/${id}`, { method: "PUT", body: JSON.stringify({ ...svc, active: !svc.active }) });
+    const res = await apiFetch(`/admin/api/services/${id}`, { method: "PUT", body: JSON.stringify(toPayload({ ...svc, active: !svc.active })) });
     const saved = await res.json();
     setData(d => ({ ...d, services: d.services.map(s => s.id === id ? saved : s) }));
   };
+
+  const subTitle = isSuper
+    ? "Управление услугами всех клиник"
+    : `Услуги клиники: ${me?.clinic_name || ""}`;
 
   return (
     <div>
       <div className="section-head">
         <div>
           <div className="section-title">Услуги</div>
-          <div className="section-sub">Управление медицинскими направлениями</div>
+          <div className="section-sub">{subTitle}</div>
         </div>
-        <button className="btn btn-primary" onClick={openAdd}><Ico name="plus" size={14} /> Добавить услугу</button>
+        <button className="btn btn-primary" onClick={openAdd} disabled={!defaultClinicId}><Ico name="plus" size={14} /> Добавить услугу</button>
       </div>
       <div className="card" style={{ padding: 0 }}>
         <div className="table-wrap">
           <table>
             <thead><tr>
-              <th>Услуга</th><th>Описание</th><th>Материалов</th><th>Статус</th><th style={{width:100}}>Действия</th>
+              <th>Услуга</th>
+              {isSuper && <th>Клиника</th>}
+              <th>Описание</th><th>Материалов</th><th>Статус</th><th style={{width:100}}>Действия</th>
             </tr></thead>
             <tbody>
               {data.services.map(s => (
                 <tr key={s.id}>
                   <td><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><ServiceIcon icon={s.icon} size={20} /><strong>{s.name}</strong></span></td>
+                  {isSuper && <td style={{ fontSize: 13 }}>{s.clinic_name || "—"}</td>}
                   <td style={{ color: "var(--text)", fontSize: 13 }}>{s.desc}</td>
-                  <td><span className="badge badge-teal">{data.content.filter(c => c.service === s.name).length}</span></td>
+                  <td><span className="badge badge-teal">{data.content.filter(c => c.service_id === s.id).length}</span></td>
                   <td><Toggle on={s.active} onChange={() => toggle(s.id)} /></td>
                   <td>
                     <div style={{ display: "flex", gap: 6 }}>
@@ -757,6 +778,9 @@ function ServicesSection({ data, setData }) {
                   </td>
                 </tr>
               ))}
+              {data.services.length === 0 && (
+                <tr><td colSpan={isSuper ? 6 : 5} style={{ textAlign: "center", padding: "32px", color: "var(--text)" }}>Нет услуг</td></tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -765,6 +789,19 @@ function ServicesSection({ data, setData }) {
         <Modal title={modal === "add" ? "Добавить услугу" : "Редактировать услугу"} onClose={() => setModal(null)}
           footer={<><button className="btn btn-secondary" onClick={() => setModal(null)}>Отмена</button><button className="btn btn-primary" onClick={save}>Сохранить</button></>}>
           <div className="form-grid">
+            {isSuper ? (
+              <div className="form-group form-full">
+                <label className="form-label">Клиника</label>
+                <select className="form-input" value={form.clinic_id || ""} onChange={e => setForm(f => ({ ...f, clinic_id: +e.target.value }))}>
+                  {data.clinics.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+            ) : (
+              <div className="form-group form-full">
+                <label className="form-label">Клиника</label>
+                <input className="form-input" value={me?.clinic_name || ""} disabled />
+              </div>
+            )}
             <div className="form-group form-full">
               <label className="form-label">Название услуги</label>
               <input className="form-input" value={form.name || ""} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Например: Стоматология" />
@@ -805,7 +842,8 @@ function ServicesSection({ data, setData }) {
 }
 
 // ── Cities ────────────────────────────────────────────────
-function CitiesSection({ data, setData }) {
+function CitiesSection({ data, setData, me }) {
+  const isSuper = !!me?.is_superadmin;
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
 
@@ -834,7 +872,7 @@ function CitiesSection({ data, setData }) {
     <div>
       <div className="section-head">
         <div><div className="section-title">Города</div><div className="section-sub">Регионы присутствия</div></div>
-        <button className="btn btn-primary" onClick={openAdd}><Ico name="plus" size={14} /> Добавить город</button>
+        {isSuper && <button className="btn btn-primary" onClick={openAdd}><Ico name="plus" size={14} /> Добавить город</button>}
       </div>
       <div className="card" style={{ padding: 0 }}>
         <div className="table-wrap"><table>
@@ -851,8 +889,8 @@ function CitiesSection({ data, setData }) {
                 </div>
               </td>
               <td><div style={{ display: "flex", gap: 6 }}>
-                <button className="btn-icon" onClick={() => openEdit(c)}><Ico name="edit" /></button>
-                <button className="btn-icon" style={{ background: "#fef2f2", color: "#e53e3e" }} onClick={() => del(c.id)}><Ico name="trash" /></button>
+                {isSuper && <button className="btn-icon" onClick={() => openEdit(c)}><Ico name="edit" /></button>}
+                {isSuper && <button className="btn-icon" style={{ background: "#fef2f2", color: "#e53e3e" }} onClick={() => del(c.id)}><Ico name="trash" /></button>}
               </div></td>
             </tr>
           ))}</tbody>
@@ -878,20 +916,22 @@ function CitiesSection({ data, setData }) {
 }
 
 // ── Clinics ───────────────────────────────────────────────
-function ClinicsSection({ data, setData }) {
+function ClinicsSection({ data, setData, me }) {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
+  const isSuper = !!me?.is_superadmin;
   const firstCity = data.cities[0];
-  const empty = { name: "", city: firstCity?.name || "", city_id: firstCity?.id || null, addr: "", phone: "", services: [], service_ids: [], worktime: "", active: true };
+  const empty = { name: "", city: firstCity?.name || "", city_id: firstCity?.id || null, addr: "", phone: "", worktime: "", active: true };
 
   const toPayload = (f) => ({
     name: f.name, city_id: f.city_id || (data.cities.find(c => c.name === f.city)?.id),
-    addr: f.addr, phone: f.phone, service_ids: f.service_ids || [], worktime: f.worktime, active: f.active,
+    addr: f.addr, phone: f.phone, worktime: f.worktime, active: f.active,
   });
 
   const save = async () => {
     const url = modal === "add" ? "/admin/api/clinics" : `/admin/api/clinics/${form.id}`;
     const res = await apiFetch(url, { method: modal === "add" ? "POST" : "PUT", body: JSON.stringify(toPayload(form)) });
+    if (!res.ok) { alert("Не удалось сохранить клинику"); return; }
     const saved = await res.json();
     if (modal === "add") setData(d => ({ ...d, clinics: [...d.clinics, saved] }));
     else setData(d => ({ ...d, clinics: d.clinics.map(c => c.id === form.id ? saved : c) }));
@@ -907,16 +947,14 @@ function ClinicsSection({ data, setData }) {
     const saved = await res.json();
     setData(d => ({ ...d, clinics: d.clinics.map(c => c.id === id ? saved : c) }));
   };
-  const toggleSvc = (svcId) => {
-    const ids = form.service_ids || [];
-    setForm(f => ({ ...f, service_ids: ids.includes(svcId) ? ids.filter(x => x !== svcId) : [...ids, svcId] }));
-  };
 
   return (
     <div>
       <div className="section-head">
-        <div><div className="section-title">Клиники</div><div className="section-sub">Медицинские учреждения</div></div>
-        <button className="btn btn-primary" onClick={() => { setForm({ ...empty }); setModal("add"); }}><Ico name="plus" size={14} /> Добавить клинику</button>
+        <div><div className="section-title">Клиники</div><div className="section-sub">{isSuper ? "Медицинские учреждения" : "Информация о вашей клинике"}</div></div>
+        {isSuper && (
+          <button className="btn btn-primary" onClick={() => { setForm({ ...empty }); setModal("add"); }}><Ico name="plus" size={14} /> Добавить клинику</button>
+        )}
       </div>
       <div className="card" style={{ padding: 0 }}>
         <div className="table-wrap"><table>
@@ -930,10 +968,14 @@ function ClinicsSection({ data, setData }) {
               <td><Toggle on={c.active} onChange={() => toggle(c.id)} /></td>
               <td><div style={{ display: "flex", gap: 6 }}>
                 <button className="btn-icon" onClick={() => { setForm({ ...c }); setModal("edit"); }}><Ico name="edit" /></button>
-                <button className="btn-icon" style={{ background: "#fef2f2", color: "#e53e3e" }} onClick={() => del(c.id)}><Ico name="trash" /></button>
+                {isSuper && <button className="btn-icon" style={{ background: "#fef2f2", color: "#e53e3e" }} onClick={() => del(c.id)}><Ico name="trash" /></button>}
               </div></td>
             </tr>
-          ))}</tbody>
+          ))}
+          {data.clinics.length === 0 && (
+            <tr><td colSpan={6} style={{ textAlign: "center", padding: "32px", color: "var(--text)" }}>Нет клиник</td></tr>
+          )}
+          </tbody>
         </table></div>
       </div>
       {modal && (
@@ -946,7 +988,8 @@ function ClinicsSection({ data, setData }) {
             </div>
             <div className="form-group">
               <label className="form-label">Город</label>
-              <select className="form-input" value={form.city_id || ""} onChange={e => { const c = data.cities.find(x => x.id === +e.target.value); setForm(f => ({ ...f, city_id: +e.target.value, city: c?.name || "" })); }}>
+              <select className="form-input" value={form.city_id || ""} disabled={!isSuper}
+                onChange={e => { const c = data.cities.find(x => x.id === +e.target.value); setForm(f => ({ ...f, city_id: +e.target.value, city: c?.name || "" })); }}>
                 {data.cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
@@ -962,20 +1005,13 @@ function ClinicsSection({ data, setData }) {
               <label className="form-label">Часы работы</label>
               <input className="form-input" value={form.worktime || ""} onChange={e => setForm(f => ({ ...f, worktime: e.target.value }))} placeholder="Пн–Пт 9:00–19:00" />
             </div>
-            <div className="form-group form-full">
-              <label className="form-label">Услуги</label>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
-                {data.services.map(s => {
-                  const on = (form.service_ids || []).includes(s.id);
-                  return (
-                    <button key={s.id} onClick={() => toggleSvc(s.id)}
-                      style={{ padding: "6px 14px", borderRadius: 99, border: `1.5px solid ${on ? "var(--btn-color)" : "var(--stroke)"}`,
-                        background: on ? "#e0f7f6" : "#fff", color: on ? "var(--brand-dark)" : "var(--text)",
-                        fontWeight: on ? 600 : 400, fontSize: 13, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                      <ServiceIcon icon={s.icon} size={16} /> {s.name}
-                    </button>
-                  );
-                })}
+            <div className="form-group form-full" style={{ background: "#f0f9fa", padding: 12, borderRadius: 12 }}>
+              <label className="form-label">Услуги клиники</label>
+              <div style={{ fontSize: 12, color: "var(--text)", marginBottom: 6 }}>Услуги управляются в разделе «Услуги». Здесь — список текущих:</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {(form.services || []).length === 0
+                  ? <span style={{ fontSize: 13, color: "var(--text)" }}>Услуг нет</span>
+                  : (form.services || []).map(s => <span key={s} className="badge badge-teal">{s}</span>)}
               </div>
             </div>
           </div>
@@ -1119,15 +1155,16 @@ function AvatarCropDialog({ src, onConfirm, onCancel }) {
 }
 
 // ── Doctors ───────────────────────────────────────────────
-function DoctorsSection({ data, setData }) {
+function DoctorsSection({ data, setData, me }) {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [scheduleDoctor, setScheduleDoctor] = useState(null);
   const [cropDialog, setCropDialog] = useState(null);
+  const isSuper = !!me?.is_superadmin;
 
   const COLORS = ["#16a085","#2980b9","#8e44ad","#e74c3c","#e67e22","#27ae60","#2c3e50"];
-  const firstClinic = data.clinics[0];
-  const empty = { name: "", spec: "", clinic: firstClinic?.name || "", clinic_id: firstClinic?.id || null, exp: 0, minAge: 0, color: COLORS[0], initials: "", avatar: null, active: true };
+  const defaultClinic = isSuper ? data.clinics[0] : data.clinics.find(c => c.id === me?.clinic_id);
+  const empty = { name: "", spec: "", clinic: defaultClinic?.name || "", clinic_id: defaultClinic?.id || null, exp: 0, minAge: 0, color: COLORS[0], initials: "", avatar: null, active: true };
 
   const save = async () => {
     const url = modal === "add" ? "/admin/api/doctors" : `/admin/api/doctors/${form.id}`;
@@ -1193,7 +1230,8 @@ function DoctorsSection({ data, setData }) {
             </div>
             <div className="form-group">
               <label className="form-label">Клиника</label>
-              <select className="form-input" value={form.clinic_id || ""} onChange={e => { const c = data.clinics.find(x => x.id === +e.target.value); setForm(f => ({ ...f, clinic_id: +e.target.value, clinic: c?.name || "" })); }}>
+              <select className="form-input" value={form.clinic_id || ""} disabled={!isSuper}
+                onChange={e => { const c = data.clinics.find(x => x.id === +e.target.value); setForm(f => ({ ...f, clinic_id: +e.target.value, clinic: c?.name || "" })); }}>
                 {data.clinics.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
@@ -1337,7 +1375,7 @@ function ScheduleModal({ doctor, onClose }) {
 }
 
 // ── Content ───────────────────────────────────────────────
-function ContentSection({ data, setData }) {
+function ContentSection({ data, setData, me }) {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [filterSvc, setFilterSvc] = useState("all");
@@ -1579,33 +1617,152 @@ function RolesSection({ data, setData }) {
   );
 }
 
+// ── Admin users (superadmin only) ─────────────────────────
+function AdminUsersSection({ data, setData, me }) {
+  const [modal, setModal] = useState(null);
+  const [form, setForm] = useState({});
+
+  const empty = { username: "", password: "", full_name: "", is_superadmin: false, clinic_id: data.clinics[0]?.id || null, is_active: true };
+
+  const toPayload = (f, isCreate) => ({
+    username: f.username,
+    ...(isCreate || f.password ? { password: f.password } : {}),
+    full_name: f.full_name || "",
+    is_superadmin: !!f.is_superadmin,
+    clinic_id: f.is_superadmin ? null : (f.clinic_id || null),
+    is_active: !!f.is_active,
+  });
+
+  const save = async () => {
+    const isCreate = modal === "add";
+    const url = isCreate ? "/admin/api/admin-users" : `/admin/api/admin-users/${form.id}`;
+    const res = await apiFetch(url, { method: isCreate ? "POST" : "PUT", body: JSON.stringify(toPayload(form, isCreate)) });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.detail || "Не удалось сохранить");
+      return;
+    }
+    const saved = await res.json();
+    if (isCreate) setData(d => ({ ...d, adminUsers: [...d.adminUsers, saved] }));
+    else setData(d => ({ ...d, adminUsers: d.adminUsers.map(u => u.id === form.id ? saved : u) }));
+    setModal(null);
+  };
+  const del = async (id) => {
+    if (!confirm("Удалить администратора?")) return;
+    const res = await apiFetch(`/admin/api/admin-users/${id}`, { method: "DELETE" });
+    if (!res.ok) { const err = await res.json().catch(() => ({})); alert(err.detail || "Ошибка"); return; }
+    setData(d => ({ ...d, adminUsers: d.adminUsers.filter(u => u.id !== id) }));
+  };
+
+  return (
+    <div>
+      <div className="section-head">
+        <div><div className="section-title">Администраторы</div><div className="section-sub">Учётные записи администраторов клиник и суперадминистраторов</div></div>
+        <button className="btn btn-primary" onClick={() => { setForm({ ...empty }); setModal("add"); }}><Ico name="plus" size={14} /> Добавить администратора</button>
+      </div>
+      <div className="card" style={{ padding: 0 }}>
+        <div className="table-wrap"><table>
+          <thead><tr><th>Логин</th><th>ФИО</th><th>Роль</th><th>Клиника</th><th>Статус</th><th style={{width:100}}>Действия</th></tr></thead>
+          <tbody>
+            {data.adminUsers.map(u => (
+              <tr key={u.id}>
+                <td><strong>{u.username}</strong></td>
+                <td style={{ fontSize: 13 }}>{u.full_name || "—"}</td>
+                <td>{u.is_superadmin ? <span className="badge" style={{ background: "#f0edfb", color: "#8e44ad" }}>Суперадмин</span> : <span className="badge badge-teal">Админ клиники</span>}</td>
+                <td style={{ fontSize: 13 }}>{u.clinic_name || (u.is_superadmin ? "—" : "")}</td>
+                <td><span className={`badge ${u.is_active ? "badge-green" : "badge-gray"}`}>{u.is_active ? "Активен" : "Отключён"}</span></td>
+                <td><div style={{ display: "flex", gap: 6 }}>
+                  <button className="btn-icon" onClick={() => { setForm({ ...u, password: "" }); setModal("edit"); }}><Ico name="edit" /></button>
+                  {u.id !== me?.id && <button className="btn-icon" style={{ background: "#fef2f2", color: "#e53e3e" }} onClick={() => del(u.id)}><Ico name="trash" /></button>}
+                </div></td>
+              </tr>
+            ))}
+            {data.adminUsers.length === 0 && (
+              <tr><td colSpan={6} style={{ textAlign: "center", padding: "32px", color: "var(--text)" }}>Администраторов нет</td></tr>
+            )}
+          </tbody>
+        </table></div>
+      </div>
+      {modal && (
+        <Modal title={modal === "add" ? "Добавить администратора" : "Редактировать администратора"} onClose={() => setModal(null)}
+          footer={<><button className="btn btn-secondary" onClick={() => setModal(null)}>Отмена</button><button className="btn btn-primary" onClick={save}>Сохранить</button></>}>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Логин</label>
+              <input className="form-input" value={form.username || ""} onChange={e => setForm(f => ({ ...f, username: e.target.value }))} placeholder="clinic_admin" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">{modal === "add" ? "Пароль" : "Новый пароль"} <span>{modal === "edit" && "(оставьте пустым, чтобы не менять)"}</span></label>
+              <input className="form-input" type="password" value={form.password || ""} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="••••••" />
+            </div>
+            <div className="form-group form-full">
+              <label className="form-label">ФИО</label>
+              <input className="form-input" value={form.full_name || ""} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} placeholder="Иванов И.И." />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Роль</label>
+              <select className="form-input" value={form.is_superadmin ? "super" : "clinic"} onChange={e => setForm(f => ({ ...f, is_superadmin: e.target.value === "super" }))}>
+                <option value="clinic">Админ клиники</option>
+                <option value="super">Суперадмин</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Клиника</label>
+              <select className="form-input" value={form.clinic_id || ""} disabled={!!form.is_superadmin}
+                onChange={e => setForm(f => ({ ...f, clinic_id: +e.target.value }))}>
+                <option value="">— не выбрана —</option>
+                {data.clinics.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group form-full" style={{ display: "flex", alignItems: "center", gap: 10, flexDirection: "row" }}>
+              <Toggle on={!!form.is_active} onChange={v => setForm(f => ({ ...f, is_active: v }))} />
+              <span style={{ fontSize: 13 }}>Учётная запись активна</span>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+
 // ── App ───────────────────────────────────────────────────
-const NAV = [
-  { id: "dashboard", label: "Дашборд", icon: "dashboard", group: null },
-  { id: "services", label: "Услуги", icon: "services", group: "Каталог" },
-  { id: "cities", label: "Города", icon: "city", group: "Каталог" },
-  { id: "clinics", label: "Клиники", icon: "clinic", group: "Каталог" },
-  { id: "doctors", label: "Врачи", icon: "doctor", group: "Каталог" },
-  { id: "content", label: "Контент", icon: "content", group: "Материалы" },
-  { id: "roles", label: "Роли и права", icon: "roles", group: "Система" },
+const NAV_ALL = [
+  { id: "dashboard", label: "Дашборд", icon: "dashboard", group: null, super: false },
+  { id: "services", label: "Услуги", icon: "services", group: "Каталог", super: false },
+  { id: "cities", label: "Города", icon: "city", group: "Каталог", super: true },
+  { id: "clinics", label: "Клиники", icon: "clinic", group: "Каталог", super: false },
+  { id: "doctors", label: "Врачи", icon: "doctor", group: "Каталог", super: false },
+  { id: "content", label: "Контент", icon: "content", group: "Материалы", super: false },
+  { id: "admin-users", label: "Администраторы", icon: "roles", group: "Система", super: true },
+  { id: "roles", label: "Роли и права", icon: "roles", group: "Система", super: true },
 ];
 
 function App() {
   const [token, setToken] = React.useState(localStorage.getItem("admin_token"));
   const [adminUser, setAdminUser] = React.useState(localStorage.getItem("admin_username") || "");
+  const [me, setMe] = React.useState(null);
   const [page, setPage] = useState("dashboard");
   const [data, setData] = useState(EMPTY_DATA);
   const [loading, setLoading] = React.useState(false);
 
   const PAGE_TITLES = {
     dashboard: "Дашборд", services: "Услуги", cities: "Города",
-    clinics: "Клиники", doctors: "Врачи", content: "Материалы для адаптации", roles: "Роли и права",
+    clinics: "Клиники", doctors: "Врачи", content: "Материалы для адаптации",
+    roles: "Роли и права", "admin-users": "Администраторы",
   };
 
   React.useEffect(() => {
     if (!token) return;
     setLoading(true);
-    loadAllData().then(d => { setData(d); setLoading(false); }).catch(() => setLoading(false));
+    apiFetch("/admin/api/me")
+      .then(r => r.json())
+      .then(meData => {
+        setMe(meData);
+        return loadAllData(meData);
+      })
+      .then(d => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
   }, [token]);
 
   const handleLogin = (uname) => {
@@ -1617,13 +1774,19 @@ function App() {
     localStorage.removeItem("admin_token");
     localStorage.removeItem("admin_username");
     setToken(null);
+    setMe(null);
     setData(EMPTY_DATA);
   };
 
   if (!token) return <LoginScreen onLogin={handleLogin} />;
 
   const initials = adminUser ? adminUser.slice(0, 2).toUpperCase() : "АД";
+  const isSuper = !!me?.is_superadmin;
+  const NAV = NAV_ALL.filter(n => isSuper || !n.super);
   const groups = [...new Set(NAV.map(n => n.group))];
+  const visibleIds = new Set(NAV.map(n => n.id));
+  const safePage = visibleIds.has(page) ? page : "dashboard";
+  const roleLabel = isSuper ? "Суперадминистратор" : (me?.clinic_name ? `Админ клиники · ${me.clinic_name}` : "Администратор");
 
   return (
     <div className="layout">
@@ -1631,7 +1794,7 @@ function App() {
         <div className="sidebar-logo">
           <div className="sidebar-logo-title">Иду к врачу</div>
           <div className="sidebar-logo-sub">Панель управления</div>
-          <div className="sidebar-badge">Admin</div>
+          <div className="sidebar-badge">{isSuper ? "Super Admin" : "Clinic Admin"}</div>
         </div>
         <nav className="sidebar-nav">
           {groups.map(group => {
@@ -1640,7 +1803,7 @@ function App() {
               <React.Fragment key={group || "top"}>
                 {group && <div className="nav-section-label">{group}</div>}
                 {items.map(item => (
-                  <button key={item.id} className={`nav-item${page === item.id ? " active" : ""}`} onClick={() => setPage(item.id)}>
+                  <button key={item.id} className={`nav-item${safePage === item.id ? " active" : ""}`} onClick={() => setPage(item.id)}>
                     <div className="nav-icon"><Ico name={item.icon} size={15} /></div>
                     {item.label}
                   </button>
@@ -1654,7 +1817,7 @@ function App() {
             <div className="admin-avatar">{initials}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="admin-name">{adminUser}</div>
-              <div className="admin-role">Администратор</div>
+              <div className="admin-role" title={roleLabel} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{roleLabel}</div>
             </div>
             <button onClick={handleLogout} title="Выйти" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text)", padding: 4 }}>
               <Ico name="logout" size={16} />
@@ -1665,20 +1828,22 @@ function App() {
 
       <div className="main">
         <header className="topbar">
-          <span className="topbar-title">{PAGE_TITLES[page]}</span>
+          <span className="topbar-title">{PAGE_TITLES[safePage]}</span>
           <div className="topbar-actions">
             {loading && <span style={{ fontSize: 12, color: "var(--text)" }}>Загрузка…</span>}
+            {!isSuper && me?.clinic_name && <span className="badge badge-teal">{me.clinic_name}</span>}
             <div className="admin-avatar" style={{ width: 34, height: 34, fontSize: 12 }}>{initials}</div>
           </div>
         </header>
         <div className="content">
-          {page === "dashboard" && <Dashboard data={data} />}
-          {page === "services" && <ServicesSection data={data} setData={setData} />}
-          {page === "cities" && <CitiesSection data={data} setData={setData} />}
-          {page === "clinics" && <ClinicsSection data={data} setData={setData} />}
-          {page === "doctors" && <DoctorsSection data={data} setData={setData} />}
-          {page === "content" && <ContentSection data={data} setData={setData} />}
-          {page === "roles" && <RolesSection data={data} setData={setData} />}
+          {safePage === "dashboard" && <Dashboard data={data} />}
+          {safePage === "services" && <ServicesSection data={data} setData={setData} me={me} />}
+          {safePage === "cities" && <CitiesSection data={data} setData={setData} me={me} />}
+          {safePage === "clinics" && <ClinicsSection data={data} setData={setData} me={me} />}
+          {safePage === "doctors" && <DoctorsSection data={data} setData={setData} me={me} />}
+          {safePage === "content" && <ContentSection data={data} setData={setData} me={me} />}
+          {safePage === "roles" && isSuper && <RolesSection data={data} setData={setData} />}
+          {safePage === "admin-users" && isSuper && <AdminUsersSection data={data} setData={setData} me={me} />}
         </div>
       </div>
     </div>

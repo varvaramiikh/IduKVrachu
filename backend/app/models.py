@@ -66,18 +66,20 @@ class Clinic(Base):
     address: Mapped[Optional[str]] = mapped_column(String(512))
     phone: Mapped[Optional[str]] = mapped_column(String(30))
     worktime: Mapped[Optional[str]] = mapped_column(String(100))
-    services_json: Mapped[Optional[str]] = mapped_column(String(500))  # JSON list of service IDs
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     mis_external_id: Mapped[Optional[str]] = mapped_column(String(100))
 
     city = relationship("City", back_populates="clinics")
     appointments = relationship("Appointment", back_populates="clinic")
     doctors = relationship("Doctor", back_populates="clinic")
+    services = relationship("Service", back_populates="clinic", cascade="all, delete-orphan")
+    admins = relationship("AdminUser", back_populates="clinic")
 
 class Service(Base):
     __tablename__ = "services"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    clinic_id: Mapped[int] = mapped_column(ForeignKey("clinics.id"), index=True)
     name: Mapped[str] = mapped_column(String(255))
     description: Mapped[Optional[str]] = mapped_column(String(500))
     icon: Mapped[Optional[str]] = mapped_column(String(10))
@@ -85,6 +87,7 @@ class Service(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     mis_external_id: Mapped[Optional[str]] = mapped_column(String(100))
 
+    clinic = relationship("Clinic", back_populates="services")
     appointments = relationship("Appointment", back_populates="service")
 
 class Appointment(Base):
@@ -222,6 +225,21 @@ class BotAppointmentRequest(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="bot_appointments")
+
+class AdminUser(Base):
+    __tablename__ = "admin_users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
+    full_name: Mapped[Optional[str]] = mapped_column(String(255))
+    is_superadmin: Mapped[bool] = mapped_column(Boolean, default=False)
+    clinic_id: Mapped[Optional[int]] = mapped_column(ForeignKey("clinics.id"), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    clinic = relationship("Clinic", back_populates="admins")
+
 
 class AdminAuditLog(Base):
     __tablename__ = "admin_audit_logs"

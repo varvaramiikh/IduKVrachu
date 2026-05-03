@@ -42,6 +42,7 @@ class Clinic(BaseModel):
 
 class Service(BaseModel):
     id: int
+    clinic_id: int
     name: str
     description: Optional[str] = None
     icon: Optional[str] = None
@@ -151,12 +152,15 @@ class AdminLoginRequest(BaseModel):
 
 class AdminServiceItem(BaseModel):
     id: int
+    clinic_id: int
+    clinic_name: str
     name: str
     desc: str
     icon: str
     active: bool
 
 class AdminServiceCreate(BaseModel):
+    clinic_id: Optional[int] = None  # superadmin must provide; clinic admin pinned to own
     name: str
     desc: str = ""
     icon: str = ""
@@ -201,7 +205,6 @@ class AdminClinicCreate(BaseModel):
     city_id: int
     addr: str = ""
     phone: str = ""
-    service_ids: List[int] = []
     worktime: str = ""
     active: bool = True
 
@@ -296,3 +299,38 @@ class AdminStats(BaseModel):
     content_count: int
     users_count: int
     appointments_count: int
+
+# ── Admin users (super-admin manages clinic admins) ───────────
+
+class AdminMe(BaseModel):
+    id: int
+    username: str
+    full_name: Optional[str] = None
+    is_superadmin: bool
+    clinic_id: Optional[int] = None
+    clinic_name: Optional[str] = None
+
+class AdminUserItem(BaseModel):
+    id: int
+    username: str
+    full_name: Optional[str] = None
+    is_superadmin: bool
+    clinic_id: Optional[int] = None
+    clinic_name: Optional[str] = None
+    is_active: bool
+
+class AdminUserCreate(BaseModel):
+    username: str
+    password: str
+    full_name: Optional[str] = ""
+    is_superadmin: bool = False
+    clinic_id: Optional[int] = None
+    is_active: bool = True
+
+class AdminUserUpdate(BaseModel):
+    username: str
+    password: Optional[str] = None
+    full_name: Optional[str] = ""
+    is_superadmin: bool = False
+    clinic_id: Optional[int] = None
+    is_active: bool = True

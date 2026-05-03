@@ -22,14 +22,16 @@ async def seed_if_empty() -> None:
         clinic1 = Clinic(name="Детская стоматология 'Зубная фея'", address="ул. Пушкина, д. 10", city_id=moscow.id, is_active=True, mis_external_id="cl_01")
         clinic2 = Clinic(name="Медицинский центр 'Здоровье'", address="пр. Мира, д. 25", city_id=moscow.id, is_active=True, mis_external_id="cl_02")
         db.add_all([clinic1, clinic2])
+        await db.flush()
 
-        s1 = Service(name="Первичный осмотр стоматолога", service_type="стоматология", is_active=True, mis_external_id="srv_01")
-        s2 = Service(name="Лечение кариеса", service_type="стоматология", is_active=True, mis_external_id="srv_02")
-        s3 = Service(name="Забор крови из вены", service_type="анализы", is_active=True, mis_external_id="srv_03")
+        s1 = Service(clinic_id=clinic1.id, name="Первичный осмотр стоматолога", service_type="стоматология", is_active=True, mis_external_id="srv_01")
+        s2 = Service(clinic_id=clinic1.id, name="Лечение кариеса", service_type="стоматология", is_active=True, mis_external_id="srv_02")
+        s3 = Service(clinic_id=clinic2.id, name="Забор крови из вены", service_type="анализы", is_active=True, mis_external_id="srv_03")
         db.add_all([s1, s2, s3])
+        await db.flush()
 
-        m1 = ContentModule(title="Сдача крови", description="Подготовка к анализу крови", is_free=True)
-        m2 = ContentModule(title="Стоматолог", description="Знакомство с кабинетом стоматолога", is_free=False, price_stars=69)
+        m1 = ContentModule(title="Сдача крови", description="Подготовка к анализу крови", is_free=True, service_id=s3.id)
+        m2 = ContentModule(title="Стоматолог", description="Знакомство с кабинетом стоматолога", is_free=False, price_stars=69, service_id=s1.id)
         db.add_all([m1, m2])
         await db.flush()
 

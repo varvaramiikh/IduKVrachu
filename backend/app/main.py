@@ -28,6 +28,7 @@ from .mis import mis_provider
 from .models import (
     AdminAuditLog,
     AdminRole,
+    AdminUser,
     Appointment,
     BotAppointmentRequest,
     ChildProfile,
@@ -58,6 +59,7 @@ from .schemas import (
     AdminDoctorItem,
     AdminDoctorUpdate,
     AdminLoginRequest,
+    AdminMe,
     AdminRoleCreate,
     AdminRoleItem,
     AdminRoleUpdate,
@@ -66,6 +68,9 @@ from .schemas import (
     AdminServiceItem,
     AdminServiceUpdate,
     AdminStats,
+    AdminUserCreate,
+    AdminUserItem,
+    AdminUserUpdate,
     Appointment as AppointmentSchema,
     AppointmentCreate,
     AppointmentDetail,
@@ -187,15 +192,21 @@ async def get_current_user(x_tg_init_data: str = Header(...), db: AsyncSession =
 
 _BEARER = HTTPBearer()
 
-def _make_admin_token(username: str) -> str:
+
+def _hash_pw(pw: str) -> str:
+    return hashlib.sha256(pw.encode("utf-8")).hexdigest()
+
+
+def _make_admin_token(admin_id: int) -> str:
     exp = int(time.time()) + 86400 * 7
     payload = base64.urlsafe_b64encode(
-        json.dumps({"sub": username, "exp": exp}).encode()
+        json.dumps({"sub": admin_id, "exp": exp}).encode()
     ).decode().rstrip("=")
     sig = hmac.new(settings.SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
     return f"{payload}.{sig}"
 
-def _verify_admin_token(token: str) -> Optional[str]:
+
+def _verify_admin_token(token: str) -> Optional[int]:
     try:
         payload_b64, sig = token.rsplit(".", 1)
         expected = hmac.new(settings.SECRET_KEY.encode(), payload_b64.encode(), hashlib.sha256).hexdigest()
@@ -205,15 +216,39 @@ def _verify_admin_token(token: str) -> Optional[str]:
         data = json.loads(base64.urlsafe_b64decode(payload_b64 + padding))
         if data["exp"] < time.time():
             return None
-        return data["sub"]
+        sub = data.get("sub")
+        return int(sub) if sub is not None else None
     except Exception:
         return None
 
-async def get_admin(creds: HTTPAuthorizationCredentials = Depends(_BEARER)) -> str:
-    username = _verify_admin_token(creds.credentials)
-    if not username:
+
+async def get_admin(
+    creds: HTTPAuthorizationCredentials = Depends(_BEARER),
+    db: AsyncSession = Depends(get_db),
+) -> AdminUser:
+    admin_id = _verify_admin_token(creds.credentials)
+    if admin_id is None:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
-    return username
+    admin = (await db.execute(select(AdminUser).where(AdminUser.id == admin_id))).scalar_one_or_none()
+    if not admin or not admin.is_active:
+        raise HTTPException(status_code=401, detail="Admin disabled or not found")
+    return admin
+
+
+async def require_super(admin: AdminUser = Depends(get_admin)) -> AdminUser:
+    if not admin.is_superadmin:
+        raise HTTPException(status_code=403, detail="Superadmin required")
+    return admin
+
+
+def _ensure_clinic_access(admin: AdminUser, clinic_id: Optional[int]) -> None:
+    """Clinic admins can only touch their own clinic."""
+    if admin.is_superadmin:
+        return
+    if admin.clinic_id is None:
+        raise HTTPException(status_code=403, detail="Admin has no clinic assigned")
+    if clinic_id is None or clinic_id != admin.clinic_id:
+        raise HTTPException(status_code=403, detail="Forbidden: foreign clinic")
 
 
 # ── Public API ────────────────────────────────────────────────
@@ -225,21 +260,37 @@ async def get_cities(db: AsyncSession = Depends(get_db)):
 
 @app.get("/api/clinics", response_model=List[ClinicSchema])
 async def get_clinics(city_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Clinic).where(Clinic.city_id == city_id, Clinic.is_active == True))
-    clinics = result.scalars().all()
+    clinics = (await db.execute(
+        select(Clinic).where(Clinic.city_id == city_id, Clinic.is_active == True)
+    )).scalars().all()
+    if not clinics:
+        return []
+    clinic_ids = [c.id for c in clinics]
+    svc_rows = (await db.execute(
+        select(Service.id, Service.clinic_id).where(
+            Service.clinic_id.in_(clinic_ids),
+            Service.is_active == True,
+        )
+    )).all()
+    by_clinic: Dict[int, List[int]] = {cid: [] for cid in clinic_ids}
+    for svc_id, cid in svc_rows:
+        by_clinic.setdefault(cid, []).append(svc_id)
     return [
         ClinicSchema(
             id=c.id, name=c.name, city_id=c.city_id, address=c.address,
             phone=c.phone, worktime=c.worktime, is_active=c.is_active,
-            service_ids=json.loads(c.services_json or "[]"),
+            service_ids=by_clinic.get(c.id, []),
         )
         for c in clinics
     ]
 
+
 @app.get("/api/services", response_model=List[ServiceSchema])
-async def get_services(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Service).where(Service.is_active == True))
-    return result.scalars().all()
+async def get_services(clinic_id: Optional[int] = None, db: AsyncSession = Depends(get_db)):
+    stmt = select(Service).where(Service.is_active == True)
+    if clinic_id is not None:
+        stmt = stmt.where(Service.clinic_id == clinic_id)
+    return (await db.execute(stmt)).scalars().all()
 
 @app.get("/api/doctors", response_model=List[DoctorSchema])
 async def get_doctors(clinic_id: int, db: AsyncSession = Depends(get_db)):
@@ -592,24 +643,74 @@ async def close_ticket(ticket_id: int, db: AsyncSession = Depends(get_db)):
 # ── Admin API: auth ───────────────────────────────────────────
 
 @app.post("/admin/api/login")
-async def admin_login(data: AdminLoginRequest):
-    if data.username != settings.ADMIN_USERNAME or data.password != settings.ADMIN_PASSWORD:
+async def admin_login(data: AdminLoginRequest, db: AsyncSession = Depends(get_db)):
+    user = (await db.execute(
+        select(AdminUser).where(AdminUser.username == data.username)
+    )).scalar_one_or_none()
+    if not user or not user.is_active or user.password_hash != _hash_pw(data.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    return {"token": _make_admin_token(data.username), "username": data.username}
+    return {
+        "token": _make_admin_token(user.id),
+        "username": user.username,
+        "is_superadmin": user.is_superadmin,
+        "clinic_id": user.clinic_id,
+    }
+
+
+@app.get("/admin/api/me", response_model=AdminMe)
+async def admin_me(admin: AdminUser = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+    clinic_name = None
+    if admin.clinic_id is not None:
+        clinic = (await db.execute(select(Clinic).where(Clinic.id == admin.clinic_id))).scalar_one_or_none()
+        clinic_name = clinic.name if clinic else None
+    return AdminMe(
+        id=admin.id, username=admin.username, full_name=admin.full_name,
+        is_superadmin=admin.is_superadmin, clinic_id=admin.clinic_id,
+        clinic_name=clinic_name,
+    )
 
 
 # ── Admin API: stats ──────────────────────────────────────────
 
 @app.get("/admin/api/stats", response_model=AdminStats)
-async def admin_stats(admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_stats(admin: AdminUser = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+    is_super = admin.is_superadmin
+    cid = admin.clinic_id
+
+    services_q = select(func.count()).select_from(Service)
+    clinics_q = select(func.count()).select_from(Clinic)
+    doctors_q = select(func.count()).select_from(Doctor)
+    content_q = select(func.count()).select_from(ContentModule)
+    appts_q = select(func.count()).select_from(Appointment)
+    users_q = select(func.count()).select_from(User)
+    cities_q = select(func.count()).select_from(City).where(City.is_active == True)
+
+    if not is_super:
+        if cid is None:
+            raise HTTPException(status_code=403, detail="Admin has no clinic assigned")
+        services_q = services_q.where(Service.clinic_id == cid)
+        clinics_q = clinics_q.where(Clinic.id == cid)
+        doctors_q = doctors_q.where(Doctor.clinic_id == cid)
+        appts_q = appts_q.where(Appointment.clinic_id == cid)
+        # content scoped to clinic's services
+        content_q = content_q.where(
+            ContentModule.service_id.in_(select(Service.id).where(Service.clinic_id == cid))
+        )
+        # users who booked into this clinic
+        users_q = select(func.count(func.distinct(Appointment.user_id))).select_from(Appointment).where(Appointment.clinic_id == cid)
+        # cities: only clinic's city
+        cities_q = select(func.count()).select_from(City).where(
+            City.id == select(Clinic.city_id).where(Clinic.id == cid).scalar_subquery()
+        )
+
     counts = await asyncio.gather(
-        db.scalar(select(func.count()).select_from(Service)),
-        db.scalar(select(func.count()).select_from(City).where(City.is_active == True)),
-        db.scalar(select(func.count()).select_from(Clinic)),
-        db.scalar(select(func.count()).select_from(Doctor)),
-        db.scalar(select(func.count()).select_from(ContentModule)),
-        db.scalar(select(func.count()).select_from(User)),
-        db.scalar(select(func.count()).select_from(Appointment)),
+        db.scalar(services_q),
+        db.scalar(cities_q),
+        db.scalar(clinics_q),
+        db.scalar(doctors_q),
+        db.scalar(content_q),
+        db.scalar(users_q),
+        db.scalar(appts_q),
     )
     return AdminStats(
         services_count=counts[0] or 0, cities_count=counts[1] or 0,
@@ -621,40 +722,88 @@ async def admin_stats(admin: str = Depends(get_admin), db: AsyncSession = Depend
 
 # ── Admin API: services ───────────────────────────────────────
 
+async def _service_to_item(svc: Service, db: AsyncSession) -> AdminServiceItem:
+    clinic = (await db.execute(select(Clinic).where(Clinic.id == svc.clinic_id))).scalar_one_or_none()
+    return AdminServiceItem(
+        id=svc.id, clinic_id=svc.clinic_id, clinic_name=clinic.name if clinic else "",
+        name=svc.name, desc=svc.description or "", icon=svc.icon or "", active=svc.is_active,
+    )
+
+
 @app.get("/admin/api/services", response_model=List[AdminServiceItem])
-async def admin_list_services(admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
-    rows = (await db.execute(select(Service))).scalars().all()
-    return [AdminServiceItem(id=s.id, name=s.name, desc=s.description or "", icon=s.icon or "", active=s.is_active) for s in rows]
+async def admin_list_services(admin: AdminUser = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+    stmt = select(Service)
+    if not admin.is_superadmin:
+        if admin.clinic_id is None:
+            return []
+        stmt = stmt.where(Service.clinic_id == admin.clinic_id)
+    rows = (await db.execute(stmt)).scalars().all()
+    return [await _service_to_item(s, db) for s in rows]
 
 
 @app.post("/admin/api/services", response_model=AdminServiceItem, status_code=201)
-async def admin_create_service(data: AdminServiceCreate, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
-    svc = Service(name=data.name, service_type=data.name.lower(), description=data.desc, icon=data.icon, is_active=data.active)
+async def admin_create_service(
+    data: AdminServiceCreate,
+    admin: AdminUser = Depends(get_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    target_clinic = data.clinic_id if admin.is_superadmin else admin.clinic_id
+    if target_clinic is None:
+        raise HTTPException(status_code=400, detail="clinic_id is required")
+    _ensure_clinic_access(admin, target_clinic)
+    if not (await db.execute(select(Clinic.id).where(Clinic.id == target_clinic))).scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Clinic not found")
+    svc = Service(
+        clinic_id=target_clinic,
+        name=data.name,
+        service_type=data.name.lower(),
+        description=data.desc,
+        icon=data.icon,
+        is_active=data.active,
+    )
     db.add(svc)
     await db.commit()
     await db.refresh(svc)
-    return AdminServiceItem(id=svc.id, name=svc.name, desc=svc.description or "", icon=svc.icon or "", active=svc.is_active)
+    return await _service_to_item(svc, db)
 
 
 @app.put("/admin/api/services/{service_id}", response_model=AdminServiceItem)
-async def admin_update_service(service_id: int, data: AdminServiceUpdate, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_update_service(
+    service_id: int,
+    data: AdminServiceUpdate,
+    admin: AdminUser = Depends(get_admin),
+    db: AsyncSession = Depends(get_db),
+):
     svc = (await db.execute(select(Service).where(Service.id == service_id))).scalar_one_or_none()
     if not svc:
         raise HTTPException(status_code=404, detail="Service not found")
+    _ensure_clinic_access(admin, svc.clinic_id)
+    # Reassigning to another clinic only allowed for superadmin
+    if data.clinic_id is not None and data.clinic_id != svc.clinic_id:
+        if not admin.is_superadmin:
+            raise HTTPException(status_code=403, detail="Only superadmin can move services between clinics")
+        if not (await db.execute(select(Clinic.id).where(Clinic.id == data.clinic_id))).scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="Target clinic not found")
+        svc.clinic_id = data.clinic_id
     svc.name = data.name
     svc.description = data.desc
     svc.icon = data.icon
     svc.is_active = data.active
     await db.commit()
     await db.refresh(svc)
-    return AdminServiceItem(id=svc.id, name=svc.name, desc=svc.description or "", icon=svc.icon or "", active=svc.is_active)
+    return await _service_to_item(svc, db)
 
 
 @app.delete("/admin/api/services/{service_id}")
-async def admin_delete_service(service_id: int, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_delete_service(
+    service_id: int,
+    admin: AdminUser = Depends(get_admin),
+    db: AsyncSession = Depends(get_db),
+):
     svc = (await db.execute(select(Service).where(Service.id == service_id))).scalar_one_or_none()
     if not svc:
         raise HTTPException(status_code=404, detail="Service not found")
+    _ensure_clinic_access(admin, svc.clinic_id)
     await db.delete(svc)
     await db.commit()
     return {"status": "ok"}
@@ -667,7 +816,8 @@ def _city_to_item(c: City, clinics_count: int) -> AdminCityItem:
 
 
 @app.get("/admin/api/cities", response_model=List[AdminCityItem])
-async def admin_list_cities(admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_list_cities(admin: AdminUser = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+    # Read-only for everyone (used to populate dropdowns); writes are super-only.
     cities = (await db.execute(select(City))).scalars().all()
     result = []
     for c in cities:
@@ -677,7 +827,7 @@ async def admin_list_cities(admin: str = Depends(get_admin), db: AsyncSession = 
 
 
 @app.post("/admin/api/cities", response_model=AdminCityItem, status_code=201)
-async def admin_create_city(data: AdminCityCreate, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_create_city(data: AdminCityCreate, admin: AdminUser = Depends(require_super), db: AsyncSession = Depends(get_db)):
     city = City(name=data.name, region=data.region, is_active=data.active)
     db.add(city)
     await db.commit()
@@ -686,7 +836,7 @@ async def admin_create_city(data: AdminCityCreate, admin: str = Depends(get_admi
 
 
 @app.put("/admin/api/cities/{city_id}", response_model=AdminCityItem)
-async def admin_update_city(city_id: int, data: AdminCityUpdate, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_update_city(city_id: int, data: AdminCityUpdate, admin: AdminUser = Depends(require_super), db: AsyncSession = Depends(get_db)):
     city = (await db.execute(select(City).where(City.id == city_id))).scalar_one_or_none()
     if not city:
         raise HTTPException(status_code=404, detail="City not found")
@@ -699,7 +849,7 @@ async def admin_update_city(city_id: int, data: AdminCityUpdate, admin: str = De
 
 
 @app.delete("/admin/api/cities/{city_id}")
-async def admin_delete_city(city_id: int, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_delete_city(city_id: int, admin: AdminUser = Depends(require_super), db: AsyncSession = Depends(get_db)):
     city = (await db.execute(select(City).where(City.id == city_id))).scalar_one_or_none()
     if not city:
         raise HTTPException(status_code=404, detail="City not found")
@@ -713,31 +863,31 @@ async def admin_delete_city(city_id: int, admin: str = Depends(get_admin), db: A
 async def _clinic_to_item(clinic: Clinic, db: AsyncSession) -> AdminClinicItem:
     city = (await db.execute(select(City).where(City.id == clinic.city_id))).scalar_one_or_none()
     city_name = city.name if city else ""
-    service_ids: List[int] = json.loads(clinic.services_json or "[]")
-    service_names: List[str] = []
-    if service_ids:
-        svcs = (await db.execute(select(Service).where(Service.id.in_(service_ids)))).scalars().all()
-        svc_map = {s.id: s.name for s in svcs}
-        service_names = [svc_map[sid] for sid in service_ids if sid in svc_map]
+    svcs = (await db.execute(select(Service).where(Service.clinic_id == clinic.id))).scalars().all()
     return AdminClinicItem(
         id=clinic.id, name=clinic.name, city=city_name, city_id=clinic.city_id,
-        addr=clinic.address or "", phone=clinic.phone or "", services=service_names,
-        service_ids=service_ids, worktime=clinic.worktime or "", active=clinic.is_active,
+        addr=clinic.address or "", phone=clinic.phone or "",
+        services=[s.name for s in svcs], service_ids=[s.id for s in svcs],
+        worktime=clinic.worktime or "", active=clinic.is_active,
     )
 
 
 @app.get("/admin/api/clinics", response_model=List[AdminClinicItem])
-async def admin_list_clinics(admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
-    clinics = (await db.execute(select(Clinic))).scalars().all()
+async def admin_list_clinics(admin: AdminUser = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+    stmt = select(Clinic)
+    if not admin.is_superadmin:
+        if admin.clinic_id is None:
+            return []
+        stmt = stmt.where(Clinic.id == admin.clinic_id)
+    clinics = (await db.execute(stmt)).scalars().all()
     return [await _clinic_to_item(c, db) for c in clinics]
 
 
 @app.post("/admin/api/clinics", response_model=AdminClinicItem, status_code=201)
-async def admin_create_clinic(data: AdminClinicCreate, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_create_clinic(data: AdminClinicCreate, admin: AdminUser = Depends(require_super), db: AsyncSession = Depends(get_db)):
     clinic = Clinic(
         city_id=data.city_id, name=data.name, address=data.addr,
-        phone=data.phone, worktime=data.worktime,
-        services_json=json.dumps(data.service_ids), is_active=data.active,
+        phone=data.phone, worktime=data.worktime, is_active=data.active,
     )
     db.add(clinic)
     await db.commit()
@@ -746,23 +896,26 @@ async def admin_create_clinic(data: AdminClinicCreate, admin: str = Depends(get_
 
 
 @app.put("/admin/api/clinics/{clinic_id}", response_model=AdminClinicItem)
-async def admin_update_clinic(clinic_id: int, data: AdminClinicUpdate, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_update_clinic(clinic_id: int, data: AdminClinicUpdate, admin: AdminUser = Depends(get_admin), db: AsyncSession = Depends(get_db)):
     clinic = (await db.execute(select(Clinic).where(Clinic.id == clinic_id))).scalar_one_or_none()
     if not clinic:
         raise HTTPException(status_code=404, detail="Clinic not found")
+    _ensure_clinic_access(admin, clinic_id)
+    # Clinic admins can't reassign their clinic to a different city
+    if not admin.is_superadmin and data.city_id != clinic.city_id:
+        raise HTTPException(status_code=403, detail="Only superadmin can change city")
     clinic.city_id = data.city_id
     clinic.name = data.name
     clinic.address = data.addr
     clinic.phone = data.phone
     clinic.worktime = data.worktime
-    clinic.services_json = json.dumps(data.service_ids)
     clinic.is_active = data.active
     await db.commit()
     return await _clinic_to_item(clinic, db)
 
 
 @app.delete("/admin/api/clinics/{clinic_id}")
-async def admin_delete_clinic(clinic_id: int, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_delete_clinic(clinic_id: int, admin: AdminUser = Depends(require_super), db: AsyncSession = Depends(get_db)):
     clinic = (await db.execute(select(Clinic).where(Clinic.id == clinic_id))).scalar_one_or_none()
     if not clinic:
         raise HTTPException(status_code=404, detail="Clinic not found")
@@ -789,15 +942,24 @@ async def _doctor_to_item(doctor: Doctor, db: AsyncSession) -> AdminDoctorItem:
 
 
 @app.get("/admin/api/doctors", response_model=List[AdminDoctorItem])
-async def admin_list_doctors(admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
-    doctors = (await db.execute(select(Doctor))).scalars().all()
+async def admin_list_doctors(admin: AdminUser = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+    stmt = select(Doctor)
+    if not admin.is_superadmin:
+        if admin.clinic_id is None:
+            return []
+        stmt = stmt.where(Doctor.clinic_id == admin.clinic_id)
+    doctors = (await db.execute(stmt)).scalars().all()
     return [await _doctor_to_item(d, db) for d in doctors]
 
 
 @app.post("/admin/api/doctors", response_model=AdminDoctorItem, status_code=201)
-async def admin_create_doctor(data: AdminDoctorCreate, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_create_doctor(data: AdminDoctorCreate, admin: AdminUser = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+    target_clinic = data.clinic_id if admin.is_superadmin else admin.clinic_id
+    if target_clinic is None:
+        raise HTTPException(status_code=400, detail="clinic_id is required")
+    _ensure_clinic_access(admin, target_clinic)
     doctor = Doctor(
-        name=data.name, spec=data.spec, clinic_id=data.clinic_id,
+        name=data.name, spec=data.spec, clinic_id=target_clinic,
         exp_years=data.exp, min_age=data.minAge,
         color=data.color, initials=data.initials,
         avatar=data.avatar, is_active=data.active,
@@ -809,13 +971,19 @@ async def admin_create_doctor(data: AdminDoctorCreate, admin: str = Depends(get_
 
 
 @app.put("/admin/api/doctors/{doctor_id}", response_model=AdminDoctorItem)
-async def admin_update_doctor(doctor_id: int, data: AdminDoctorUpdate, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_update_doctor(doctor_id: int, data: AdminDoctorUpdate, admin: AdminUser = Depends(get_admin), db: AsyncSession = Depends(get_db)):
     doctor = (await db.execute(select(Doctor).where(Doctor.id == doctor_id))).scalar_one_or_none()
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found")
+    _ensure_clinic_access(admin, doctor.clinic_id)
+    new_clinic = data.clinic_id if admin.is_superadmin else admin.clinic_id
+    if new_clinic is None:
+        raise HTTPException(status_code=400, detail="clinic_id is required")
+    if not admin.is_superadmin and new_clinic != doctor.clinic_id:
+        raise HTTPException(status_code=403, detail="Cannot move doctor to another clinic")
     doctor.name = data.name
     doctor.spec = data.spec
-    doctor.clinic_id = data.clinic_id
+    doctor.clinic_id = new_clinic
     doctor.exp_years = data.exp
     doctor.min_age = data.minAge
     doctor.color = data.color
@@ -827,20 +995,22 @@ async def admin_update_doctor(doctor_id: int, data: AdminDoctorUpdate, admin: st
 
 
 @app.delete("/admin/api/doctors/{doctor_id}")
-async def admin_delete_doctor(doctor_id: int, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_delete_doctor(doctor_id: int, admin: AdminUser = Depends(get_admin), db: AsyncSession = Depends(get_db)):
     doctor = (await db.execute(select(Doctor).where(Doctor.id == doctor_id))).scalar_one_or_none()
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found")
+    _ensure_clinic_access(admin, doctor.clinic_id)
     await db.delete(doctor)
     await db.commit()
     return {"status": "ok"}
 
 
 @app.get("/admin/api/doctors/{doctor_id}/schedule")
-async def admin_get_schedule(doctor_id: int, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_get_schedule(doctor_id: int, admin: AdminUser = Depends(get_admin), db: AsyncSession = Depends(get_db)):
     doctor = (await db.execute(select(Doctor).where(Doctor.id == doctor_id))).scalar_one_or_none()
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found")
+    _ensure_clinic_access(admin, doctor.clinic_id)
     slots_rows = (await db.execute(select(DoctorSchedule).where(DoctorSchedule.doctor_id == doctor_id))).scalars().all()
     slots: Dict[str, Dict[str, bool]] = {str(i): {} for i in range(7)}
     for row in slots_rows:
@@ -849,10 +1019,11 @@ async def admin_get_schedule(doctor_id: int, admin: str = Depends(get_admin), db
 
 
 @app.put("/admin/api/doctors/{doctor_id}/schedule")
-async def admin_update_schedule(doctor_id: int, data: AdminScheduleUpdate, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_update_schedule(doctor_id: int, data: AdminScheduleUpdate, admin: AdminUser = Depends(get_admin), db: AsyncSession = Depends(get_db)):
     doctor = (await db.execute(select(Doctor).where(Doctor.id == doctor_id))).scalar_one_or_none()
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found")
+    _ensure_clinic_access(admin, doctor.clinic_id)
     # Delete all existing slots
     existing = (await db.execute(select(DoctorSchedule).where(DoctorSchedule.doctor_id == doctor_id))).scalars().all()
     for row in existing:
@@ -882,14 +1053,44 @@ async def _content_to_item(m: ContentModule, db: AsyncSession) -> AdminContentIt
     )
 
 
+async def _content_service_clinic(module: ContentModule, db: AsyncSession) -> Optional[int]:
+    if module.service_id is None:
+        return None
+    svc = (await db.execute(select(Service.clinic_id).where(Service.id == module.service_id))).scalar_one_or_none()
+    return svc
+
+
+def _scope_content_query(stmt, admin: AdminUser):
+    if admin.is_superadmin:
+        return stmt
+    if admin.clinic_id is None:
+        return stmt.where(False)
+    return stmt.where(
+        ContentModule.service_id.in_(select(Service.id).where(Service.clinic_id == admin.clinic_id))
+    )
+
+
 @app.get("/admin/api/content", response_model=List[AdminContentItem])
-async def admin_list_content(admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
-    modules = (await db.execute(select(ContentModule))).scalars().all()
+async def admin_list_content(admin: AdminUser = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+    stmt = _scope_content_query(select(ContentModule), admin)
+    modules = (await db.execute(stmt)).scalars().all()
     return [await _content_to_item(m, db) for m in modules]
 
 
+async def _check_content_clinic(service_id: Optional[int], admin: AdminUser, db: AsyncSession) -> None:
+    if admin.is_superadmin:
+        return
+    if service_id is None:
+        raise HTTPException(status_code=400, detail="service_id is required for clinic admins")
+    svc = (await db.execute(select(Service).where(Service.id == service_id))).scalar_one_or_none()
+    if not svc:
+        raise HTTPException(status_code=404, detail="Service not found")
+    _ensure_clinic_access(admin, svc.clinic_id)
+
+
 @app.post("/admin/api/content", response_model=AdminContentItem, status_code=201)
-async def admin_create_content(data: AdminContentCreate, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_create_content(data: AdminContentCreate, admin: AdminUser = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+    await _check_content_clinic(data.service_id, admin, db)
     module = ContentModule(
         title=data.title, description=data.desc,
         service_id=data.service_id, content_type=data.type,
@@ -902,10 +1103,13 @@ async def admin_create_content(data: AdminContentCreate, admin: str = Depends(ge
 
 
 @app.put("/admin/api/content/{content_id}", response_model=AdminContentItem)
-async def admin_update_content(content_id: int, data: AdminContentUpdate, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_update_content(content_id: int, data: AdminContentUpdate, admin: AdminUser = Depends(get_admin), db: AsyncSession = Depends(get_db)):
     module = (await db.execute(select(ContentModule).where(ContentModule.id == content_id))).scalar_one_or_none()
     if not module:
         raise HTTPException(status_code=404, detail="Content not found")
+    cur_clinic = await _content_service_clinic(module, db)
+    _ensure_clinic_access(admin, cur_clinic) if cur_clinic is not None or not admin.is_superadmin else None
+    await _check_content_clinic(data.service_id, admin, db)
     module.title = data.title
     module.description = data.desc
     module.service_id = data.service_id
@@ -918,10 +1122,15 @@ async def admin_update_content(content_id: int, data: AdminContentUpdate, admin:
 
 
 @app.delete("/admin/api/content/{content_id}")
-async def admin_delete_content(content_id: int, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_delete_content(content_id: int, admin: AdminUser = Depends(get_admin), db: AsyncSession = Depends(get_db)):
     module = (await db.execute(select(ContentModule).where(ContentModule.id == content_id))).scalar_one_or_none()
     if not module:
         raise HTTPException(status_code=404, detail="Content not found")
+    cur_clinic = await _content_service_clinic(module, db)
+    if cur_clinic is not None:
+        _ensure_clinic_access(admin, cur_clinic)
+    elif not admin.is_superadmin:
+        raise HTTPException(status_code=403, detail="Forbidden")
     await db.delete(module)
     await db.commit()
     return {"status": "ok"}
@@ -938,13 +1147,13 @@ def _role_to_item(r: AdminRole) -> AdminRoleItem:
 
 
 @app.get("/admin/api/roles", response_model=List[AdminRoleItem])
-async def admin_list_roles(admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_list_roles(admin: AdminUser = Depends(require_super), db: AsyncSession = Depends(get_db)):
     roles = (await db.execute(select(AdminRole))).scalars().all()
     return [_role_to_item(r) for r in roles]
 
 
 @app.post("/admin/api/roles", response_model=AdminRoleItem, status_code=201)
-async def admin_create_role(data: AdminRoleCreate, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_create_role(data: AdminRoleCreate, admin: AdminUser = Depends(require_super), db: AsyncSession = Depends(get_db)):
     role = AdminRole(name=data.name, description=data.desc, color=data.color, perms=json.dumps(data.perms))
     db.add(role)
     await db.commit()
@@ -953,7 +1162,7 @@ async def admin_create_role(data: AdminRoleCreate, admin: str = Depends(get_admi
 
 
 @app.put("/admin/api/roles/{role_id}", response_model=AdminRoleItem)
-async def admin_update_role(role_id: int, data: AdminRoleUpdate, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_update_role(role_id: int, data: AdminRoleUpdate, admin: AdminUser = Depends(require_super), db: AsyncSession = Depends(get_db)):
     role = (await db.execute(select(AdminRole).where(AdminRole.id == role_id))).scalar_one_or_none()
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
@@ -966,10 +1175,113 @@ async def admin_update_role(role_id: int, data: AdminRoleUpdate, admin: str = De
 
 
 @app.delete("/admin/api/roles/{role_id}")
-async def admin_delete_role(role_id: int, admin: str = Depends(get_admin), db: AsyncSession = Depends(get_db)):
+async def admin_delete_role(role_id: int, admin: AdminUser = Depends(require_super), db: AsyncSession = Depends(get_db)):
     role = (await db.execute(select(AdminRole).where(AdminRole.id == role_id))).scalar_one_or_none()
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
     await db.delete(role)
+    await db.commit()
+    return {"status": "ok"}
+
+
+# ── Admin API: admin users (super-only) ───────────────────────
+
+async def _admin_user_to_item(u: AdminUser, db: AsyncSession) -> AdminUserItem:
+    clinic_name = None
+    if u.clinic_id is not None:
+        clinic = (await db.execute(select(Clinic).where(Clinic.id == u.clinic_id))).scalar_one_or_none()
+        clinic_name = clinic.name if clinic else None
+    return AdminUserItem(
+        id=u.id, username=u.username, full_name=u.full_name,
+        is_superadmin=u.is_superadmin, clinic_id=u.clinic_id,
+        clinic_name=clinic_name, is_active=u.is_active,
+    )
+
+
+@app.get("/admin/api/admin-users", response_model=List[AdminUserItem])
+async def admin_list_admin_users(admin: AdminUser = Depends(require_super), db: AsyncSession = Depends(get_db)):
+    users = (await db.execute(select(AdminUser).order_by(AdminUser.id))).scalars().all()
+    return [await _admin_user_to_item(u, db) for u in users]
+
+
+@app.post("/admin/api/admin-users", response_model=AdminUserItem, status_code=201)
+async def admin_create_admin_user(
+    data: AdminUserCreate,
+    admin: AdminUser = Depends(require_super),
+    db: AsyncSession = Depends(get_db),
+):
+    if (await db.execute(select(AdminUser.id).where(AdminUser.username == data.username))).scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Username already exists")
+    if not data.is_superadmin and data.clinic_id is None:
+        raise HTTPException(status_code=400, detail="clinic_id is required for clinic admins")
+    if data.clinic_id is not None:
+        if not (await db.execute(select(Clinic.id).where(Clinic.id == data.clinic_id))).scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="Clinic not found")
+    if not data.password:
+        raise HTTPException(status_code=400, detail="Password is required")
+    user = AdminUser(
+        username=data.username,
+        password_hash=_hash_pw(data.password),
+        full_name=data.full_name or None,
+        is_superadmin=data.is_superadmin,
+        clinic_id=None if data.is_superadmin else data.clinic_id,
+        is_active=data.is_active,
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return await _admin_user_to_item(user, db)
+
+
+@app.put("/admin/api/admin-users/{user_id}", response_model=AdminUserItem)
+async def admin_update_admin_user(
+    user_id: int,
+    data: AdminUserUpdate,
+    admin: AdminUser = Depends(require_super),
+    db: AsyncSession = Depends(get_db),
+):
+    user = (await db.execute(select(AdminUser).where(AdminUser.id == user_id))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Admin user not found")
+    if data.username != user.username:
+        if (await db.execute(select(AdminUser.id).where(AdminUser.username == data.username))).scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Username already exists")
+    if not data.is_superadmin and data.clinic_id is None:
+        raise HTTPException(status_code=400, detail="clinic_id is required for clinic admins")
+    if data.clinic_id is not None:
+        if not (await db.execute(select(Clinic.id).where(Clinic.id == data.clinic_id))).scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="Clinic not found")
+    user.username = data.username
+    if data.password:
+        user.password_hash = _hash_pw(data.password)
+    user.full_name = data.full_name or None
+    user.is_superadmin = data.is_superadmin
+    user.clinic_id = None if data.is_superadmin else data.clinic_id
+    user.is_active = data.is_active
+    await db.commit()
+    return await _admin_user_to_item(user, db)
+
+
+@app.delete("/admin/api/admin-users/{user_id}")
+async def admin_delete_admin_user(
+    user_id: int,
+    admin: AdminUser = Depends(require_super),
+    db: AsyncSession = Depends(get_db),
+):
+    if user_id == admin.id:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    user = (await db.execute(select(AdminUser).where(AdminUser.id == user_id))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Admin user not found")
+    # Don't strand the system without any active superadmin
+    if user.is_superadmin:
+        remaining = (await db.scalar(
+            select(func.count()).select_from(AdminUser).where(
+                AdminUser.is_superadmin == True, AdminUser.is_active == True, AdminUser.id != user_id
+            )
+        )) or 0
+        if remaining == 0:
+            raise HTTPException(status_code=400, detail="Cannot delete the last superadmin")
+    await db.delete(user)
     await db.commit()
     return {"status": "ok"}
