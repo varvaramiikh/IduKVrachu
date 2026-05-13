@@ -331,14 +331,15 @@ async def get_doctor_slots(doctor_id: int, date: str, db: AsyncSession = Depends
     day_start = datetime.combine(target, datetime.min.time())
     day_end = day_start + timedelta(days=1)
     busy_query = select(Appointment.slot_datetime).where(
-        Appointment.status == "scheduled",
+        Appointment.status.in_(("scheduled", "pending")),
         Appointment.slot_datetime >= day_start,
         Appointment.slot_datetime < day_end,
     )
     if doctor.clinic_id is not None:
         busy_query = busy_query.where(Appointment.clinic_id == doctor.clinic_id)
     busy_rows = (await db.execute(busy_query)).scalars().all()
-    busy_times = {dt.strftime("%H:%M") for dt in busy_rows}
+    # busy_rows are naive UTC; doctor schedule time_slot is MSK (HH:MM).
+    busy_times = {(dt + MSK_OFFSET).strftime("%H:%M") for dt in busy_rows}
     return [DoctorSlot(time=t, busy=t in busy_times) for t in times]
 
 @app.get("/api/slots", response_model=List[SlotSchema])
@@ -382,6 +383,17 @@ async def create_appointment(
 
     if child_id is None:
         raise HTTPException(status_code=400, detail="Child profile is required")
+
+    slot_dt_naive = data.slot_datetime.replace(tzinfo=None) if data.slot_datetime.tzinfo else data.slot_datetime
+    conflict = (await db.execute(
+        select(Appointment.id).where(
+            Appointment.clinic_id == data.clinic_id,
+            Appointment.slot_datetime == slot_dt_naive,
+            Appointment.status.in_(("scheduled", "pending")),
+        )
+    )).scalar_one_or_none()
+    if conflict is not None:
+        raise HTTPException(status_code=409, detail="Этот слот уже занят, выберите другое время")
 
     try:
         mis_id = await mis_provider.create_appointment({
@@ -462,6 +474,16 @@ async def reschedule_appointment(
     new_slot = data.slot_datetime.replace(tzinfo=None) if data.slot_datetime.tzinfo else data.slot_datetime
     if new_slot.replace(tzinfo=timezone.utc) <= datetime.now(tz=timezone.utc):
         raise HTTPException(status_code=400, detail="New slot must be in the future")
+    conflict = (await db.execute(
+        select(Appointment.id).where(
+            Appointment.clinic_id == appointment.clinic_id,
+            Appointment.slot_datetime == new_slot,
+            Appointment.status.in_(("scheduled", "pending")),
+            Appointment.id != appointment.id,
+        )
+    )).scalar_one_or_none()
+    if conflict is not None:
+        raise HTTPException(status_code=409, detail="Этот слот уже занят, выберите другое время")
     try:
         await mis_provider.reschedule_appointment(appointment.mis_external_id, new_slot)
     except Exception as e:
