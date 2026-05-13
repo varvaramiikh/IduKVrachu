@@ -327,6 +327,38 @@ class AdminUserCreate(BaseModel):
     clinic_id: Optional[int] = None
     is_active: bool = True
 
+# ── Admin notifications ───────────────────────────────────────
+
+class AdminNotificationItem(BaseModel):
+    id: int
+    clinic_id: int
+    clinic_name: str
+    type: str
+    title: str
+    body: Optional[str] = None
+    appointment_id: Optional[int] = None
+    is_read: bool
+    created_at: datetime
+
+# ── Admin appointments ────────────────────────────────────────
+
+class AdminAppointmentItem(BaseModel):
+    id: int
+    clinic_id: int
+    clinic_name: str
+    service_id: int
+    service_name: str
+    child_id: Optional[int] = None
+    child_name: str = ""
+    parent_name: str = ""
+    parent_phone: str = ""
+    user_telegram_id: Optional[int] = None
+    slot_datetime: datetime
+    status: str
+    comment: Optional[str] = None
+    created_at: datetime
+
+
 class AdminUserUpdate(BaseModel):
     username: str
     password: Optional[str] = None

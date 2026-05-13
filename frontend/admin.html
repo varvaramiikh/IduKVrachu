@@ -429,6 +429,62 @@
     }
     .day-btn.on { background: #e0f7f6; border-color: var(--btn-color); color: var(--brand-dark); }
 
+    /* Notifications */
+    .bell-btn {
+      position: relative;
+      width: 38px; height: 38px;
+      border-radius: 12px;
+      border: 1.5px solid var(--stroke);
+      background: #fff;
+      color: var(--brand-dark);
+      cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .bell-btn:hover { background: #f0f9fa; }
+    .bell-badge {
+      position: absolute;
+      top: -4px; right: -4px;
+      min-width: 18px; height: 18px;
+      padding: 0 5px;
+      border-radius: 9px;
+      background: #e53e3e;
+      color: #fff;
+      font-size: 10px; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: 2px solid #fff;
+    }
+    .notif-pop {
+      position: absolute;
+      top: 50px; right: 28px;
+      width: 380px;
+      max-height: 70vh;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg);
+      z-index: 60;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .notif-head {
+      padding: 14px 18px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--stroke);
+    }
+    .notif-list { overflow-y: auto; flex: 1; }
+    .notif-item {
+      padding: 12px 18px;
+      border-bottom: 1px solid #f4f7f8;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .notif-item:hover { background: #fafcfd; }
+    .notif-item--unread { background: #f0f9fa; }
+    .notif-item--unread:hover { background: #e6f4f6; }
+    .notif-empty { padding: 32px 18px; text-align: center; color: var(--text); font-size: 13px; }
+    .notif-title { font-size: 13px; font-weight: 600; color: var(--title); margin-bottom: 2px; }
+    .notif-body { font-size: 12px; color: var(--text); white-space: pre-line; }
+    .notif-meta { font-size: 11px; color: #a8b3b9; margin-top: 6px; display: flex; gap: 8px; align-items: center; }
+
     /* Scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -476,6 +532,8 @@ const icons = {
   doc: "M4 1h6l4 4v10H4V1zM10 1v4h4M6 8h5M6 11h3",
   arrow_right: "M6 3l5 5-5 5",
   logout: "M10 3h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-3M6 11l5-3-5-3M2 8h9",
+  bell: "M8 2a4 4 0 0 0-4 4v3l-1.5 2h11L12 9V6a4 4 0 0 0-4-4zM6 13a2 2 0 0 0 4 0",
+  appointments: "M3 4h10v9H3zM3 7h10M6 2v3M10 2v3M6 10h4",
 };
 
 const Ico = ({ name, size = 16 }) => (
@@ -522,11 +580,10 @@ async function loadAllData(me) {
     apiFetch("/admin/api/clinics").then(r => r.json()),
     apiFetch("/admin/api/doctors").then(r => r.json()),
     apiFetch("/admin/api/content").then(r => r.json()),
-    isSuper ? apiFetch("/admin/api/roles").then(r => r.json()) : Promise.resolve([]),
     isSuper ? apiFetch("/admin/api/admin-users").then(r => r.json()) : Promise.resolve([]),
   ];
-  const [services, cities, clinics, doctors, content, roles, adminUsers] = await Promise.all(tasks);
-  return { services, cities, clinics, doctors, content, roles, adminUsers };
+  const [services, cities, clinics, doctors, content, adminUsers] = await Promise.all(tasks);
+  return { services, cities, clinics, doctors, content, roles: [], adminUsers };
 }
 
 // ── Login screen ──────────────────────────────────────────
@@ -1726,16 +1783,208 @@ function AdminUsersSection({ data, setData, me }) {
 }
 
 
+// ── Appointments ──────────────────────────────────────────
+function formatDt(s) {
+  if (!s) return "";
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return s;
+  return d.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+const APPT_STATUS = {
+  pending: { label: "Ожидает подтверждения", cls: "badge-orange" },
+  scheduled: { label: "Подтверждена", cls: "badge-green" },
+  cancelled: { label: "Отменена", cls: "badge-gray" },
+  completed: { label: "Завершена", cls: "badge-teal" },
+};
+
+function AppointmentsSection({ me, onChanged }) {
+  const [items, setItems] = useState([]);
+  const [filter, setFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const isSuper = !!me?.is_superadmin;
+
+  const load = async () => {
+    setLoading(true);
+    const q = filter === "all" ? "" : `?status=${encodeURIComponent(filter)}`;
+    const r = await apiFetch(`/admin/api/appointments${q}`);
+    if (r.ok) setItems(await r.json());
+    setLoading(false);
+  };
+  React.useEffect(() => { load(); }, [filter]);
+
+  const confirm = async (id) => {
+    const r = await apiFetch(`/admin/api/appointments/${id}/confirm`, { method: "POST" });
+    if (!r.ok) { const e = await r.json().catch(() => ({})); alert(e.detail || "Ошибка"); return; }
+    await load();
+    onChanged?.();
+  };
+  const cancel = async (id) => {
+    if (!window.confirm("Отменить запись?")) return;
+    const r = await apiFetch(`/admin/api/appointments/${id}/cancel`, { method: "POST" });
+    if (!r.ok) { const e = await r.json().catch(() => ({})); alert(e.detail || "Ошибка"); return; }
+    await load();
+    onChanged?.();
+  };
+
+  return (
+    <div>
+      <div className="section-head">
+        <div>
+          <div className="section-title">Записи пациентов</div>
+          <div className="section-sub">{isSuper ? "Все записи по всем клиникам" : "Записи в вашу клинику"}</div>
+        </div>
+      </div>
+      <div className="tabs">
+        {[
+          { v: "all", l: "Все" },
+          { v: "pending", l: "Ожидают" },
+          { v: "scheduled", l: "Подтверждены" },
+          { v: "cancelled", l: "Отменены" },
+        ].map(t => (
+          <button key={t.v} className={`tab${filter === t.v ? " active" : ""}`} onClick={() => setFilter(t.v)}>{t.l}</button>
+        ))}
+      </div>
+      <div className="card" style={{ padding: 0 }}>
+        <div className="table-wrap"><table>
+          <thead><tr>
+            <th>Время</th>
+            <th>Пациент</th>
+            <th>Услуга</th>
+            {isSuper && <th>Клиника</th>}
+            <th>Контакт</th>
+            <th>Статус</th>
+            <th style={{ width: 160 }}>Действия</th>
+          </tr></thead>
+          <tbody>
+            {loading && (
+              <tr><td colSpan={isSuper ? 7 : 6} style={{ textAlign: "center", padding: "32px", color: "var(--text)" }}>Загрузка…</td></tr>
+            )}
+            {!loading && items.length === 0 && (
+              <tr><td colSpan={isSuper ? 7 : 6} style={{ textAlign: "center", padding: "32px", color: "var(--text)" }}>Записей нет</td></tr>
+            )}
+            {!loading && items.map(a => {
+              const st = APPT_STATUS[a.status] || { label: a.status, cls: "badge-gray" };
+              return (
+                <tr key={a.id}>
+                  <td style={{ fontSize: 13, fontWeight: 600 }}>{formatDt(a.slot_datetime)}</td>
+                  <td><strong>{a.child_name || "—"}</strong>{a.parent_name && <div style={{ fontSize: 12, color: "var(--text)" }}>Родитель: {a.parent_name}</div>}</td>
+                  <td style={{ fontSize: 13 }}>{a.service_name}</td>
+                  {isSuper && <td style={{ fontSize: 13 }}>{a.clinic_name}</td>}
+                  <td style={{ fontSize: 13, color: "var(--text)" }}>{a.parent_phone || "—"}</td>
+                  <td><span className={`badge ${st.cls}`}>{st.label}</span></td>
+                  <td>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {a.status === "pending" && (
+                        <button className="btn btn-primary btn-sm" onClick={() => confirm(a.id)}>Подтвердить</button>
+                      )}
+                      {(a.status === "pending" || a.status === "scheduled") && (
+                        <button className="btn-icon" style={{ background: "#fef2f2", color: "#e53e3e" }} title="Отменить" onClick={() => cancel(a.id)}><Ico name="close" /></button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  );
+}
+
+
+// ── Notifications bell ────────────────────────────────────
+function NotificationsBell({ me, onConfirm, onJumpAppointments }) {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState([]);
+  const [count, setCount] = useState(0);
+
+  const refresh = React.useCallback(async () => {
+    try {
+      const [listRes, cntRes] = await Promise.all([
+        apiFetch("/admin/api/notifications?limit=50"),
+        apiFetch("/admin/api/notifications/unread-count"),
+      ]);
+      if (listRes.ok) setItems(await listRes.json());
+      if (cntRes.ok) setCount((await cntRes.json()).count || 0);
+    } catch {}
+  }, []);
+
+  React.useEffect(() => {
+    refresh();
+    const t = setInterval(refresh, 20000);
+    return () => clearInterval(t);
+  }, [refresh]);
+
+  const markRead = async (id) => {
+    await apiFetch(`/admin/api/notifications/${id}/read`, { method: "POST" });
+    refresh();
+  };
+  const markAll = async () => {
+    await apiFetch("/admin/api/notifications/read-all", { method: "POST" });
+    refresh();
+  };
+
+  const onItemClick = async (n) => {
+    if (!n.is_read) await markRead(n.id);
+    if (n.appointment_id) {
+      setOpen(false);
+      onJumpAppointments?.();
+    }
+  };
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button className="bell-btn" onClick={() => { setOpen(v => !v); if (!open) refresh(); }} title="Уведомления">
+        <Ico name="bell" size={18} />
+        {count > 0 && <span className="bell-badge">{count > 99 ? "99+" : count}</span>}
+      </button>
+      {open && (
+        <>
+          <div style={{ position: "fixed", inset: 0, zIndex: 55 }} onClick={() => setOpen(false)} />
+          <div className="notif-pop" onClick={e => e.stopPropagation()}>
+            <div className="notif-head">
+              <div style={{ fontSize: 14, fontWeight: 700 }}>Уведомления</div>
+              <button className="btn btn-secondary btn-sm" onClick={markAll} disabled={count === 0}>Прочитать все</button>
+            </div>
+            <div className="notif-list">
+              {items.length === 0 && <div className="notif-empty">Пока нет уведомлений</div>}
+              {items.map(n => (
+                <div key={n.id} className={`notif-item${n.is_read ? "" : " notif-item--unread"}`} onClick={() => onItemClick(n)}>
+                  <div className="notif-title">{n.title}</div>
+                  {n.body && <div className="notif-body">{n.body}</div>}
+                  <div className="notif-meta">
+                    <span>{formatDt(n.created_at)}</span>
+                    {me?.is_superadmin && n.clinic_name && <span className="badge badge-teal" style={{ fontSize: 10 }}>{n.clinic_name}</span>}
+                    {n.type === "appointment_created" && n.appointment_id && (
+                      <button className="btn btn-primary btn-sm" style={{ marginLeft: "auto" }}
+                        onClick={async (e) => { e.stopPropagation(); await onConfirm?.(n.appointment_id); await markRead(n.id); }}>
+                        Подтвердить
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+
 // ── App ───────────────────────────────────────────────────
 const NAV_ALL = [
   { id: "dashboard", label: "Дашборд", icon: "dashboard", group: null, super: false },
+  { id: "appointments", label: "Записи", icon: "appointments", group: null, super: false },
   { id: "services", label: "Услуги", icon: "services", group: "Каталог", super: false },
   { id: "cities", label: "Города", icon: "city", group: "Каталог", super: true },
   { id: "clinics", label: "Клиники", icon: "clinic", group: "Каталог", super: false },
   { id: "doctors", label: "Врачи", icon: "doctor", group: "Каталог", super: false },
   { id: "content", label: "Контент", icon: "content", group: "Материалы", super: false },
   { id: "admin-users", label: "Администраторы", icon: "roles", group: "Система", super: true },
-  { id: "roles", label: "Роли и права", icon: "roles", group: "Система", super: true },
 ];
 
 function App() {
@@ -1747,9 +1996,17 @@ function App() {
   const [loading, setLoading] = React.useState(false);
 
   const PAGE_TITLES = {
-    dashboard: "Дашборд", services: "Услуги", cities: "Города",
+    dashboard: "Дашборд", appointments: "Записи пациентов",
+    services: "Услуги", cities: "Города",
     clinics: "Клиники", doctors: "Врачи", content: "Материалы для адаптации",
-    roles: "Роли и права", "admin-users": "Администраторы",
+    "admin-users": "Администраторы",
+  };
+
+  const [apptBump, setApptBump] = React.useState(0);
+  const handleConfirmFromBell = async (appointmentId) => {
+    const r = await apiFetch(`/admin/api/appointments/${appointmentId}/confirm`, { method: "POST" });
+    if (!r.ok) { const e = await r.json().catch(() => ({})); alert(e.detail || "Не удалось подтвердить"); return; }
+    setApptBump(v => v + 1);
   };
 
   React.useEffect(() => {
@@ -1832,17 +2089,18 @@ function App() {
           <div className="topbar-actions">
             {loading && <span style={{ fontSize: 12, color: "var(--text)" }}>Загрузка…</span>}
             {!isSuper && me?.clinic_name && <span className="badge badge-teal">{me.clinic_name}</span>}
+            {me && <NotificationsBell me={me} onConfirm={handleConfirmFromBell} onJumpAppointments={() => setPage("appointments")} />}
             <div className="admin-avatar" style={{ width: 34, height: 34, fontSize: 12 }}>{initials}</div>
           </div>
         </header>
         <div className="content">
           {safePage === "dashboard" && <Dashboard data={data} />}
+          {safePage === "appointments" && <AppointmentsSection key={apptBump} me={me} onChanged={() => setApptBump(v => v + 1)} />}
           {safePage === "services" && <ServicesSection data={data} setData={setData} me={me} />}
           {safePage === "cities" && <CitiesSection data={data} setData={setData} me={me} />}
           {safePage === "clinics" && <ClinicsSection data={data} setData={setData} me={me} />}
           {safePage === "doctors" && <DoctorsSection data={data} setData={setData} me={me} />}
           {safePage === "content" && <ContentSection data={data} setData={setData} me={me} />}
-          {safePage === "roles" && isSuper && <RolesSection data={data} setData={setData} />}
           {safePage === "admin-users" && isSuper && <AdminUsersSection data={data} setData={setData} me={me} />}
         </div>
       </div>

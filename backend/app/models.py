@@ -241,6 +241,19 @@ class AdminUser(Base):
     clinic = relationship("Clinic", back_populates="admins")
 
 
+class AdminNotification(Base):
+    __tablename__ = "admin_notifications"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    clinic_id: Mapped[int] = mapped_column(ForeignKey("clinics.id"), index=True)
+    type: Mapped[str] = mapped_column(String(50))  # appointment_created / appointment_cancelled / manual
+    title: Mapped[str] = mapped_column(String(255))
+    body: Mapped[Optional[str]] = mapped_column(Text)
+    appointment_id: Mapped[Optional[int]] = mapped_column(ForeignKey("appointments.id"), nullable=True)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
 class AdminAuditLog(Base):
     __tablename__ = "admin_audit_logs"
 

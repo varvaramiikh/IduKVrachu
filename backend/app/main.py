@@ -27,6 +27,7 @@ from .logging_utils import configure_logging, log_environment, log_settings
 from .mis import mis_provider
 from .models import (
     AdminAuditLog,
+    AdminNotification,
     AdminRole,
     AdminUser,
     Appointment,
@@ -58,8 +59,10 @@ from .schemas import (
     AdminDoctorCreate,
     AdminDoctorItem,
     AdminDoctorUpdate,
+    AdminAppointmentItem,
     AdminLoginRequest,
     AdminMe,
+    AdminNotificationItem,
     AdminRoleCreate,
     AdminRoleItem,
     AdminRoleUpdate,
@@ -386,10 +389,30 @@ async def create_appointment(
     appointment = Appointment(
         user_id=user.id, clinic_id=data.clinic_id, service_id=data.service_id,
         child_id=child_id, slot_datetime=data.slot_datetime, mis_external_id=mis_id, comment=data.comment,
+        status="pending",
     )
     db.add(appointment)
     await db.commit()
     await db.refresh(appointment)
+
+    # Notify clinic admins
+    parent = (await db.execute(select(ParentProfile).where(ParentProfile.user_id == user.id))).scalar_one_or_none()
+    child = (await db.execute(select(ChildProfile).where(ChildProfile.id == child_id))).scalar_one_or_none()
+    title = f"Новая запись: {service.name}"
+    body_parts = [f"Пациент: {child.fio if child else '—'}"]
+    if parent:
+        body_parts.append(f"Родитель: {parent.fio} ({parent.phone})")
+    body_parts.append(f"Время: {appointment.slot_datetime.strftime('%d.%m.%Y %H:%M')}")
+    if data.comment:
+        body_parts.append(f"Комментарий: {data.comment}")
+    db.add(AdminNotification(
+        clinic_id=data.clinic_id,
+        type="appointment_created",
+        title=title,
+        body="\n".join(body_parts),
+        appointment_id=appointment.id,
+    ))
+    await db.commit()
     return appointment
 
 
@@ -451,7 +474,7 @@ async def cancel_appointment(
     )).scalar_one_or_none()
     if not appointment:
         raise HTTPException(status_code=404, detail="Appointment not found")
-    if appointment.status != "scheduled":
+    if appointment.status not in ("scheduled", "pending"):
         raise HTTPException(status_code=400, detail="Appointment already cancelled or completed")
     slot_dt = appointment.slot_datetime.replace(tzinfo=timezone.utc)
     if slot_dt - datetime.now(tz=timezone.utc) < timedelta(hours=24):
@@ -461,6 +484,20 @@ async def cancel_appointment(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     appointment.status = "cancelled"
+
+    # Notify clinic admins about cancellation
+    service = (await db.execute(select(Service).where(Service.id == appointment.service_id))).scalar_one_or_none()
+    parent = (await db.execute(select(ParentProfile).where(ParentProfile.user_id == user.id))).scalar_one_or_none()
+    db.add(AdminNotification(
+        clinic_id=appointment.clinic_id,
+        type="appointment_cancelled",
+        title=f"Отмена записи: {service.name if service else ''}",
+        body=(
+            f"Пациент: {(parent.fio if parent else '—')}\n"
+            f"Время: {appointment.slot_datetime.strftime('%d.%m.%Y %H:%M')}"
+        ),
+        appointment_id=appointment.id,
+    ))
     await db.commit()
     return {"status": "ok"}
 
@@ -1285,3 +1322,175 @@ async def admin_delete_admin_user(
     await db.delete(user)
     await db.commit()
     return {"status": "ok"}
+
+
+# ── Admin API: notifications ──────────────────────────────────
+
+def _scope_clinic_q(stmt, column, admin: AdminUser):
+    if admin.is_superadmin:
+        return stmt
+    if admin.clinic_id is None:
+        return stmt.where(False)
+    return stmt.where(column == admin.clinic_id)
+
+
+async def _notification_to_item(n: AdminNotification, db: AsyncSession) -> AdminNotificationItem:
+    clinic = (await db.execute(select(Clinic).where(Clinic.id == n.clinic_id))).scalar_one_or_none()
+    return AdminNotificationItem(
+        id=n.id, clinic_id=n.clinic_id, clinic_name=clinic.name if clinic else "",
+        type=n.type, title=n.title, body=n.body, appointment_id=n.appointment_id,
+        is_read=n.is_read, created_at=n.created_at,
+    )
+
+
+@app.get("/admin/api/notifications", response_model=List[AdminNotificationItem])
+async def admin_list_notifications(
+    unread_only: bool = False,
+    limit: int = 50,
+    admin: AdminUser = Depends(get_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = select(AdminNotification).order_by(AdminNotification.created_at.desc())
+    stmt = _scope_clinic_q(stmt, AdminNotification.clinic_id, admin)
+    if unread_only:
+        stmt = stmt.where(AdminNotification.is_read == False)
+    stmt = stmt.limit(max(1, min(limit, 200)))
+    rows = (await db.execute(stmt)).scalars().all()
+    return [await _notification_to_item(n, db) for n in rows]
+
+
+@app.get("/admin/api/notifications/unread-count")
+async def admin_notifications_unread_count(
+    admin: AdminUser = Depends(get_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = select(func.count()).select_from(AdminNotification).where(AdminNotification.is_read == False)
+    stmt = _scope_clinic_q(stmt, AdminNotification.clinic_id, admin)
+    cnt = (await db.scalar(stmt)) or 0
+    return {"count": int(cnt)}
+
+
+@app.post("/admin/api/notifications/{notification_id}/read")
+async def admin_mark_notification_read(
+    notification_id: int,
+    admin: AdminUser = Depends(get_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    n = (await db.execute(select(AdminNotification).where(AdminNotification.id == notification_id))).scalar_one_or_none()
+    if not n:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    _ensure_clinic_access(admin, n.clinic_id)
+    n.is_read = True
+    await db.commit()
+    return {"status": "ok"}
+
+
+@app.post("/admin/api/notifications/read-all")
+async def admin_mark_all_notifications_read(
+    admin: AdminUser = Depends(get_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = select(AdminNotification).where(AdminNotification.is_read == False)
+    stmt = _scope_clinic_q(stmt, AdminNotification.clinic_id, admin)
+    rows = (await db.execute(stmt)).scalars().all()
+    for n in rows:
+        n.is_read = True
+    await db.commit()
+    return {"status": "ok", "updated": len(rows)}
+
+
+# ── Admin API: appointments ───────────────────────────────────
+
+async def _appointment_to_admin_item(a: Appointment, db: AsyncSession) -> AdminAppointmentItem:
+    clinic = (await db.execute(select(Clinic).where(Clinic.id == a.clinic_id))).scalar_one_or_none()
+    service = (await db.execute(select(Service).where(Service.id == a.service_id))).scalar_one_or_none()
+    child = (await db.execute(select(ChildProfile).where(ChildProfile.id == a.child_id))).scalar_one_or_none() if a.child_id else None
+    parent = (await db.execute(select(ParentProfile).where(ParentProfile.user_id == a.user_id))).scalar_one_or_none()
+    tg_user = (await db.execute(select(User).where(User.id == a.user_id))).scalar_one_or_none()
+    return AdminAppointmentItem(
+        id=a.id, clinic_id=a.clinic_id, clinic_name=clinic.name if clinic else "",
+        service_id=a.service_id, service_name=service.name if service else "",
+        child_id=a.child_id, child_name=child.fio if child else "",
+        parent_name=parent.fio if parent else "",
+        parent_phone=parent.phone if parent else "",
+        user_telegram_id=tg_user.telegram_id if tg_user else None,
+        slot_datetime=a.slot_datetime, status=a.status,
+        comment=a.comment, created_at=a.created_at,
+    )
+
+
+@app.get("/admin/api/appointments", response_model=List[AdminAppointmentItem])
+async def admin_list_appointments(
+    status: Optional[str] = None,
+    limit: int = 100,
+    admin: AdminUser = Depends(get_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = select(Appointment).order_by(Appointment.slot_datetime.desc())
+    stmt = _scope_clinic_q(stmt, Appointment.clinic_id, admin)
+    if status:
+        stmt = stmt.where(Appointment.status == status)
+    stmt = stmt.limit(max(1, min(limit, 500)))
+    rows = (await db.execute(stmt)).scalars().all()
+    return [await _appointment_to_admin_item(a, db) for a in rows]
+
+
+async def _notify_user_appointment_confirmed(user: User, appointment: Appointment, db: AsyncSession) -> None:
+    if user.telegram_id == 12345678:
+        return  # debug stub user
+    service = (await db.execute(select(Service).where(Service.id == appointment.service_id))).scalar_one_or_none()
+    clinic = (await db.execute(select(Clinic).where(Clinic.id == appointment.clinic_id))).scalar_one_or_none()
+    msg = (
+        "✅ Ваша запись подтверждена!\n\n"
+        f"Услуга: {service.name if service else ''}\n"
+        f"Клиника: {clinic.name if clinic else ''}\n"
+        f"Время: {appointment.slot_datetime.strftime('%d.%m.%Y %H:%M')}"
+    )
+    try:
+        from aiogram import Bot as TgBot
+        tg_bot = TgBot(token=settings.BOT_TOKEN)
+        await tg_bot.send_message(user.telegram_id, msg, reply_markup=_get_main_kb_for_notify(user.telegram_id))
+        await tg_bot.session.close()
+    except Exception:
+        logger.warning("confirm: не удалось отправить уведомление telegram_id=%s", user.telegram_id, exc_info=True)
+
+
+@app.post("/admin/api/appointments/{appointment_id}/confirm", response_model=AdminAppointmentItem)
+async def admin_confirm_appointment(
+    appointment_id: int,
+    admin: AdminUser = Depends(get_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    appt = (await db.execute(select(Appointment).where(Appointment.id == appointment_id))).scalar_one_or_none()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    _ensure_clinic_access(admin, appt.clinic_id)
+    if appt.status == "scheduled":
+        return await _appointment_to_admin_item(appt, db)
+    if appt.status != "pending":
+        raise HTTPException(status_code=400, detail=f"Cannot confirm appointment in status '{appt.status}'")
+    appt.status = "scheduled"
+    await db.commit()
+
+    user = (await db.execute(select(User).where(User.id == appt.user_id))).scalar_one_or_none()
+    if user:
+        await _notify_user_appointment_confirmed(user, appt, db)
+
+    return await _appointment_to_admin_item(appt, db)
+
+
+@app.post("/admin/api/appointments/{appointment_id}/cancel", response_model=AdminAppointmentItem)
+async def admin_cancel_by_admin(
+    appointment_id: int,
+    admin: AdminUser = Depends(get_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    appt = (await db.execute(select(Appointment).where(Appointment.id == appointment_id))).scalar_one_or_none()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    _ensure_clinic_access(admin, appt.clinic_id)
+    if appt.status == "cancelled":
+        return await _appointment_to_admin_item(appt, db)
+    appt.status = "cancelled"
+    await db.commit()
+    return await _appointment_to_admin_item(appt, db)
