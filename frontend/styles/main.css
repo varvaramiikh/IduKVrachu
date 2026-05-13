@@ -57,19 +57,11 @@ main {
 
 .screen {
   display: none;
-  min-height: 100vh;
-  min-height: 100dvh;
   padding: 14px 16px 28px;
-  overflow-y: auto;
 }
 
 .screen--active {
   display: block;
-}
-
-.screen--welcome.screen--active {
-  display: flex;
-  flex-direction: column;
 }
 
 .screen--welcome h1 {
@@ -150,8 +142,7 @@ main {
 
 .welcome-card {
   width: calc(100% + 32px);
-  flex: 1 0 auto;
-  min-height: 500px;
+  min-height: 700px;
   margin: -14px -16px 0;
   padding: 60px 16px 60px;
   display: flex;
@@ -1085,8 +1076,4 @@ main {
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
   }
 
-  .screen {
-    min-height: 100vh;
-    min-height: 100dvh;
-  }
 }
