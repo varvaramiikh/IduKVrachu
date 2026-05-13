@@ -2030,17 +2030,32 @@
             if (newChildId) state.childId = newChildId;
           }
           try {
-            const res = await fetch('/api/appointments', {
+            const body = JSON.stringify({
+              clinic_id: state.clinicId,
+              service_id: state.serviceId,
+              child_id: state.childId || null,
+              slot_datetime: dt.toISOString(),
+              comment: state.comment || null,
+            });
+            const doPost = () => fetch('/api/appointments', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'X-Tg-Init-Data': initData },
-              body: JSON.stringify({
-                clinic_id: state.clinicId,
-                service_id: state.serviceId,
-                child_id: state.childId || null,
-                slot_datetime: dt.toISOString(),
-                comment: state.comment || null,
-              }),
+              body,
             });
+            let res = await doPost();
+            if (res.status === 403) {
+              const errText = await res.clone().text().catch(() => '');
+              if (errText.includes('Consent required')) {
+                // implicit consent on first booking via WebApp
+                try {
+                  await fetch('/api/consent?version=webapp_v1', {
+                    method: 'POST',
+                    headers: { 'X-Tg-Init-Data': initData },
+                  });
+                  res = await doPost();
+                } catch (_) { /* fall through to error handling */ }
+              }
+            }
             if (!res.ok) {
               const errText = await res.text().catch(() => '');
               alert(`Не удалось сохранить запись (${res.status}): ${errText}`);
@@ -2073,8 +2088,8 @@
         if (successTitle) successTitle.textContent = 'Запись перенесена';
         if (successText) successText.textContent = 'Новый день и время визита сохранены. Бот напомнит за 3 часа.';
       } else {
-        if (successTitle) successTitle.textContent = 'Вы записаны!';
-        if (successText) successText.textContent = 'Ваша запись подтверждена. Бот напомнит за 3 часа до визита.';
+        if (successTitle) successTitle.textContent = 'Запись отправлена!';
+        if (successText) successText.textContent = 'Заявка передана администратору клиники. Мы пришлём уведомление в чат, как только запись подтвердят.';
       }
       state.rescheduleId = null;
       goToStep(8);
