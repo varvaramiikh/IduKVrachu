@@ -884,6 +884,7 @@
       font-weight: 600;
     }
     .appt-card__status--upcoming { background: #E0F7F6; color: #128395; }
+    .appt-card__status--pending { background: #FFF4E6; color: #E67E22; }
     .appt-card__status--past { background: #F0F4F5; color: #848484; }
     .appt-card__actions {
       display: flex;
@@ -2161,13 +2162,22 @@
                 const dt = new Date(dtStr);
                 const dateStr = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
                 const timeStr = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-                const upcoming = a.status === 'scheduled' && dt > new Date();
-                const statusLabel = upcoming ? 'Предстоит' : a.status === 'cancelled' ? 'Отменена' : 'Прошла';
-                const statusClass = upcoming ? 'appt-card__status--upcoming' : 'appt-card__status--past';
-                const canCancel = upcoming && (dt - new Date()) >= 24 * 60 * 60 * 1000;
-                const actions = upcoming ? `
+                const isFuture = dt > new Date();
+                const pending = a.status === 'pending' && isFuture;
+                const upcoming = a.status === 'scheduled' && isFuture;
+                const active = pending || upcoming;
+                const statusLabel = pending
+                  ? 'Ожидает подтверждения'
+                  : upcoming
+                    ? 'Предстоит'
+                    : a.status === 'cancelled' ? 'Отменена' : 'Прошла';
+                const statusClass = pending
+                  ? 'appt-card__status--pending'
+                  : upcoming ? 'appt-card__status--upcoming' : 'appt-card__status--past';
+                const canCancel = active && (dt - new Date()) >= 24 * 60 * 60 * 1000;
+                const actions = active ? `
                     <div class="appt-card__actions">
-                      <button class="appt-card__btn appt-card__btn--reschedule" data-action="reschedule" data-id="${a.id}">Перенести</button>
+                      <button class="appt-card__btn appt-card__btn--reschedule" data-action="reschedule" data-id="${a.id}" ${upcoming ? '' : 'disabled title="Доступно после подтверждения"'}>Перенести</button>
                       <button class="appt-card__btn appt-card__btn--cancel" data-action="cancel" data-id="${a.id}" ${canCancel ? '' : 'disabled title="Отмена возможна не позднее чем за 24 часа"'}>Отменить</button>
                     </div>
                 ` : '';
