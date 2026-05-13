@@ -200,6 +200,13 @@ def _hash_pw(pw: str) -> str:
     return hashlib.sha256(pw.encode("utf-8")).hexdigest()
 
 
+# Slot_datetime is stored as naive UTC. Display in Moscow time (UTC+3, no DST).
+MSK_OFFSET = timedelta(hours=3)
+
+def _fmt_msk(d: datetime) -> str:
+    return (d + MSK_OFFSET).strftime('%d.%m.%Y %H:%M')
+
+
 def _make_admin_token(admin_id: int) -> str:
     exp = int(time.time()) + 86400 * 7
     payload = base64.urlsafe_b64encode(
@@ -402,7 +409,7 @@ async def create_appointment(
     body_parts = [f"Пациент: {child.fio if child else '—'}"]
     if parent:
         body_parts.append(f"Родитель: {parent.fio} ({parent.phone})")
-    body_parts.append(f"Время: {appointment.slot_datetime.strftime('%d.%m.%Y %H:%M')}")
+    body_parts.append(f"Время: {_fmt_msk(appointment.slot_datetime)}")
     if data.comment:
         body_parts.append(f"Комментарий: {data.comment}")
     db.add(AdminNotification(
@@ -494,7 +501,7 @@ async def cancel_appointment(
         title=f"Отмена записи: {service.name if service else ''}",
         body=(
             f"Пациент: {(parent.fio if parent else '—')}\n"
-            f"Время: {appointment.slot_datetime.strftime('%d.%m.%Y %H:%M')}"
+            f"Время: {_fmt_msk(appointment.slot_datetime)}"
         ),
         appointment_id=appointment.id,
     ))
@@ -1444,7 +1451,7 @@ async def _notify_user_appointment_confirmed(user: User, appointment: Appointmen
         "✅ Ваша запись подтверждена!\n\n"
         f"Услуга: {service.name if service else ''}\n"
         f"Клиника: {clinic.name if clinic else ''}\n"
-        f"Время: {appointment.slot_datetime.strftime('%d.%m.%Y %H:%M')}"
+        f"Время: {_fmt_msk(appointment.slot_datetime)}"
     )
     try:
         from aiogram import Bot as TgBot
