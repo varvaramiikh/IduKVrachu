@@ -181,6 +181,14 @@ INFO_MESSAGE = (
 
 @dp.message(Command("start"))
 async def start_handler(message: types.Message):
+    try:
+        await bot.set_chat_menu_button(
+            chat_id=message.from_user.id,
+            menu_button=types.MenuButtonDefault(),
+        )
+    except Exception:
+        logger.exception("start_handler: не удалось сбросить chat menu button")
+
     async with async_session() as db:
         result = await db.execute(
             select(User).where(User.telegram_id == message.from_user.id)
@@ -717,18 +725,13 @@ async def main():
 
     await call_with_retry(
         "set_my_commands",
-        lambda: bot.set_my_commands([
-            BotCommand(command="start", description="🏠 Главное меню"),
-            BotCommand(command="preparation", description="📚 Подготовка"),
-            BotCommand(command="appointments", description="📋 Мои записи"),
-            BotCommand(command="paysupport", description="🛠 Поддержка платежей"),
-        ]),
+        lambda: bot.set_my_commands([]),
     )
 
     await call_with_retry(
         "set_chat_menu_button",
         lambda: bot.set_chat_menu_button(
-            menu_button=types.MenuButtonCommands()
+            menu_button=types.MenuButtonDefault()
         ),
     )
 
