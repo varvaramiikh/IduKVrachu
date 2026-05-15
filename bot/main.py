@@ -174,7 +174,7 @@ INFO_MESSAGE = (
     "• Запись в клинику\n\n"
     "Подготовка включает адаптационные материалы: мультфильмы, социстории, "
     "игры-тренажёры и рекомендации для родителей.\n\n"
-    "<i>Нажимая кнопку «Начать», вы подтверждаете согласие на обработку "
+    "<i>Нажимая кнопку «Принять», вы подтверждаете согласие на обработку "
     "персональных данных в соответствии с ФЗ-152.</i>"
 )
 
@@ -199,7 +199,6 @@ async def start_handler(message: types.Message):
     name = message.from_user.first_name or "друг"
 
     if user.consent_timestamp:
-        await enable_webapp_button(message.from_user.id)
         await message.answer(
             f"Добро пожаловать, {name}! 👋\n\n"
             "Вы можете пользоваться всеми функциями сервиса.",
@@ -275,14 +274,23 @@ async def consent_agree_handler(callback: types.CallbackQuery):
             await db.commit()
             logger.info("consent: принято telegram_id=%s", callback.from_user.id)
 
-    await enable_webapp_button(callback.from_user.id)
     await callback.message.edit_text(
         "✅ Согласие на обработку персональных данных принято.",
         parse_mode="HTML",
     )
+    name = callback.from_user.first_name or "друг"
     await callback.message.answer(
-        f"Добро пожаловать, {callback.from_user.first_name or 'друг'}! 👋\n\n"
-        "Теперь вам доступен полный функционал сервиса «Иду к врачу»! 🏥",
+        f"🎉 <b>Спасибо, {name}!</b>\n"
+        "Согласие получено — теперь вам открыт полный функционал сервиса "
+        "«Иду к врачу» 🏥\n\n"
+        "<b>Что вы можете сделать прямо сейчас:</b>\n"
+        "• 📚 Пройти подготовку к посещению врача — мультфильмы, "
+        "социстории и игры-тренажёры помогут ребёнку привыкнуть к визиту\n"
+        "• 📅 Записаться к специалисту в удобной клинике\n"
+        "• 📋 Управлять своими записями и переносить их\n"
+        "• ✉️ Связаться с нашей поддержкой\n\n"
+        "Выберите нужный раздел в меню ниже 👇",
+        parse_mode="HTML",
         reply_markup=get_main_kb(callback.from_user.id),
     )
     await callback.answer()
@@ -295,6 +303,61 @@ async def pay_support_handler(message: types.Message):
         "Если у вас возникли проблемы с оплатой или начислением баллов, "
         "пожалуйста, напишите нашему оператору: @admin_handle"
     )
+
+
+@dp.message(Command("preparation"))
+async def preparation_handler(message: types.Message):
+    tg_id = message.from_user.id
+    url = settings.WEB_APP_URL + _append_tg_id("", tg_id)
+    if is_https_url(settings.WEB_APP_URL):
+        btn = InlineKeyboardButton(text="📚 Открыть подготовку", web_app=WebAppInfo(url=url))
+    else:
+        btn = InlineKeyboardButton(text="📚 Открыть подготовку", url=url)
+    await message.answer(
+        "📚 <b>Подготовка к посещению врача</b>\n\n"
+        "Мультфильмы, социстории и игры-тренажёры помогут ребёнку с РАС "
+        "привыкнуть к будущему визиту и снизить тревожность.",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[[btn]]),
+    )
+
+
+@dp.message(Command("appointments"))
+async def appointments_command_handler(message: types.Message):
+    async with async_session() as db:
+        result = await db.execute(select(User).where(User.telegram_id == message.from_user.id))
+        user = result.scalar_one_or_none()
+        if not user:
+            await message.answer("Пользователь не найден. Нажмите /start.")
+            return
+
+        result = await db.execute(
+            select(BotAppointmentRequest)
+            .where(BotAppointmentRequest.user_id == user.id,
+                   BotAppointmentRequest.status != "cancelled")
+            .order_by(BotAppointmentRequest.created_at.desc())
+        )
+        appts = result.scalars().all()
+
+    if not appts:
+        await message.answer(
+            "📋 <b>Мои записи</b>\n\nУ вас нет активных заявок.",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🏠 На главную", callback_data="go_home")],
+            ]),
+        )
+        return
+
+    for appt in appts:
+        status = STATUS_LABELS.get(appt.status, appt.status)
+        text = (
+            f"📋 <b>Заявка №{appt.id}</b>\n\n"
+            f"🏥 {appt.clinic_name}, {appt.city}\n"
+            f"📅 {appt.desired_date}, {appt.time_range}\n"
+            f"Статус: {status}"
+        )
+        await message.answer(text, parse_mode="HTML", reply_markup=_my_appt_kb(appt.id))
 
 
 # Скрытая команда: не регистрируется в set_my_commands, поэтому не отображается
@@ -314,7 +377,7 @@ async def admin_link_handler(message: types.Message):
 
 def get_consent_kb():
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Начать", callback_data="consent_agree")],
+        [InlineKeyboardButton(text="✅ Принять", callback_data="consent_agree")],
         [InlineKeyboardButton(text="📄 Подробнее о согласии", callback_data="consent_view")],
     ])
 
@@ -635,16 +698,6 @@ async def appt_reschedule(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-async def enable_webapp_button(chat_id: int):
-    if is_https_url(settings.WEB_APP_URL):
-        await bot.set_chat_menu_button(
-            chat_id=chat_id,
-            menu_button=types.MenuButtonWebApp(
-                text="Записаться",
-                web_app=WebAppInfo(url=settings.WEB_APP_URL),
-            ),
-        )
-
 async def main():
     logger.info("Starting bot...")
     log_environment(logger)
@@ -658,6 +711,8 @@ async def main():
         "set_my_commands",
         lambda: bot.set_my_commands([
             BotCommand(command="start", description="🏠 Главное меню"),
+            BotCommand(command="preparation", description="📚 Подготовка"),
+            BotCommand(command="appointments", description="📋 Мои записи"),
             BotCommand(command="paysupport", description="🛠 Поддержка платежей"),
         ]),
     )
