@@ -769,6 +769,10 @@ main {
   color: #FFFFFF;
 }
 
+.dentist-story-button--final {
+  justify-content: center;
+}
+
 .dentist-story-button:disabled {
   opacity: 0.55;
   cursor: default;

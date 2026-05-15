@@ -405,6 +405,7 @@
         actions: window.bloodStoryActions ?? [],
         imageCount: 28,
         imagePathPrefix: 'materials/img/blood/takeblood',
+        homeScreenId: 'screen-welcome',
       }),
       'screen-dentist-story': createStoryController({
         image: document.getElementById('dentist-story-image'),
@@ -414,11 +415,15 @@
         actions: window.dentistStoryActions ?? [],
         imageCount: 30,
         imagePathPrefix: 'materials/img/dentist/dentist',
+        homeScreenId: 'screen-welcome',
       }),
     };
 
     function createStoryController(config) {
       const stepCount = config.actions.length;
+      const nextLabel = config.nextButton?.querySelector('p:first-child') ?? null;
+      const nextArrow = config.nextButton?.querySelector('p:last-child') ?? null;
+      const defaultNextText = nextLabel?.textContent ?? 'Вперед';
       let currentStep = 0;
 
       function renderStep() {
@@ -430,7 +435,16 @@
         config.image.src = `${config.imagePathPrefix}${imageIndex}.png`;
         config.text.textContent = config.actions[currentStep];
         config.prevButton.disabled = currentStep === 0;
-        config.nextButton.disabled = currentStep === stepCount - 1;
+
+        const isFinalStep = currentStep === stepCount - 1;
+        config.nextButton.disabled = false;
+        config.nextButton.classList.toggle('dentist-story-button--final', isFinalStep);
+        if (nextLabel) {
+          nextLabel.textContent = isFinalStep ? 'Главное меню' : defaultNextText;
+        }
+        if (nextArrow && nextArrow !== nextLabel) {
+          nextArrow.hidden = isFinalStep;
+        }
       }
 
       function setStep(nextStep) {
@@ -447,6 +461,12 @@
       });
 
       config.nextButton?.addEventListener('click', () => {
+        if (currentStep === stepCount - 1) {
+          if (config.homeScreenId) {
+            openScreen(config.homeScreenId);
+          }
+          return;
+        }
         setStep(currentStep + 1);
       });
 
