@@ -515,9 +515,9 @@ main {
 
 .topbar {
   display: grid;
-  grid-template-columns: 44px 1fr 44px;
+  grid-template-columns: 44px 1fr;
   gap: 12px;
-  align-items: center;
+  align-items: start;
   margin-bottom: 12px;
 }
 
@@ -540,9 +540,13 @@ main {
 .module-head,
 .content-top {
   display: flex;
-  justify-content: space-between;
   gap: 12px;
   align-items: start;
+}
+
+.content-top > div:not(.content-top-icon) {
+  flex: 1;
+  min-width: 0;
 }
 
 .content-top-icon {
@@ -637,10 +641,6 @@ main {
 .content-card-parents {
   background-color: #F0FDF44D;
   border-color: #DCFCE7;
-}
-
-.content-card-parents .content-card-actions {
-  justify-content: flex-end;
 }
 
 .screen-header-badge {
