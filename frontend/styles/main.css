@@ -932,6 +932,7 @@ main {
   justify-content: center;
   gap: 10px;
   border-radius: 10px;
+  text-decoration: none;
 }
 
 .reccomend-card-button--secondary {
