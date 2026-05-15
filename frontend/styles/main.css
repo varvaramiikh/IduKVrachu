@@ -639,6 +639,10 @@ main {
   border-color: #DCFCE7;
 }
 
+.content-card-parents .content-card-actions {
+  justify-content: flex-end;
+}
+
 .screen-header-badge {
   display: flex;
   align-items: center;
