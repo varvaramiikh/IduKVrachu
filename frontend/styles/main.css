@@ -675,6 +675,13 @@ main {
   width: 65%;
 }
 
+#screen-blood-story.screen--active,
+#screen-dentist-story.screen--active {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 #screen-blood-story .dentist-story-title {
   margin: 8px 0 16px !important;
 }
@@ -684,8 +691,9 @@ main {
   margin-bottom: 12px;
 }
 
-#screen-blood-story .dentist-story-buttons {
-  margin-top: 16px;
+#screen-blood-story .dentist-story-buttons,
+#screen-dentist-story .dentist-story-buttons {
+  margin-top: auto;
   padding: 16px 0;
 }
 
@@ -696,11 +704,6 @@ main {
 #screen-dentist-story .dentist-story-text {
   padding: 16px;
   margin-bottom: 12px;
-}
-
-#screen-dentist-story .dentist-story-buttons {
-  margin-top: 16px;
-  padding: 16px 0;
 }
 
 .dentist-story-title {
