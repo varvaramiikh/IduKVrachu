@@ -515,11 +515,10 @@ main {
 
 .topbar {
   display: grid;
-  grid-template-columns: 44px 1fr;
+  grid-template-columns: 44px 1fr 44px;
   gap: 12px;
-  align-items: start;
-  margin-bottom: 12px;
   align-items: center;
+  margin-bottom: 12px;
 }
 
 .icon-button {
