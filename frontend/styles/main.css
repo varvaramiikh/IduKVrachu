@@ -689,6 +689,20 @@ main {
   padding: 16px 0;
 }
 
+#screen-dentist-story .dentist-story-title {
+  margin: 8px 0 16px !important;
+}
+
+#screen-dentist-story .dentist-story-text {
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+#screen-dentist-story .dentist-story-buttons {
+  margin-top: 16px;
+  padding: 16px 0;
+}
+
 .dentist-story-title {
   margin: 15px 0 30px !important;
   color: #3B3B3B !important;
