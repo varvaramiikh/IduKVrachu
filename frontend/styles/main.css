@@ -671,6 +671,10 @@ main {
   margin: 0 auto 16px;
 }
 
+#blood-story-image {
+  width: 65%;
+}
+
 .dentist-story-title {
   margin: 15px 0 30px !important;
   color: #3B3B3B !important;
