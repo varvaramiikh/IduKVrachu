@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(& \"C:\\\\Users\\\\����\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python311\\\\python.exe\" -c \"import fastapi; import alembic; print\\('OK, fastapi:', fastapi.__version__\\)\" 2>&1)"
+    ]
+  }
+}

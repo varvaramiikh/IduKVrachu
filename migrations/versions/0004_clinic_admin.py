@@ -35,7 +35,12 @@ def upgrade() -> None:
     # ── 1. services.clinic_id (nullable initially) ────────────
     if not _has_col(insp, "services", "clinic_id"):
         with op.batch_alter_table("services") as batch_op:
-            batch_op.add_column(sa.Column("clinic_id", sa.Integer, sa.ForeignKey("clinics.id"), nullable=True))
+            batch_op.add_column(sa.Column(
+                "clinic_id",
+                sa.Integer,
+                sa.ForeignKey("clinics.id", name="fk_services_clinic_id"),
+                nullable=True,
+            ))
 
     # ── 2. Migrate Clinic.services_json → Service.clinic_id ───
     services_t = sa.table(

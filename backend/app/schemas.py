@@ -43,13 +43,14 @@ class Clinic(BaseModel):
 class Service(BaseModel):
     id: int
     clinic_id: int
+    direction_id: int
+    direction_name: Optional[str] = None
+    direction_icon: Optional[str] = None
     name: str
     description: Optional[str] = None
     icon: Optional[str] = None
     service_type: str
     is_active: bool = True
-    class Config:
-        from_attributes = True
 
 class Doctor(BaseModel):
     id: int
@@ -148,10 +149,42 @@ class AdminLoginRequest(BaseModel):
     username: str
     password: str
 
+# ── Admin directions ──────────────────────────────────────────
+
+class AdminDirectionItem(BaseModel):
+    id: int
+    clinic_id: int
+    clinic_name: str
+    name: str
+    desc: str
+    icon: str
+    color: str
+    active: bool
+    services_count: int
+    content_count: int
+
+class AdminDirectionCreate(BaseModel):
+    clinic_id: Optional[int] = None  # superadmin must provide; clinic admin pinned to own
+    name: str
+    desc: str = ""
+    icon: str = ""
+    color: str = "#128395"
+    active: bool = True
+    also_in_clinic_ids: List[int] = []  # broadcast: создать копии в этих клиниках (super-only)
+
+class AdminDirectionUpdate(BaseModel):
+    name: str
+    desc: str = ""
+    icon: str = ""
+    color: str = "#128395"
+    active: bool = True
+
 # ── Admin services ────────────────────────────────────────────
 
 class AdminServiceItem(BaseModel):
     id: int
+    direction_id: int
+    direction_name: str
     clinic_id: int
     clinic_name: str
     name: str
@@ -160,14 +193,19 @@ class AdminServiceItem(BaseModel):
     active: bool
 
 class AdminServiceCreate(BaseModel):
-    clinic_id: Optional[int] = None  # superadmin must provide; clinic admin pinned to own
+    direction_id: int
     name: str
     desc: str = ""
     icon: str = ""
     active: bool = True
+    also_in_clinic_ids: List[int] = []  # broadcast (super-only): создать копии в направлениях с тем же именем
 
-class AdminServiceUpdate(AdminServiceCreate):
-    pass
+class AdminServiceUpdate(BaseModel):
+    direction_id: Optional[int] = None
+    name: str
+    desc: str = ""
+    icon: str = ""
+    active: bool = True
 
 # ── Admin cities ──────────────────────────────────────────────
 
@@ -197,6 +235,7 @@ class AdminClinicItem(BaseModel):
     phone: str
     services: List[str]
     service_ids: List[int]
+    directions_count: int = 0
     worktime: str
     active: bool
 
@@ -250,8 +289,10 @@ class AdminScheduleUpdate(BaseModel):
 
 class AdminContentItem(BaseModel):
     id: int
-    service: str
-    service_id: Optional[int]
+    direction_id: Optional[int]
+    direction_name: str
+    clinic_id: Optional[int]
+    clinic_name: str
     type: str
     title: str
     desc: str
@@ -260,16 +301,23 @@ class AdminContentItem(BaseModel):
     active: bool
 
 class AdminContentCreate(BaseModel):
-    service_id: Optional[int] = None
+    direction_id: Optional[int] = None
     type: str = "Мультфильм"
     title: str
     desc: str = ""
     duration: Optional[int] = None
     url: str = ""
     active: bool = True
+    also_in_clinic_ids: List[int] = []  # broadcast (super-only): копии в направлениях с тем же именем
 
-class AdminContentUpdate(AdminContentCreate):
-    pass
+class AdminContentUpdate(BaseModel):
+    direction_id: Optional[int] = None
+    type: str = "Мультфильм"
+    title: str
+    desc: str = ""
+    duration: Optional[int] = None
+    url: str = ""
+    active: bool = True
 
 # ── Admin roles ───────────────────────────────────────────────
 
@@ -293,6 +341,7 @@ class AdminRoleUpdate(AdminRoleCreate):
 
 class AdminStats(BaseModel):
     services_count: int
+    directions_count: int
     cities_count: int
     clinics_count: int
     doctors_count: int

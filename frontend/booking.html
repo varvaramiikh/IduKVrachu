@@ -74,6 +74,35 @@
       display: grid;
       gap: 12px;
     }
+    .service-group {
+      display: grid;
+      gap: 12px;
+    }
+    .service-group + .service-group {
+      margin-top: 18px;
+    }
+    .service-group__header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 4px;
+      color: #128395;
+    }
+    .service-group__header-icon {
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .service-group__title {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #128395;
+    }
     .service-card {
       display: flex;
       align-items: center;
@@ -1762,7 +1791,23 @@
         document.getElementById('btn-step3-next').disabled = true;
         return;
       }
+
+      // Группируем услуги по направлениям для визуального разделения
+      const groupsMap = new Map();
       available.forEach(svc => {
+        const key = svc.direction_id ?? `__nodir_${svc.id}`;
+        if (!groupsMap.has(key)) {
+          groupsMap.set(key, {
+            id: svc.direction_id,
+            name: svc.direction_name || '',
+            icon: svc.direction_icon || '',
+            services: [],
+          });
+        }
+        groupsMap.get(key).services.push(svc);
+      });
+
+      const renderCard = (svc) => {
         const selected = state.serviceId === svc.id;
         const card = document.createElement('div');
         card.className = 'service-card' + (selected ? ' service-card--selected' : '');
@@ -1789,7 +1834,24 @@
           renderServices();
           document.getElementById('btn-step3-next').disabled = false;
         });
-        list.appendChild(card);
+        return card;
+      };
+
+      const showHeaders = groupsMap.size > 1;
+      groupsMap.forEach(group => {
+        const wrap = document.createElement('div');
+        wrap.className = 'service-group';
+        if (showHeaders && group.name) {
+          const head = document.createElement('div');
+          head.className = 'service-group__header';
+          const iconHtml = (window.renderServiceIconHTML
+            ? window.renderServiceIconHTML(group.icon, 22)
+            : `<span style="font-size:18px;line-height:1">${group.icon || '⚕️'}</span>`);
+          head.innerHTML = `<span class="service-group__header-icon">${iconHtml}</span><p class="service-group__title">${group.name}</p>`;
+          wrap.appendChild(head);
+        }
+        group.services.forEach(svc => wrap.appendChild(renderCard(svc)));
+        list.appendChild(wrap);
       });
       document.getElementById('btn-step3-next').disabled = !state.serviceId;
     }

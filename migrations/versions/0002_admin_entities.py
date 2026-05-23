@@ -45,7 +45,12 @@ def upgrade() -> None:
 
     with op.batch_alter_table("content_modules") as batch_op:
         if not _has_col(insp, "content_modules", "service_id"):
-            batch_op.add_column(sa.Column("service_id", sa.Integer, sa.ForeignKey("services.id"), nullable=True))
+            batch_op.add_column(sa.Column(
+                "service_id",
+                sa.Integer,
+                sa.ForeignKey("services.id", name="fk_content_modules_service_id"),
+                nullable=True,
+            ))
         if not _has_col(insp, "content_modules", "content_type"):
             batch_op.add_column(sa.Column("content_type", sa.String(100), nullable=True))
         if not _has_col(insp, "content_modules", "duration_minutes"):

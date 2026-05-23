@@ -72,14 +72,29 @@ class Clinic(Base):
     city = relationship("City", back_populates="clinics")
     appointments = relationship("Appointment", back_populates="clinic")
     doctors = relationship("Doctor", back_populates="clinic")
-    services = relationship("Service", back_populates="clinic", cascade="all, delete-orphan")
+    directions = relationship("Direction", back_populates="clinic", cascade="all, delete-orphan")
     admins = relationship("AdminUser", back_populates="clinic")
+
+class Direction(Base):
+    __tablename__ = "directions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    clinic_id: Mapped[int] = mapped_column(ForeignKey("clinics.id"), index=True)
+    name: Mapped[str] = mapped_column(String(255))
+    description: Mapped[Optional[str]] = mapped_column(String(500))
+    icon: Mapped[Optional[str]] = mapped_column(String(10))
+    color: Mapped[Optional[str]] = mapped_column(String(20))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    clinic = relationship("Clinic", back_populates="directions")
+    services = relationship("Service", back_populates="direction", cascade="all, delete-orphan")
+    content_modules = relationship("ContentModule", back_populates="direction", cascade="all, delete-orphan")
 
 class Service(Base):
     __tablename__ = "services"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    clinic_id: Mapped[int] = mapped_column(ForeignKey("clinics.id"), index=True)
+    direction_id: Mapped[int] = mapped_column(ForeignKey("directions.id"), index=True)
     name: Mapped[str] = mapped_column(String(255))
     description: Mapped[Optional[str]] = mapped_column(String(500))
     icon: Mapped[Optional[str]] = mapped_column(String(10))
@@ -87,7 +102,7 @@ class Service(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     mis_external_id: Mapped[Optional[str]] = mapped_column(String(100))
 
-    clinic = relationship("Clinic", back_populates="services")
+    direction = relationship("Direction", back_populates="services")
     appointments = relationship("Appointment", back_populates="service")
 
 class Appointment(Base):
@@ -152,7 +167,7 @@ class ContentModule(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(255))
     description: Mapped[Optional[str]] = mapped_column(String(1000))
-    service_id: Mapped[Optional[int]] = mapped_column(ForeignKey("services.id"), nullable=True)
+    direction_id: Mapped[Optional[int]] = mapped_column(ForeignKey("directions.id"), nullable=True, index=True)
     content_type: Mapped[Optional[str]] = mapped_column(String(100))
     duration_minutes: Mapped[Optional[int]] = mapped_column(Integer)
     url: Mapped[Optional[str]] = mapped_column(String(512))
@@ -160,6 +175,7 @@ class ContentModule(Base):
     price_stars: Mapped[int] = mapped_column(Integer, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
+    direction = relationship("Direction", back_populates="content_modules")
     items = relationship("ContentItem", back_populates="module")
     purchases = relationship("Purchase", back_populates="module")
 
