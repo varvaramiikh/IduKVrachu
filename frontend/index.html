@@ -516,6 +516,120 @@
       });
     });
 
+    // Подмешиваем материалы, добавленные в админке (Мультфильм, Игра-тренажёр),
+    // к статическим карточкам на экранах «Поход к стоматологу» и «Сдача крови».
+    async function loadAdminMaterials() {
+      const SCREEN_BY_DIRECTION = {
+        'Стоматология': 'screen-dentist',
+        'Сдача крови': 'screen-blood',
+      };
+      const ICON_BY_TYPE = {
+        'Мультфильм': 'materials/svg/icon-cartoon.svg',
+        'Игра-тренажёр': 'materials/svg/icon-game.svg',
+        'Игра-тренажер': 'materials/svg/icon-game.svg',
+      };
+      const ALLOWED_TYPES = new Set(Object.keys(ICON_BY_TYPE));
+
+      let materials;
+      try {
+        const res = await fetch('/api/public/materials');
+        if (!res.ok) return;
+        materials = await res.json();
+      } catch (_) {
+        return;
+      }
+
+      for (const mat of materials) {
+        if (!ALLOWED_TYPES.has(mat.content_type)) continue;
+        const screenId = SCREEN_BY_DIRECTION[mat.direction_name];
+        if (!screenId) continue;
+        const list = document.querySelector('#' + screenId + ' .content-card-list');
+        if (!list) continue;
+
+        const article = document.createElement('article');
+        article.className = 'content-card';
+
+        const top = document.createElement('div');
+        top.className = 'content-top';
+
+        const iconWrap = document.createElement('div');
+        iconWrap.className = 'content-top-icon';
+        const iconImg = document.createElement('img');
+        iconImg.src = ICON_BY_TYPE[mat.content_type];
+        iconImg.alt = '';
+        iconWrap.appendChild(iconImg);
+
+        const body = document.createElement('div');
+
+        const typeP = document.createElement('p');
+        typeP.className = 'module-type';
+        typeP.textContent = mat.content_type;
+        body.appendChild(typeP);
+
+        const titleH = document.createElement('h4');
+        titleH.className = 'content-card-title';
+        titleH.textContent = mat.title;
+        body.appendChild(titleH);
+
+        if (mat.description) {
+          const descP = document.createElement('p');
+          descP.className = 'content-card-description';
+          descP.textContent = mat.description;
+          body.appendChild(descP);
+        }
+
+        const actions = document.createElement('div');
+        actions.className = 'content-card-actions';
+
+        const time = document.createElement('div');
+        time.className = 'content-card-time';
+        if (mat.duration_minutes) {
+          const clockImg = document.createElement('img');
+          clockImg.src = 'materials/svg/icon-clock.svg';
+          clockImg.alt = '';
+          time.appendChild(clockImg);
+          const timeP = document.createElement('p');
+          timeP.className = 'content-card-time-text';
+          timeP.textContent = mat.duration_minutes + ' мин';
+          time.appendChild(timeP);
+        }
+        actions.appendChild(time);
+
+        const isHttpUrl = mat.url && /^https?:\/\//i.test(mat.url);
+        let btn;
+        if (isHttpUrl) {
+          btn = document.createElement('a');
+          btn.href = mat.url;
+          btn.target = '_blank';
+          btn.rel = 'noreferrer';
+        } else {
+          btn = document.createElement('button');
+          btn.type = 'button';
+          btn.disabled = true;
+        }
+        btn.className = 'button button-primary button-full content-card-button';
+        const playImg = document.createElement('img');
+        playImg.src = 'materials/svg/icon-play.svg';
+        playImg.alt = '';
+        btn.appendChild(playImg);
+        const btnLabel = document.createElement('p');
+        btnLabel.textContent = 'Начать';
+        btn.appendChild(btnLabel);
+        actions.appendChild(btn);
+
+        body.appendChild(actions);
+        top.appendChild(iconWrap);
+        top.appendChild(body);
+        article.appendChild(top);
+
+        const parentsCard = list.querySelector('.content-card-parents');
+        if (parentsCard) list.insertBefore(article, parentsCard);
+        else list.appendChild(article);
+      }
+    }
+
+    loadAdminMaterials();
+
   </script>
 </body>
 </html>

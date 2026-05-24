@@ -626,13 +626,13 @@ async def save_profile(data: ProfileSaveRequest, user: User = Depends(get_curren
     return {"status": "ok", "child_id": child_id}
 
 
-def _get_main_kb_for_notify(tg_id):
+def _get_main_kb_for_notify(tg_id, path: str = "", text: str = "🏥 Открыть приложение"):
     from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-    url = settings.WEB_APP_URL
+    url = settings.WEB_APP_URL.rstrip("/") + path
     btn = (
-        InlineKeyboardButton(text="🏥 Открыть приложение", web_app=WebAppInfo(url=url))
-        if url.startswith("https://")
-        else InlineKeyboardButton(text="🏥 Открыть приложение", url=url)
+        InlineKeyboardButton(text=text, web_app=WebAppInfo(url=url))
+        if settings.WEB_APP_URL.startswith("https://")
+        else InlineKeyboardButton(text=text, url=url)
     )
     return InlineKeyboardMarkup(inline_keyboard=[[btn]])
 
@@ -648,6 +648,33 @@ async def update_progress(item_id: int, status: str, user: User = Depends(get_cu
         prog.updated_at = datetime.utcnow()
     await db.commit()
     return {"status": "ok"}
+
+
+@app.get("/api/public/materials", response_model=List[dict])
+async def get_public_materials(db: AsyncSession = Depends(get_db)):
+    """Active materials added via admin panel, for the bot WebApp landing page.
+
+    Public (no auth) — used by frontend/index.html to append admin-managed
+    cards (Мультфильм / Игра-тренажёр) alongside the static ones.
+    """
+    rows = (await db.execute(
+        select(ContentModule, Direction.name)
+        .join(Direction, ContentModule.direction_id == Direction.id)
+        .where(ContentModule.is_active == True)
+        .order_by(ContentModule.id)
+    )).all()
+    return [
+        {
+            "id": m.id,
+            "direction_name": direction_name,
+            "content_type": m.content_type or "",
+            "title": m.title,
+            "description": m.description or "",
+            "duration_minutes": m.duration_minutes,
+            "url": m.url or "",
+        }
+        for m, direction_name in rows
+    ]
 
 
 @app.get("/api/modules", response_model=List[dict])
@@ -1636,7 +1663,15 @@ async def _notify_user_appointment_confirmed(user: User, appointment: Appointmen
     try:
         from aiogram import Bot as TgBot
         tg_bot = TgBot(token=settings.BOT_TOKEN)
-        await tg_bot.send_message(user.telegram_id, msg, reply_markup=_get_main_kb_for_notify(user.telegram_id))
+        await tg_bot.send_message(
+            user.telegram_id,
+            msg,
+            reply_markup=_get_main_kb_for_notify(
+                user.telegram_id,
+                path="/booking.html?screen=appointments",
+                text="📋 Мои записи",
+            ),
+        )
         await tg_bot.session.close()
     except Exception:
         logger.warning("confirm: не удалось отправить уведомление telegram_id=%s", user.telegram_id, exc_info=True)

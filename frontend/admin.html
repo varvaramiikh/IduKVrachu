@@ -2206,7 +2206,14 @@ function AppointmentsSection({ me, onChanged }) {
                 <tr key={a.id}>
                   <td style={{ fontSize: 13, fontWeight: 600 }}>{formatDt(a.slot_datetime)}</td>
                   <td><strong>{a.child_name || "—"}</strong>{a.parent_name && <div style={{ fontSize: 12, color: "var(--text)" }}>Родитель: {a.parent_name}</div>}</td>
-                  <td style={{ fontSize: 13 }}>{a.service_name}</td>
+                  <td style={{ fontSize: 13 }}>
+                    {a.service_name}
+                    {a.comment && (
+                      <div style={{ fontSize: 12, color: "var(--text)", marginTop: 4, fontStyle: "italic" }} title={a.comment}>
+                        💬 {a.comment}
+                      </div>
+                    )}
+                  </td>
                   {isSuper && <td style={{ fontSize: 13 }}>{a.clinic_name}</td>}
                   <td style={{ fontSize: 13, color: "var(--text)" }}>{a.parent_phone || "—"}</td>
                   <td><span className={`badge ${st.cls}`}>{st.label}</span></td>
