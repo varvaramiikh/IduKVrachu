@@ -452,6 +452,16 @@ async def create_appointment(
         appointment_id=appointment.id,
     ))
     await db.commit()
+
+    user_msg = (
+        "📨 Ваша заявка отправлена!\n\n"
+        f"Услуга: {service.name}\n"
+        f"Клиника: {clinic.name}\n"
+        f"Время: {_fmt_msk(appointment.slot_datetime)}\n\n"
+        "⏳ Ожидайте подтверждения от клиники — мы пришлём отдельное сообщение, "
+        "как только запись будет подтверждена."
+    )
+    await _send_user_appointment_notification(user.telegram_id, user_msg)
     return appointment
 
 
@@ -511,6 +521,16 @@ async def reschedule_appointment(
     appointment.slot_datetime = new_slot
     await db.commit()
     await db.refresh(appointment)
+
+    service = (await db.execute(select(Service).where(Service.id == appointment.service_id))).scalar_one_or_none()
+    clinic = (await db.execute(select(Clinic).where(Clinic.id == appointment.clinic_id))).scalar_one_or_none()
+    user_msg = (
+        "🔄 Ваша запись перенесена.\n\n"
+        f"Услуга: {service.name if service else ''}\n"
+        f"Клиника: {clinic.name if clinic else ''}\n"
+        f"Новое время: {_fmt_msk(appointment.slot_datetime)}"
+    )
+    await _send_user_appointment_notification(user.telegram_id, user_msg)
     return appointment
 
 
@@ -536,6 +556,7 @@ async def cancel_appointment(
 
     # Notify clinic admins about cancellation
     service = (await db.execute(select(Service).where(Service.id == appointment.service_id))).scalar_one_or_none()
+    clinic = (await db.execute(select(Clinic).where(Clinic.id == appointment.clinic_id))).scalar_one_or_none()
     parent = (await db.execute(select(ParentProfile).where(ParentProfile.user_id == user.id))).scalar_one_or_none()
     db.add(AdminNotification(
         clinic_id=appointment.clinic_id,
@@ -548,6 +569,15 @@ async def cancel_appointment(
         appointment_id=appointment.id,
     ))
     await db.commit()
+
+    user_msg = (
+        "❌ Вы отменили запись.\n\n"
+        f"Услуга: {service.name if service else ''}\n"
+        f"Клиника: {clinic.name if clinic else ''}\n"
+        f"Время: {_fmt_msk(appointment.slot_datetime)}\n\n"
+        "Если передумаете, вы всегда можете записаться снова в приложении."
+    )
+    await _send_user_appointment_notification(user.telegram_id, user_msg)
     return {"status": "ok"}
 
 
@@ -636,6 +666,31 @@ def _get_main_kb_for_notify(tg_id, path: str = "", text: str = "🏥 Откры�
         else InlineKeyboardButton(text=text, url=url)
     )
     return InlineKeyboardMarkup(inline_keyboard=[[btn]])
+
+
+async def _send_user_appointment_notification(telegram_id: int, text: str) -> None:
+    """Push a Telegram message to the user about one of their appointments."""
+    if telegram_id == 12345678:
+        return  # debug stub user
+    try:
+        from aiogram import Bot as TgBot
+        tg_bot = TgBot(token=settings.BOT_TOKEN)
+        try:
+            await tg_bot.send_message(
+                telegram_id,
+                text,
+                reply_markup=_get_main_kb_for_notify(
+                    telegram_id,
+                    path="/booking.html?screen=appointments",
+                    text="📋 Мои записи",
+                ),
+            )
+        finally:
+            await tg_bot.session.close()
+    except Exception:
+        logger.warning(
+            "notify: не удалось отправить уведомление telegram_id=%s", telegram_id, exc_info=True
+        )
 
 
 @app.post("/api/progress")
@@ -1690,8 +1745,6 @@ async def admin_list_appointments(
 
 
 async def _notify_user_appointment_confirmed(user: User, appointment: Appointment, db: AsyncSession) -> None:
-    if user.telegram_id == 12345678:
-        return  # debug stub user
     service = (await db.execute(select(Service).where(Service.id == appointment.service_id))).scalar_one_or_none()
     clinic = (await db.execute(select(Clinic).where(Clinic.id == appointment.clinic_id))).scalar_one_or_none()
     msg = (
@@ -1700,21 +1753,7 @@ async def _notify_user_appointment_confirmed(user: User, appointment: Appointmen
         f"Клиника: {clinic.name if clinic else ''}\n"
         f"Время: {_fmt_msk(appointment.slot_datetime)}"
     )
-    try:
-        from aiogram import Bot as TgBot
-        tg_bot = TgBot(token=settings.BOT_TOKEN)
-        await tg_bot.send_message(
-            user.telegram_id,
-            msg,
-            reply_markup=_get_main_kb_for_notify(
-                user.telegram_id,
-                path="/booking.html?screen=appointments",
-                text="📋 Мои записи",
-            ),
-        )
-        await tg_bot.session.close()
-    except Exception:
-        logger.warning("confirm: не удалось отправить уведомление telegram_id=%s", user.telegram_id, exc_info=True)
+    await _send_user_appointment_notification(user.telegram_id, msg)
 
 
 @app.post("/admin/api/appointments/{appointment_id}/confirm", response_model=AdminAppointmentItem)
@@ -1755,4 +1794,19 @@ async def admin_cancel_by_admin(
         return await _appointment_to_admin_item(appt, db)
     appt.status = "cancelled"
     await db.commit()
+
+    user = (await db.execute(select(User).where(User.id == appt.user_id))).scalar_one_or_none()
+    if user:
+        service = (await db.execute(select(Service).where(Service.id == appt.service_id))).scalar_one_or_none()
+        clinic = (await db.execute(select(Clinic).where(Clinic.id == appt.clinic_id))).scalar_one_or_none()
+        user_msg = (
+            "⚠️ К сожалению, клиника отменила вашу запись.\n\n"
+            f"Услуга: {service.name if service else ''}\n"
+            f"Клиника: {clinic.name if clinic else ''}\n"
+            f"Время: {_fmt_msk(appt.slot_datetime)}\n\n"
+            "Для уточнения деталей свяжитесь с клиникой или выберите другое "
+            "удобное время в приложении."
+        )
+        await _send_user_appointment_notification(user.telegram_id, user_msg)
+
     return await _appointment_to_admin_item(appt, db)

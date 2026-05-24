@@ -1628,6 +1628,7 @@
         const confirmBtn = document.getElementById('btn-confirm');
         const editBtn = document.getElementById('btn-edit');
         const subtitle = document.querySelector('#step-7 .step-subtitle');
+        confirmBtn.disabled = false;
         if (state.rescheduleId) {
           confirmBtn.textContent = 'Перенести запись';
           editBtn.style.display = 'none';
