@@ -713,23 +713,22 @@ async def get_public_materials(db: AsyncSession = Depends(get_db)):
     Public (no auth) — used by frontend/index.html to append admin-managed
     cards (Мультфильм / Игра-тренажёр) alongside the static ones.
     """
-    rows = (await db.execute(
-        select(ContentModule, Direction.name)
-        .join(Direction, ContentModule.direction_id == Direction.id)
+    modules = (await db.execute(
+        select(ContentModule)
         .where(ContentModule.is_active == True)
         .order_by(ContentModule.id)
-    )).all()
+    )).scalars().all()
     return [
         {
             "id": m.id,
-            "direction_name": direction_name,
+            "direction_name": m.direction_name or "",
             "content_type": m.content_type or "",
             "title": m.title,
             "description": m.description or "",
             "duration_minutes": m.duration_minutes,
             "url": m.url or "",
         }
-        for m, direction_name in rows
+        for m in modules
     ]
 
 
@@ -859,13 +858,15 @@ async def admin_stats(admin: AdminUser = Depends(get_admin), db: AsyncSession = 
         if cid is None:
             raise HTTPException(status_code=403, detail="Admin has no clinic assigned")
         clinic_direction_ids = select(Direction.id).where(Direction.clinic_id == cid)
+        clinic_direction_names = select(Direction.name).where(Direction.clinic_id == cid)
         services_q = services_q.where(Service.direction_id.in_(clinic_direction_ids))
         directions_q = directions_q.where(Direction.clinic_id == cid)
         clinics_q = clinics_q.where(Clinic.id == cid)
         doctors_q = doctors_q.where(Doctor.clinic_id == cid)
         appts_q = appts_q.where(Appointment.clinic_id == cid)
-        # content scoped to clinic's directions
-        content_q = content_q.where(ContentModule.direction_id.in_(clinic_direction_ids))
+        # Materials are canonical (one row per direction name across all clinics).
+        # For a clinic admin, show materials whose direction exists in this clinic.
+        content_q = content_q.where(ContentModule.direction_name.in_(clinic_direction_names))
         # users who booked into this clinic
         users_q = select(func.count(func.distinct(Appointment.user_id))).select_from(Appointment).where(Appointment.clinic_id == cid)
         # cities: only clinic's city
@@ -900,7 +901,7 @@ async def _direction_to_item(d: Direction, db: AsyncSession) -> AdminDirectionIt
         select(func.count()).select_from(Service).where(Service.direction_id == d.id)
     )) or 0
     content_count = (await db.scalar(
-        select(func.count()).select_from(ContentModule).where(ContentModule.direction_id == d.id)
+        select(func.count()).select_from(ContentModule).where(ContentModule.direction_name == d.name)
     )) or 0
     return AdminDirectionItem(
         id=d.id, clinic_id=d.clinic_id, clinic_name=clinic.name if clinic else "",
@@ -1391,65 +1392,42 @@ async def admin_update_schedule(doctor_id: int, data: AdminScheduleUpdate, admin
 
 # ── Admin API: content (super-only — clinic admins do not access materials) ──
 
-async def _content_to_item(m: ContentModule, db: AsyncSession) -> AdminContentItem:
-    direction_name = ""
-    clinic_id: Optional[int] = None
-    clinic_name = ""
-    if m.direction_id is not None:
-        direction = (await db.execute(select(Direction).where(Direction.id == m.direction_id))).scalar_one_or_none()
-        if direction:
-            direction_name = direction.name
-            clinic_id = direction.clinic_id
-            clinic = (await db.execute(select(Clinic).where(Clinic.id == direction.clinic_id))).scalar_one_or_none()
-            clinic_name = clinic.name if clinic else ""
+def _content_to_item(m: ContentModule) -> AdminContentItem:
     return AdminContentItem(
-        id=m.id, direction_id=m.direction_id, direction_name=direction_name,
-        clinic_id=clinic_id, clinic_name=clinic_name,
+        id=m.id, direction_name=m.direction_name or "",
         type=m.content_type or "Мультфильм", title=m.title,
         desc=m.description or "", duration=m.duration_minutes,
         url=m.url or "", active=m.is_active,
     )
 
 
+async def _known_direction_names(db: AsyncSession):
+    rows = (await db.execute(select(Direction.name).distinct())).scalars().all()
+    return {n for n in rows if n}
+
+
 @app.get("/admin/api/content", response_model=List[AdminContentItem])
 async def admin_list_content(admin: AdminUser = Depends(require_super), db: AsyncSession = Depends(get_db)):
     modules = (await db.execute(select(ContentModule).order_by(ContentModule.id))).scalars().all()
-    return [await _content_to_item(m, db) for m in modules]
+    return [_content_to_item(m) for m in modules]
 
 
 @app.post("/admin/api/content", response_model=AdminContentItem, status_code=201)
 async def admin_create_content(data: AdminContentCreate, admin: AdminUser = Depends(require_super), db: AsyncSession = Depends(get_db)):
-    if data.direction_id is None:
-        raise HTTPException(status_code=400, detail="direction_id is required")
-    direction = (await db.execute(select(Direction).where(Direction.id == data.direction_id))).scalar_one_or_none()
-    if not direction:
-        raise HTTPException(status_code=404, detail="Direction not found")
-    primary = ContentModule(
+    name = (data.direction_name or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="direction_name is required")
+    if name not in await _known_direction_names(db):
+        raise HTTPException(status_code=404, detail="Direction not found in any clinic")
+    module = ContentModule(
         title=data.title, description=data.desc,
-        direction_id=direction.id, content_type=data.type,
+        direction_name=name, content_type=data.type,
         duration_minutes=data.duration, url=data.url, is_active=data.active,
     )
-    db.add(primary)
-    await db.flush()
-
-    if data.also_in_clinic_ids:
-        for cid in data.also_in_clinic_ids:
-            if cid == direction.clinic_id:
-                continue
-            if not (await db.execute(select(Clinic.id).where(Clinic.id == cid))).scalar_one_or_none():
-                continue
-            target_dir = await _resolve_direction_for_clinic(direction.name, cid, db)
-            if target_dir.icon is None or target_dir.icon == "":
-                target_dir.icon = direction.icon
-            db.add(ContentModule(
-                title=data.title, description=data.desc,
-                direction_id=target_dir.id, content_type=data.type,
-                duration_minutes=data.duration, url=data.url, is_active=data.active,
-            ))
-
+    db.add(module)
     await db.commit()
-    await db.refresh(primary)
-    return await _content_to_item(primary, db)
+    await db.refresh(module)
+    return _content_to_item(module)
 
 
 @app.put("/admin/api/content/{content_id}", response_model=AdminContentItem)
@@ -1457,11 +1435,12 @@ async def admin_update_content(content_id: int, data: AdminContentUpdate, admin:
     module = (await db.execute(select(ContentModule).where(ContentModule.id == content_id))).scalar_one_or_none()
     if not module:
         raise HTTPException(status_code=404, detail="Content not found")
-    if data.direction_id is not None and data.direction_id != module.direction_id:
-        target = (await db.execute(select(Direction).where(Direction.id == data.direction_id))).scalar_one_or_none()
-        if not target:
-            raise HTTPException(status_code=404, detail="Target direction not found")
-        module.direction_id = target.id
+    if data.direction_name is not None:
+        new_name = data.direction_name.strip()
+        if new_name and new_name != module.direction_name:
+            if new_name not in await _known_direction_names(db):
+                raise HTTPException(status_code=404, detail="Target direction not found in any clinic")
+            module.direction_name = new_name
     module.title = data.title
     module.description = data.desc
     module.content_type = data.type
@@ -1469,7 +1448,7 @@ async def admin_update_content(content_id: int, data: AdminContentUpdate, admin:
     module.url = data.url
     module.is_active = data.active
     await db.commit()
-    return await _content_to_item(module, db)
+    return _content_to_item(module)
 
 
 @app.delete("/admin/api/content/{content_id}")

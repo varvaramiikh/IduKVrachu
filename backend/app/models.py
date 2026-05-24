@@ -88,7 +88,6 @@ class Direction(Base):
 
     clinic = relationship("Clinic", back_populates="directions")
     services = relationship("Service", back_populates="direction", cascade="all, delete-orphan")
-    content_modules = relationship("ContentModule", back_populates="direction", cascade="all, delete-orphan")
 
 class Service(Base):
     __tablename__ = "services"
@@ -167,7 +166,9 @@ class ContentModule(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(255))
     description: Mapped[Optional[str]] = mapped_column(String(1000))
-    direction_id: Mapped[Optional[int]] = mapped_column(ForeignKey("directions.id"), nullable=True, index=True)
+    # Canonical direction name (e.g. "Стоматология"). Shared across all clinics
+    # — a single material applies to every clinic that has this direction.
+    direction_name: Mapped[str] = mapped_column(String(255), index=True)
     content_type: Mapped[Optional[str]] = mapped_column(String(100))
     duration_minutes: Mapped[Optional[int]] = mapped_column(Integer)
     url: Mapped[Optional[str]] = mapped_column(String(512))
@@ -175,7 +176,6 @@ class ContentModule(Base):
     price_stars: Mapped[int] = mapped_column(Integer, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    direction = relationship("Direction", back_populates="content_modules")
     items = relationship("ContentItem", back_populates="module")
     purchases = relationship("Purchase", back_populates="module")
 

@@ -258,7 +258,7 @@
     }
     .form-input:focus { border-color: var(--btn-color); }
     .form-input::placeholder { color: #c0cdd4; }
-    select.form-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%23848484' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+    select.form-input { appearance: none; background-image: url("/frontend/materials/svg/icon-admin-select-chevron.svg"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
     textarea.form-input { resize: vertical; min-height: 80px; line-height: 1.5; }
 
     /* Modal */
@@ -502,44 +502,38 @@
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useCallback } = React;
+const { useState, useCallback, useMemo } = React;
 
 // ── Icons ──────────────────────────────────────────────────
-const Icon = ({ d, size = 16, stroke = "currentColor", fill = "none" }) => (
-  <svg width={size} height={size} viewBox="0 0 16 16" fill={fill} stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d={d} />
-  </svg>
-);
-
-const icons = {
-  dashboard: "M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z",
-  services: "M8 1L9.8 5.5H14.5L10.7 8.3L12.1 13L8 10.2L3.9 13L5.3 8.3L1.5 5.5H6.2z",
-  city: "M8 1C5.24 1 3 3.24 3 6c0 4.25 5 9 5 9s5-4.75 5-9c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 8 4a1.5 1.5 0 0 1 0 3z",
-  clinic: "M2 7h12M7 2v12M2 2h12v12H2z",
-  doctor: "M8 1a3 3 0 1 0 0 6A3 3 0 0 0 8 1zM3 15c0-2.76 2.24-5 5-5s5 2.24 5 5",
-  schedule: "M2 3h12v10H2zM2 6h12M6 3v2M10 3v2M5 9h2M9 9h2",
-  content: "M2 3h12v10H2zM5 7h6M5 10h4",
-  roles: "M6 1a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM1 15c0-2.76 2.24-5 5-5M10 11l1.5 1.5L14 9",
-  plus: "M8 3v10M3 8h10",
-  edit: "M11.5 2.5a1.5 1.5 0 0 1 2.12 2.12L5 13H3v-2L11.5 2.5z",
-  trash: "M3 4h10M6 4V2h4v2M5 4v9a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V4",
-  search: "M7 13A6 6 0 1 0 7 1a6 6 0 0 0 0 12zM13 13l2 2",
-  close: "M3 3l10 10M13 3L3 13",
-  check: "M3 8l3.5 3.5L13 4",
-  video: "M2 4h8a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM11 6.5l4-2v7l-4-2",
-  book: "M3 2h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM5 2v12M5 6h4M5 9h3",
-  game: "M4 8h3M5.5 6.5v3M10 7.5h.01M11.5 9h.01M2 6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z",
-  doc: "M4 1h6l4 4v10H4V1zM10 1v4h4M6 8h5M6 11h3",
-  arrow_right: "M6 3l5 5-5 5",
-  logout: "M10 3h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-3M6 11l5-3-5-3M2 8h9",
-  bell: "M8 2a4 4 0 0 0-4 4v3l-1.5 2h11L12 9V6a4 4 0 0 0-4-4zM6 13a2 2 0 0 0 4 0",
-  appointments: "M3 4h10v9H3zM3 7h10M6 2v3M10 2v3M6 10h4",
+// Каждая иконка — отдельный SVG-файл в /frontend/materials/svg/,
+// подключается через <img>, как и просили в задаче.
+const ICON_FILES = {
+  dashboard:    "/frontend/materials/svg/icon-admin-dashboard.svg",
+  services:     "/frontend/materials/svg/icon-admin-services.svg",
+  city:         "/frontend/materials/svg/icon-admin-city.svg",
+  clinic:       "/frontend/materials/svg/icon-admin-clinic.svg",
+  doctor:       "/frontend/materials/svg/icon-admin-doctor.svg",
+  schedule:     "/frontend/materials/svg/icon-admin-schedule.svg",
+  content:      "/frontend/materials/svg/icon-admin-content.svg",
+  roles:        "/frontend/materials/svg/icon-admin-roles.svg",
+  plus:         "/frontend/materials/svg/icon-admin-plus.svg",
+  edit:         "/frontend/materials/svg/icon-admin-edit.svg",
+  trash:        "/frontend/materials/svg/icon-admin-trash.svg",
+  search:       "/frontend/materials/svg/icon-admin-search.svg",
+  close:        "/frontend/materials/svg/icon-admin-close.svg",
+  check:        "/frontend/materials/svg/icon-admin-check.svg",
+  video:        "/frontend/materials/svg/icon-admin-video.svg",
+  book:         "/frontend/materials/svg/icon-admin-book.svg",
+  game:         "/frontend/materials/svg/icon-admin-game.svg",
+  doc:          "/frontend/materials/svg/icon-admin-doc.svg",
+  arrow_right:  "/frontend/materials/svg/icon-admin-arrow-right.svg",
+  logout:       "/frontend/materials/svg/icon-admin-logout.svg",
+  bell:         "/frontend/materials/svg/icon-admin-bell.svg",
+  appointments: "/frontend/materials/svg/icon-admin-appointments.svg",
 };
 
 const Ico = ({ name, size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d={icons[name]} />
-  </svg>
+  <img src={ICON_FILES[name]} alt="" width={size} height={size} style={{ display: "inline-block", verticalAlign: "middle" }} />
 );
 
 // Рендер иконки услуги: SVG из общего набора по ключу либо эмодзи/текст.
@@ -692,7 +686,7 @@ function Toggle({ on, onChange }) {
 function PermCheck({ on, onChange }) {
   return (
     <div className={`perm-check${on ? " on" : ""}`} onClick={() => onChange(!on)}>
-      {on && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+      {on && <img src="/frontend/materials/svg/icon-admin-permcheck.svg" alt="" width="10" height="8" style={{ display: "block" }} />}
     </div>
   );
 }
@@ -745,20 +739,28 @@ function Dashboard({ data, me }) {
             <div className="section-head" style={{ marginBottom: 16 }}>
               <div><div className="section-title" style={{ fontSize: 15 }}>Материалы по направлениям</div></div>
             </div>
-            {data.directions.map(d => {
-              const count = data.content.filter(c => c.direction_id === d.id).length;
-              return (
-                <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #f4f7f8" }}>
-                  <ServiceIcon icon={d.icon} size={22} color={d.color || "#128395"} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--title)" }}>{d.name}</div>
-                    <div style={{ fontSize: 12, color: "var(--text)" }}>{d.clinic_name}</div>
+            {(() => {
+              const seen = new Map();
+              for (const d of data.directions) {
+                if (!d.name || seen.has(d.name)) continue;
+                const clinicsCount = data.directions.filter(x => x.name === d.name).length;
+                seen.set(d.name, { name: d.name, icon: d.icon, color: d.color || "#128395", clinicsCount });
+              }
+              const rows = [...seen.values()];
+              return rows.map(d => {
+                const count = data.content.filter(c => c.direction_name === d.name).length;
+                return (
+                  <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #f4f7f8" }}>
+                    <ServiceIcon icon={d.icon} size={22} color={d.color} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--title)" }}>{d.name}</div>
+                      <div style={{ fontSize: 12, color: "var(--text)" }}>в {d.clinicsCount} {d.clinicsCount === 1 ? "клинике" : "клиниках"}</div>
+                    </div>
+                    <span className="badge badge-teal">{count} мат.</span>
                   </div>
-                  <span className="badge badge-teal">{count} мат.</span>
-                  <span className={`badge ${d.active ? "badge-green" : "badge-gray"}`}>{d.active ? "Активно" : "Скрыто"}</span>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
             {data.directions.length === 0 && (
               <div style={{ textAlign: "center", color: "var(--text)", fontSize: 13, padding: "16px 0" }}>Нет направлений</div>
             )}
@@ -835,10 +837,13 @@ function ServicesSection({ data, setData, me }) {
   };
   const deleteDirection = async (d) => {
     const svcCount = servicesByDirection(d.id).length;
-    const matCount = data.content.filter(c => c.direction_id === d.id).length;
-    const msg = isSuper
-      ? `Удалить направление «${d.name}»? Будут удалены ${svcCount} услуг и ${matCount} материалов этого направления.`
-      : `Удалить направление «${d.name}»? Будут удалены все его услуги.`;
+    // Materials are canonical: they stay attached to other clinics' copies of
+    // this direction. They only disappear if no clinic has this direction left.
+    const siblings = data.directions.filter(x => x.name === d.name && x.id !== d.id).length;
+    const matNote = siblings > 0
+      ? ` Материалы направления «${d.name}» останутся доступны в других ${siblings === 1 ? "клинике" : "клиниках"}.`
+      : ` Это последняя клиника с направлением «${d.name}» — материалы перестанут отображаться у пользователей.`;
+    const msg = `Удалить направление «${d.name}»? Будут удалены ${svcCount} услуг этой клиники.${matNote}`;
     if (!confirm(msg)) return;
     const res = await apiFetch(`/admin/api/directions/${d.id}`, { method: "DELETE" });
     if (!res.ok) { alert("Не удалось удалить"); return; }
@@ -846,7 +851,6 @@ function ServicesSection({ data, setData, me }) {
       ...prev,
       directions: prev.directions.filter(x => x.id !== d.id),
       services: prev.services.filter(s => s.direction_id !== d.id),
-      content: prev.content.filter(c => c.direction_id !== d.id),
     }));
   };
   const toggleDirection = async (d) => {
@@ -1057,10 +1061,6 @@ function ServicesSection({ data, setData, me }) {
                 value={window.isKnownServiceIcon && window.isKnownServiceIcon(dirForm.icon) ? "" : (dirForm.icon || "")}
                 onChange={e => setDirForm(f => ({ ...f, icon: e.target.value }))}
                 placeholder="🦷" maxLength={4} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Цвет бейджа</label>
-              <input className="form-input" type="color" value={dirForm.color || "#128395"} onChange={e => setDirForm(f => ({ ...f, color: e.target.value }))} />
             </div>
             <div className="form-group form-full">
               <label className="form-label">Описание</label>
@@ -1713,92 +1713,84 @@ function ScheduleModal({ doctor, onClose }) {
 function ContentSection({ data, setData, me }) {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
-  const [filterClinicId, setFilterClinicId] = useState("all");
-  const [filterDirectionId, setFilterDirectionId] = useState("all");
+  const [filterDirection, setFilterDirection] = useState("all");
 
-  const availableDirections = filterClinicId === "all"
-    ? data.directions
-    : data.directions.filter(d => d.clinic_id === filterClinicId);
+  // Materials are canonical (one row per direction name across all clinics).
+  // Build a unique list of direction names with a representative icon/color
+  // (first occurrence wins) for tabs and the form dropdown.
+  const directionOptions = useMemo(() => {
+    const map = new Map();
+    for (const d of data.directions) {
+      if (!d.name || map.has(d.name)) continue;
+      map.set(d.name, { name: d.name, icon: d.icon, color: d.color || "#128395" });
+    }
+    return [...map.values()];
+  }, [data.directions]);
 
   const filtered = data.content.filter(c => {
-    if (filterClinicId !== "all" && c.clinic_id !== filterClinicId) return false;
-    if (filterDirectionId !== "all" && c.direction_id !== filterDirectionId) return false;
+    if (filterDirection !== "all" && c.direction_name !== filterDirection) return false;
     return true;
   });
 
   const openAdd = () => {
-    const firstDir = availableDirections[0] || data.directions[0];
     setForm({
-      direction_id: firstDir?.id || null,
+      direction_name: directionOptions[0]?.name || "",
       type: CONTENT_TYPES[0], title: "", desc: "", duration: 4, url: "", active: true,
-      also_in_clinic_ids: [],
     });
     setModal("add");
   };
-  const openEdit = (item) => { setForm({ ...item, also_in_clinic_ids: [] }); setModal("edit"); };
+  const openEdit = (item) => { setForm({ ...item }); setModal("edit"); };
 
-  const toPayload = (f, isAdd) => ({
-    direction_id: f.direction_id,
+  const toPayload = (f) => ({
+    direction_name: f.direction_name,
     type: f.type, title: f.title, desc: f.desc || "",
     duration: f.duration || null, url: f.url || "", active: !!f.active,
-    ...(isAdd ? { also_in_clinic_ids: f.also_in_clinic_ids || [] } : {}),
   });
 
   const save = async () => {
-    if (!form.direction_id) { alert("Выберите направление"); return; }
+    if (!form.direction_name) { alert("Выберите направление"); return; }
     if (!form.title?.trim()) { alert("Укажите название"); return; }
     const isAdd = modal === "add";
     const url = isAdd ? "/admin/api/content" : `/admin/api/content/${form.id}`;
-    const res = await apiFetch(url, { method: isAdd ? "POST" : "PUT", body: JSON.stringify(toPayload(form, isAdd)) });
+    const res = await apiFetch(url, { method: isAdd ? "POST" : "PUT", body: JSON.stringify(toPayload(form)) });
     if (!res.ok) { const err = await res.json().catch(() => ({})); alert(err.detail || "Не удалось сохранить материал"); return; }
+    const saved = await res.json();
     if (isAdd) {
-      const [content, dirs] = await Promise.all([
-        apiFetch("/admin/api/content").then(r => r.json()),
-        apiFetch("/admin/api/directions").then(r => r.json()),
-      ]);
-      setData(d => ({ ...d, content, directions: dirs }));
+      setData(d => ({ ...d, content: [...d.content, saved] }));
     } else {
-      const saved = await res.json();
       setData(d => ({ ...d, content: d.content.map(c => c.id === form.id ? saved : c) }));
     }
     setModal(null);
   };
   const del = async (item) => {
-    if (!confirm(`Удалить материал «${item.title}»?`)) return;
+    if (!confirm(`Удалить материал «${item.title}»? Он исчезнет во всех клиниках с направлением «${item.direction_name}».`)) return;
     await apiFetch(`/admin/api/content/${item.id}`, { method: "DELETE" });
     setData(d => ({ ...d, content: d.content.filter(c => c.id !== item.id) }));
   };
   const toggle = async (id) => {
     const item = data.content.find(c => c.id === id);
-    const res = await apiFetch(`/admin/api/content/${id}`, { method: "PUT", body: JSON.stringify(toPayload({ ...item, active: !item.active }, false)) });
+    const res = await apiFetch(`/admin/api/content/${id}`, { method: "PUT", body: JSON.stringify(toPayload({ ...item, active: !item.active })) });
     const saved = await res.json();
     setData(d => ({ ...d, content: d.content.map(c => c.id === id ? saved : c) }));
   };
 
   const typeInfo = (type) => CONTENT_TYPE_ICONS[type] || { icon: "doc", bg: "#f0f9fa", color: "#128395" };
 
-  const directionMap = Object.fromEntries(data.directions.map(d => [d.id, d]));
-  const formClinicId = form.direction_id ? directionMap[form.direction_id]?.clinic_id : null;
-
   return (
     <div>
       <div className="section-head">
-        <div><div className="section-title">Материалы для адаптации</div><div className="section-sub">Контент, отображаемый пользователям перед визитом</div></div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <select className="form-input" style={{ width: 200 }} value={filterClinicId} onChange={e => { setFilterClinicId(e.target.value === "all" ? "all" : +e.target.value); setFilterDirectionId("all"); }}>
-            <option value="all">Все клиники</option>
-            {data.clinics.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-          <button className="btn btn-primary" onClick={openAdd} disabled={data.directions.length === 0}><Ico name="plus" size={14} /> Добавить материал</button>
+        <div>
+          <div className="section-title">Материалы для адаптации</div>
+          <div className="section-sub">Контент по направлениям — отображается во всех клиниках, где есть это направление</div>
         </div>
+        <button className="btn btn-primary" onClick={openAdd} disabled={directionOptions.length === 0}><Ico name="plus" size={14} /> Добавить материал</button>
       </div>
 
       <div className="tabs">
-        <button className={`tab${filterDirectionId === "all" ? " active" : ""}`} onClick={() => setFilterDirectionId("all")}>Все направления</button>
-        {availableDirections.map(d => (
-          <button key={d.id} className={`tab${filterDirectionId === d.id ? " active" : ""}`} onClick={() => setFilterDirectionId(d.id)} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <ServiceIcon icon={d.icon} size={16} color={d.color || "#128395"} /> {d.name}
-            {filterClinicId === "all" && <span style={{ fontSize: 10, color: "var(--text)" }}>· {d.clinic_name}</span>}
+        <button className={`tab${filterDirection === "all" ? " active" : ""}`} onClick={() => setFilterDirection("all")}>Все направления</button>
+        {directionOptions.map(d => (
+          <button key={d.name} className={`tab${filterDirection === d.name ? " active" : ""}`} onClick={() => setFilterDirection(d.name)} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <ServiceIcon icon={d.icon} size={16} color={d.color} /> {d.name}
           </button>
         ))}
       </div>
@@ -1820,7 +1812,6 @@ function ContentSection({ data, setData, me }) {
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                 {item.duration && <span className="badge badge-gray">⏱ {item.duration} мин</span>}
                 <span className="badge badge-teal">{item.direction_name || "—"}</span>
-                <span className="badge badge-gray">{item.clinic_name || "—"}</span>
               </div>
               <Toggle on={item.active} onChange={() => toggle(item.id)} />
               <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
@@ -1843,9 +1834,10 @@ function ContentSection({ data, setData, me }) {
           <div className="form-grid">
             <div className="form-group">
               <label className="form-label">Направление</label>
-              <select className="form-input" value={form.direction_id || ""} onChange={e => setForm(f => ({ ...f, direction_id: +e.target.value }))}>
-                {data.directions.map(d => <option key={d.id} value={d.id}>{d.name} — {d.clinic_name}</option>)}
+              <select className="form-input" value={form.direction_name || ""} onChange={e => setForm(f => ({ ...f, direction_name: e.target.value }))}>
+                {directionOptions.map(d => <option key={d.name} value={d.name}>{d.name}</option>)}
               </select>
+              <div style={{ fontSize: 11, color: "var(--text)", marginTop: 4 }}>Материал автоматически появится во всех клиниках, где есть это направление.</div>
             </div>
             <div className="form-group">
               <label className="form-label">Тип материала</label>
@@ -1869,29 +1861,6 @@ function ContentSection({ data, setData, me }) {
               <label className="form-label">Ссылка на контент <span>(URL)</span></label>
               <input className="form-input" value={form.url || ""} onChange={e => setForm(f => ({ ...f, url: e.target.value }))} placeholder="https://..." />
             </div>
-            {modal === "add" && data.clinics.length > 1 && (
-              <div className="form-group form-full" style={{ background: "#f7faff", padding: 12, borderRadius: 12, border: "1px dashed #b5d4ec" }}>
-                <label className="form-label">Также добавить в клиники</label>
-                <div style={{ fontSize: 12, color: "var(--text)", marginBottom: 8 }}>Копия материала будет добавлена в направление с таким же именем в каждой выбранной клинике (если направления нет — оно будет создано автоматически).</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {data.clinics.filter(c => c.id !== formClinicId).map(c => {
-                    const checked = (form.also_in_clinic_ids || []).includes(c.id);
-                    return (
-                      <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
-                        <input type="checkbox" checked={checked} onChange={e => {
-                          setForm(f => {
-                            const list = new Set(f.also_in_clinic_ids || []);
-                            if (e.target.checked) list.add(c.id); else list.delete(c.id);
-                            return { ...f, also_in_clinic_ids: [...list] };
-                          });
-                        }} />
-                        {c.name} <span style={{ fontSize: 11, color: "var(--text)" }}>{c.city}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         </Modal>
       )}

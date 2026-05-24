@@ -291,10 +291,7 @@ class AdminScheduleUpdate(BaseModel):
 
 class AdminContentItem(BaseModel):
     id: int
-    direction_id: Optional[int]
     direction_name: str
-    clinic_id: Optional[int]
-    clinic_name: str
     type: str
     title: str
     desc: str
@@ -303,17 +300,16 @@ class AdminContentItem(BaseModel):
     active: bool
 
 class AdminContentCreate(BaseModel):
-    direction_id: Optional[int] = None
+    direction_name: str
     type: str = "Мультфильм"
     title: str
     desc: str = ""
     duration: Optional[int] = None
     url: str = ""
     active: bool = True
-    also_in_clinic_ids: List[int] = []  # broadcast (super-only): копии в направлениях с тем же именем
 
 class AdminContentUpdate(BaseModel):
-    direction_id: Optional[int] = None
+    direction_name: Optional[str] = None
     type: str = "Мультфильм"
     title: str
     desc: str = ""

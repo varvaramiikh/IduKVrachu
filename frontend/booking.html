@@ -168,10 +168,10 @@
       background: var(--btn-color);
       border-color: var(--btn-color);
     }
-    .service-card__check svg {
+    .service-card__check img {
       display: none;
     }
-    .service-card--selected .service-card__check svg {
+    .service-card--selected .service-card__check img {
       display: block;
     }
 
@@ -426,10 +426,9 @@
       justify-content: center;
       flex-shrink: 0;
     }
-    .summary-icon svg {
+    .summary-icon img {
       width: 16px;
       height: 16px;
-      color: #128395;
     }
     .summary-label {
       margin: 0 0 2px;
@@ -465,10 +464,9 @@
       justify-content: center;
       margin-bottom: 24px;
     }
-    .success-icon-wrap svg {
+    .success-icon-wrap img {
       width: 44px;
       height: 44px;
-      color: var(--btn-color);
     }
     .success-title {
       margin: 0 0 10px;
@@ -739,11 +737,10 @@
       font-size: 11px;
       font-weight: 500;
     }
-    .doctor-tag svg {
+    .doctor-tag img {
       width: 12px;
       height: 12px;
       flex-shrink: 0;
-      color: #128395;
     }
     .doctor-slots-label {
       margin: 0 0 8px;
@@ -1038,36 +1035,24 @@
         <div class="start-actions">
           <button class="start-action-card" id="btn-go-booking" type="button">
             <div class="start-action-icon" style="background: #F0F9FA;">
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                <rect x="4" y="5" width="20" height="19" rx="3" stroke="#128395" stroke-width="2"/>
-                <path d="M4 11h20M10 4v4M18 4v4" stroke="#128395" stroke-width="2" stroke-linecap="round"/>
-                <path d="M14 14v6M11 17h6" stroke="#128395" stroke-width="2" stroke-linecap="round"/>
-              </svg>
+              <img src="materials/svg/icon-booking-card.svg" alt="" width="28" height="28">
             </div>
             <div class="start-action-body">
               <p class="start-action-title">Записаться к врачу</p>
               <p class="start-action-desc">Выберите специалиста и удобное время</p>
             </div>
-            <svg class="start-action-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M8 5l5 5-5 5" stroke="#128395" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <img class="start-action-arrow" src="materials/svg/icon-chevron-right.svg" alt="" width="20" height="20">
           </button>
 
           <button class="start-action-card" id="btn-go-appointments" type="button">
             <div class="start-action-icon" style="background: #F0F9FA;">
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                <path d="M9 6H7a2 2 0 00-2 2v15a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-2" stroke="#128395" stroke-width="2" stroke-linecap="round"/>
-                <rect x="9" y="3" width="10" height="5" rx="1.5" stroke="#128395" stroke-width="2"/>
-                <path d="M11 16l2 2 5-5" stroke="#128395" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+              <img src="materials/svg/icon-appointments-card.svg" alt="" width="28" height="28">
             </div>
             <div class="start-action-body">
               <p class="start-action-title">Мои записи</p>
               <p class="start-action-desc">Просмотр, отмена и перенос визитов</p>
             </div>
-            <svg class="start-action-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M8 5l5 5-5 5" stroke="#128395" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <img class="start-action-arrow" src="materials/svg/icon-chevron-right.svg" alt="" width="20" height="20">
           </button>
         </div>
       </div>
@@ -1110,10 +1095,7 @@
         <h2 class="step-title">Выберите клинику</h2>
 
         <div class="selection-strip" id="strip-city">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0">
-            <path d="M8 2C5.24 2 3 4.24 3 7c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5z" stroke="#128395" stroke-width="1.5"/>
-            <circle cx="8" cy="7" r="1.5" stroke="#128395" stroke-width="1.5"/>
-          </svg>
+          <img src="materials/svg/icon-pin-sm.svg" alt="" width="16" height="16" style="flex-shrink:0">
           <p class="selection-strip__text" id="strip-city-text">—</p>
         </div>
 
@@ -1130,10 +1112,7 @@
         <p class="step-subtitle">Укажите направление, по которому хотите записать ребёнка</p>
 
         <div class="selection-strip" id="strip-clinic">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0">
-            <path d="M8 2C5.24 2 3 4.24 3 7c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5z" stroke="#128395" stroke-width="1.5"/>
-            <circle cx="8" cy="7" r="1.5" stroke="#128395" stroke-width="1.5"/>
-          </svg>
+          <img src="materials/svg/icon-pin-sm.svg" alt="" width="16" height="16" style="flex-shrink:0">
           <p class="selection-strip__text" id="strip-clinic-text">—</p>
         </div>
 
@@ -1149,10 +1128,7 @@
         <h2 class="step-title">Дата и время</h2>
 
         <div class="selection-strip" id="strip-service">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0">
-            <circle cx="8" cy="8" r="7" stroke="#128395" stroke-width="1.5"/>
-            <path d="M5.5 8l2 2 3-3" stroke="#128395" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <img src="materials/svg/icon-check-circle-sm.svg" alt="" width="16" height="16" style="flex-shrink:0">
           <p class="selection-strip__text" id="strip-service-text">—</p>
         </div>
 
@@ -1177,7 +1153,7 @@
       <div class="booking-step" id="step-5" data-step="5">
         <h2 class="step-title">Выберите врача</h2>
         <div class="selection-strip" id="strip-date">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0"><rect x="2" y="3" width="12" height="11" rx="2" stroke="#128395" stroke-width="1.5"/><path d="M2 7h12M6 2v2M10 2v2" stroke="#128395" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <img src="materials/svg/icon-calendar-sm.svg" alt="" width="16" height="16" style="flex-shrink:0">
           <p class="selection-strip__text" id="strip-date-text">—</p>
         </div>
         <div class="doctor-list" id="doctor-list"></div>
@@ -1259,11 +1235,7 @@
       <div class="booking-step" id="step-appointments" data-step="appointments">
         <div class="appt-empty" id="appt-empty-state">
           <div class="appt-empty-icon">
-            <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
-              <rect x="4" y="6" width="26" height="24" rx="4" stroke="#128395" stroke-width="2"/>
-              <path d="M4 13h26M12 5v4M22 5v4" stroke="#128395" stroke-width="2" stroke-linecap="round"/>
-              <path d="M10 20l4 4 10-8" stroke="#128395" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <img src="materials/svg/icon-empty-appts.svg" alt="" width="34" height="34">
           </div>
           <p class="appt-empty-title">Записей пока нет</p>
           <p class="appt-empty-text">Здесь появятся ваши предстоящие и прошедшие визиты к врачу</p>
@@ -1276,9 +1248,7 @@
       <div class="booking-step" id="step-8" data-step="8">
         <div class="success-screen">
           <div class="success-icon-wrap">
-            <svg viewBox="0 0 44 44" fill="none">
-              <path d="M8 22l10 10L36 12" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <img src="materials/svg/icon-success-check.svg" alt="" width="44" height="44">
           </div>
           <h2 class="success-title">Вы записаны!</h2>
           <p class="success-text" id="success-text">Ваша запись подтверждена. Бот напомнит за 3 часа до визита.</p>
@@ -1521,32 +1491,32 @@
 
       const rows = [
         {
-          icon: `<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 8l2 2 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+          icon: `<img src="materials/svg/icon-check-circle-sm.svg" alt="" width="16" height="16">`,
           label: 'Услуга',
           value: state.serviceName || '—'
         },
         {
-          icon: `<svg viewBox="0 0 16 16" fill="none"><path d="M8 2C5.24 2 3 4.24 3 7c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5z" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="7" r="1.5" stroke="currentColor" stroke-width="1.5"/></svg>`,
+          icon: `<img src="materials/svg/icon-pin-sm.svg" alt="" width="16" height="16">`,
           label: 'Клиника',
           value: state.clinicId ? `${state.clinicName}\n${state.clinicAddr || ''}`.trim() : '—'
         },
         {
-          icon: `<svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2 7h12M6 2v2M10 2v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+          icon: `<img src="materials/svg/icon-calendar-sm.svg" alt="" width="16" height="16">`,
           label: 'Дата и время',
           value: `${dateStr}\n${state.slot}`
         },
         {
-          icon: `<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M2 14c0-2.76 2.24-5 6-5s6 2.24 6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+          icon: `<img src="materials/svg/icon-doctor-sm.svg" alt="" width="16" height="16">`,
           label: 'Врач',
           value: state.doctorName ? `${state.doctorName}\n${state.doctorSpec}` : '—'
         },
         {
-          icon: `<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="6" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M3 14c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+          icon: `<img src="materials/svg/icon-person-sm.svg" alt="" width="16" height="16">`,
           label: 'Родитель',
           value: `${state.parentName}\n${state.phone}`
         },
         {
-          icon: `<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M4 14c0-2.21 1.79-4 4-4s4 1.79 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+          icon: `<img src="materials/svg/icon-child-sm.svg" alt="" width="16" height="16">`,
           label: 'Ребёнок',
           value: `${state.childName}\nДата рождения: ${state.childDob ? formatDob(state.childDob) : '—'}`
         },
@@ -1554,7 +1524,7 @@
 
       if (state.comment) {
         rows.push({
-          icon: `<svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+          icon: `<img src="materials/svg/icon-comment-sm.svg" alt="" width="16" height="16">`,
           label: 'Комментарий',
           value: state.comment
         });
@@ -1692,19 +1662,14 @@
         card.tabIndex = 0;
         card.innerHTML = `
           <div class="service-card__icon">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style="color:#128395">
-              <path d="M14 3C9.58 3 6 6.58 6 11c0 6.56 8 14 8 14s8-7.44 8-14c0-4.42-3.58-8-8-8z" stroke="currentColor" stroke-width="2"/>
-              <circle cx="14" cy="11" r="2.5" stroke="currentColor" stroke-width="2"/>
-            </svg>
+            <img src="materials/svg/icon-pin-md.svg" alt="" width="28" height="28">
           </div>
           <div class="service-card__body">
             <p class="service-card__title">${city.name}</p>
             <p class="service-card__desc">${city.region || ''}</p>
           </div>
           <div class="service-card__check">
-            <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
-              <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <img src="materials/svg/icon-check-white.svg" alt="" width="12" height="9">
           </div>
         `;
         card.addEventListener('click', () => {
@@ -1824,9 +1789,7 @@
             <p class="service-card__desc">${svc.description || ''}</p>
           </div>
           <div class="service-card__check">
-            <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
-              <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <img src="materials/svg/icon-check-white.svg" alt="" width="12" height="9">
           </div>
         `;
         card.addEventListener('click', () => {
@@ -1938,15 +1901,15 @@
           </div>
           <div class="doctor-card__tags">
             <span class="doctor-tag">
-              <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/><path d="M6 3.5v3l1.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+              <img src="materials/svg/icon-clock-xs.svg" alt="" width="12" height="12">
               ${expLabel}
             </span>
             <span class="doctor-tag">
-              <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="4.5" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M2 11c0-2.21 1.79-4 4-4s4 1.79 4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+              <img src="materials/svg/icon-person-xs.svg" alt="" width="12" height="12">
               ${ageLabel}
             </span>
             ${addrLabel ? `<span class="doctor-tag">
-              <svg viewBox="0 0 12 12" fill="none"><path d="M6 1.5C4.07 1.5 2.5 3.07 2.5 5c0 2.63 3.5 6.5 3.5 6.5S9.5 7.63 9.5 5c0-1.93-1.57-3.5-3.5-3.5z" stroke="currentColor" stroke-width="1.2"/></svg>
+              <img src="materials/svg/icon-pin-xs.svg" alt="" width="12" height="12">
               ${addrLabel}
             </span>` : ''}
           </div>
@@ -2468,10 +2431,7 @@
     <div class="confirm-sheet">
       <div class="confirm-handle"></div>
       <div class="confirm-icon">
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-          <path d="M16 10v8M16 22v.5" stroke="#D14747" stroke-width="2.5" stroke-linecap="round"/>
-          <circle cx="16" cy="16" r="13" stroke="#D14747" stroke-width="2"/>
-        </svg>
+        <img src="materials/svg/icon-alert.svg" alt="" width="32" height="32">
       </div>
       <h2 class="confirm-title">Отменить запись?</h2>
       <p class="confirm-desc">Запись будет отменена.<br>Это действие нельзя отменить.</p>

@@ -35,8 +35,8 @@ async def seed_if_empty() -> None:
         db.add_all([s1, s2, s3])
         await db.flush()
 
-        m1 = ContentModule(title="Сдача крови", description="Подготовка к анализу крови", is_free=True, direction_id=blood2.id, content_type="Социальная история")
-        m2 = ContentModule(title="Стоматолог", description="Знакомство с кабинетом стоматолога", is_free=False, price_stars=69, direction_id=dent1.id, content_type="Мультфильм")
+        m1 = ContentModule(title="Сдача крови", description="Подготовка к анализу крови", is_free=True, direction_name=blood2.name, content_type="Социальная история")
+        m2 = ContentModule(title="Стоматолог", description="Знакомство с кабинетом стоматолога", is_free=False, price_stars=69, direction_name=dent1.name, content_type="Мультфильм")
         db.add_all([m1, m2])
         await db.flush()
 
