@@ -820,6 +820,7 @@ function ServicesSection({ data, setData, me }) {
       : {
           name: dirForm.name, desc: dirForm.desc || "", icon: dirForm.icon || "",
           color: dirForm.color || "#128395", active: !!dirForm.active,
+          also_in_clinic_ids: isSuper ? (dirForm.also_in_clinic_ids || []) : [],
         };
     const res = await apiFetch(url, { method: isAdd ? "POST" : "PUT", body: JSON.stringify(payload) });
     if (!res.ok) { const err = await res.json().catch(() => ({})); alert(err.detail || "Не удалось сохранить"); return; }
@@ -890,14 +891,16 @@ function ServicesSection({ data, setData, me }) {
       : {
           direction_id: svcForm.direction_id,
           name: svcForm.name, desc: svcForm.desc || "", icon: svcForm.icon || "", active: !!svcForm.active,
+          also_in_clinic_ids: isSuper ? (svcForm.also_in_clinic_ids || []) : [],
         };
     const res = await apiFetch(url, { method: isAdd ? "POST" : "PUT", body: JSON.stringify(payload) });
     if (!res.ok) { const err = await res.json().catch(() => ({})); alert(err.detail || "Не удалось сохранить"); return; }
-    const [dirs, svcs] = await Promise.all([
+    const [dirs, svcs, clinics] = await Promise.all([
       apiFetch("/admin/api/directions").then(r => r.json()),
       apiFetch("/admin/api/services").then(r => r.json()),
+      apiFetch("/admin/api/clinics").then(r => r.json()),
     ]);
-    setData(d => ({ ...d, directions: dirs, services: svcs }));
+    setData(d => ({ ...d, directions: dirs, services: svcs, clinics }));
     setSvcModal(null);
   };
   const deleteService = async (s) => {
@@ -1063,10 +1066,14 @@ function ServicesSection({ data, setData, me }) {
               <label className="form-label">Описание</label>
               <input className="form-input" value={dirForm.desc || ""} onChange={e => setDirForm(f => ({ ...f, desc: e.target.value }))} placeholder="Краткое описание направления" />
             </div>
-            {isSuper && dirModal.mode === "add" && data.clinics.length > 1 && (
+            {isSuper && data.clinics.length > 1 && (
               <div className="form-group form-full" style={{ background: "#f7faff", padding: 12, borderRadius: 12, border: "1px dashed #b5d4ec" }}>
-                <label className="form-label">Также создать в клиниках</label>
-                <div style={{ fontSize: 12, color: "var(--text)", marginBottom: 8 }}>Будет создана независимая копия направления в каждой выбранной клинике.</div>
+                <label className="form-label">{dirModal.mode === "add" ? "Также создать в клиниках" : "Также подвязать к клиникам"}</label>
+                <div style={{ fontSize: 12, color: "var(--text)", marginBottom: 8 }}>
+                  {dirModal.mode === "add"
+                    ? "Будет создана независимая копия направления в каждой выбранной клинике."
+                    : "В каждой выбранной клинике появится независимая копия направления с текущими значениями. Если такое направление в клинике уже есть — оно будет пропущено."}
+                </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {data.clinics.filter(c => c.id !== dirForm.clinic_id).map(c => {
                     const checked = (dirForm.also_in_clinic_ids || []).includes(c.id);
@@ -1135,10 +1142,14 @@ function ServicesSection({ data, setData, me }) {
               <label className="form-label">Описание</label>
               <input className="form-input" value={svcForm.desc || ""} onChange={e => setSvcForm(f => ({ ...f, desc: e.target.value }))} placeholder="Краткое описание для пользователя" />
             </div>
-            {isSuper && svcModal.mode === "add" && data.clinics.length > 1 && (
+            {isSuper && data.clinics.length > 1 && (
               <div className="form-group form-full" style={{ background: "#f7faff", padding: 12, borderRadius: 12, border: "1px dashed #b5d4ec" }}>
-                <label className="form-label">Также добавить в клиники</label>
-                <div style={{ fontSize: 12, color: "var(--text)", marginBottom: 8 }}>Будет создана копия услуги в направлении с таким же названием в каждой выбранной клинике (если направления нет — оно создастся автоматически).</div>
+                <label className="form-label">{svcModal.mode === "add" ? "Также добавить в клиники" : "Также подвязать к клиникам"}</label>
+                <div style={{ fontSize: 12, color: "var(--text)", marginBottom: 8 }}>
+                  {svcModal.mode === "add"
+                    ? "Будет создана копия услуги в направлении с таким же названием в каждой выбранной клинике (если направления нет — оно создастся автоматически)."
+                    : "В каждой выбранной клинике появится независимая копия услуги (в одноимённом направлении, оно создастся автоматически если его нет). Если услуга с таким именем там уже есть — она будет пропущена."}
+                </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {data.clinics.filter(c => c.id !== svcModal.clinic_id).map(c => {
                     const checked = (svcForm.also_in_clinic_ids || []).includes(c.id);

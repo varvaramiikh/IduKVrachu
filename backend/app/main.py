@@ -912,6 +912,23 @@ async def admin_update_direction(
     direction.icon = data.icon
     direction.color = data.color
     direction.is_active = data.active
+
+    if admin.is_superadmin and data.also_in_clinic_ids:
+        for cid in data.also_in_clinic_ids:
+            if cid == direction.clinic_id:
+                continue
+            if not (await db.execute(select(Clinic.id).where(Clinic.id == cid))).scalar_one_or_none():
+                continue
+            existing = (await db.execute(
+                select(Direction).where(Direction.clinic_id == cid, Direction.name == data.name)
+            )).scalar_one_or_none()
+            if existing:
+                continue
+            db.add(Direction(
+                clinic_id=cid, name=data.name, description=data.desc,
+                icon=data.icon, color=data.color, is_active=data.active,
+            ))
+
     await db.commit()
     await db.refresh(direction)
     return await _direction_to_item(direction, db)
@@ -1036,6 +1053,28 @@ async def admin_update_service(
     svc.description = data.desc
     svc.icon = data.icon
     svc.is_active = data.active
+
+    if admin.is_superadmin and data.also_in_clinic_ids:
+        source_dir = (await db.execute(select(Direction).where(Direction.id == svc.direction_id))).scalar_one_or_none()
+        if source_dir:
+            for cid in data.also_in_clinic_ids:
+                if cid == source_dir.clinic_id:
+                    continue
+                if not (await db.execute(select(Clinic.id).where(Clinic.id == cid))).scalar_one_or_none():
+                    continue
+                target_dir = await _resolve_direction_for_clinic(source_dir.name, cid, db)
+                if target_dir.icon is None or target_dir.icon == "":
+                    target_dir.icon = source_dir.icon
+                existing = (await db.execute(
+                    select(Service).where(Service.direction_id == target_dir.id, Service.name == data.name)
+                )).scalar_one_or_none()
+                if existing:
+                    continue
+                db.add(Service(
+                    direction_id=target_dir.id, name=data.name, service_type=data.name.lower(),
+                    description=data.desc, icon=data.icon, is_active=data.active,
+                ))
+
     await db.commit()
     await db.refresh(svc)
     return await _service_to_item(svc, db)

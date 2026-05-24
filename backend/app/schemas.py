@@ -178,6 +178,7 @@ class AdminDirectionUpdate(BaseModel):
     icon: str = ""
     color: str = "#128395"
     active: bool = True
+    also_in_clinic_ids: List[int] = []  # broadcast (super-only): создать копии в этих клиниках, если их там ещё нет
 
 # ── Admin services ────────────────────────────────────────────
 
@@ -206,6 +207,7 @@ class AdminServiceUpdate(BaseModel):
     desc: str = ""
     icon: str = ""
     active: bool = True
+    also_in_clinic_ids: List[int] = []  # broadcast (super-only): копии в направлениях с тем же именем
 
 # ── Admin cities ──────────────────────────────────────────────
 
