@@ -537,9 +537,10 @@ const Ico = ({ name, size = 16 }) => (
 );
 
 // Рендер иконки услуги: SVG из общего набора по ключу либо эмодзи/текст.
-const ServiceIcon = ({ icon, size = 22, color = "#128395" }) => (
+// Цвет всегда брендовый #128395 — не настраивается.
+const ServiceIcon = ({ icon, size = 22 }) => (
   <span
-    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", color, width: size, height: size }}
+    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#128395", width: size, height: size }}
     dangerouslySetInnerHTML={{ __html: window.renderServiceIconHTML ? window.renderServiceIconHTML(icon, size) : (icon || "⚕️") }}
   />
 );
@@ -751,7 +752,7 @@ function Dashboard({ data, me }) {
                 const count = data.content.filter(c => c.direction_name === d.name).length;
                 return (
                   <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #f4f7f8" }}>
-                    <ServiceIcon icon={d.icon} size={22} color={d.color} />
+                    <ServiceIcon icon={d.icon} size={22} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: "var(--title)" }}>{d.name}</div>
                       <div style={{ fontSize: 12, color: "var(--text)" }}>в {d.clinicsCount} {d.clinicsCount === 1 ? "клинике" : "клиниках"}</div>
@@ -987,7 +988,7 @@ function ServicesSection({ data, setData, me }) {
             return (
               <div key={dir.id} className="card" style={{ marginBottom: 14, padding: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderBottom: "1px solid #f0f4f5", background: "#fbfdfd", borderRadius: "16px 16px 0 0" }}>
-                  <ServiceIcon icon={dir.icon} size={22} color={dir.color || "#128395"} />
+                  <ServiceIcon icon={dir.icon} size={22} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 15, fontWeight: 700, color: "var(--title)" }}>{dir.name}</div>
                     {dir.desc && <div style={{ fontSize: 12, color: "var(--text)" }}>{dir.desc}</div>}
@@ -1790,7 +1791,7 @@ function ContentSection({ data, setData, me }) {
         <button className={`tab${filterDirection === "all" ? " active" : ""}`} onClick={() => setFilterDirection("all")}>Все направления</button>
         {directionOptions.map(d => (
           <button key={d.name} className={`tab${filterDirection === d.name ? " active" : ""}`} onClick={() => setFilterDirection(d.name)} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <ServiceIcon icon={d.icon} size={16} color={d.color} /> {d.name}
+            <ServiceIcon icon={d.icon} size={16} /> {d.name}
           </button>
         ))}
       </div>

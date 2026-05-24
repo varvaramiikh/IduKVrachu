@@ -29,12 +29,12 @@
   }
 
   // Универсальный рендер: если value — известный ключ, отрисовываем <img>;
-  // иначе считаем, что это эмодзи/строка и выводим как текст.
+  // иначе считаем, что это эмодзи/строка и выводим как текст в брендовом цвете.
   function renderServiceIconHTML(value, size) {
     const s = size || 24;
     if (value && KEYS.has(value)) return imgMarkup(value, s);
     const text = value || "⚕️";
-    return `<span style="font-size:${Math.round(s * 0.85)}px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:${s}px;height:${s}px">${text}</span>`;
+    return `<span style="font-size:${Math.round(s * 0.85)}px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:${s}px;height:${s}px;color:#128395">${text}</span>`;
   }
 
   window.SERVICE_ICONS = ICONS;
