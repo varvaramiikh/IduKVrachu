@@ -454,7 +454,7 @@ async def create_appointment(
     await db.commit()
 
     user_msg = (
-        "📨 Ваша заявка отправлена!\n\n"
+        "📨 Ваша запись отправлена!\n\n"
         f"Услуга: {service.name}\n"
         f"Клиника: {clinic.name}\n"
         f"Время: {_fmt_msk(appointment.slot_datetime)}\n\n"
