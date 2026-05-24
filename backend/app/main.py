@@ -628,7 +628,8 @@ async def save_profile(data: ProfileSaveRequest, user: User = Depends(get_curren
 
 def _get_main_kb_for_notify(tg_id, path: str = "", text: str = "🏥 Открыть приложение"):
     from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-    url = settings.WEB_APP_URL.rstrip("/") + path
+    sep = "&" if "?" in path else "?"
+    url = f"{settings.WEB_APP_URL.rstrip('/')}{path}{sep}tg_id={tg_id}"
     btn = (
         InlineKeyboardButton(text=text, web_app=WebAppInfo(url=url))
         if settings.WEB_APP_URL.startswith("https://")
