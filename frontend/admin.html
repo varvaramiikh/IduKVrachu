@@ -960,11 +960,6 @@ function ServicesSection({ data, setData, me }) {
             </select>
           )}
           <button className="btn btn-secondary" onClick={() => openAddDirection()} disabled={!canAddDirection}><Ico name="plus" size={14} /> Направление</button>
-          <button className="btn btn-primary" onClick={() => {
-            const dir = visibleDirections[0];
-            if (dir) openAddService(dir.id);
-            else alert("Сначала создайте направление");
-          }} disabled={visibleDirections.length === 0}><Ico name="plus" size={14} /> Услуга</button>
         </div>
       </div>
 
